@@ -1,0 +1,549 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/base_layer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context=".MainActivity">
+
+    <!--android:background="#ff000000"-->
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TableLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_centerHorizontal="true">
+                <TableRow>
+
+
+                    <Button
+                        android:id="@+id/PowerONBtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentLeft="true"
+                        android:layout_alignParentStart="true"
+                        android:layout_alignParentTop="true"
+                        android:layout_column="0"
+
+                        android:onClick="Power_ON"
+                        android:text="Power ON" />
+
+
+                    <Button
+                        android:id="@+id/PowerOFFBtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_alignParentRight="true"
+                        android:layout_alignParentTop="true"
+                        android:layout_column="1"
+
+                        android:onClick="SetPower_OFF"
+                        android:text="Power OFF" />
+
+                    <TextView
+                        android:id="@+id/power_text_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_above="@+id/DailyReport"
+                        android:layout_toEndOf="@+id/PowerONBtn"
+                        android:layout_toRightOf="@+id/PowerONBtn"
+                        android:layout_column="2"
+                        android:hint="POWER ?"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                </TableRow>
+                <TableRow android:layout_width="wrap_content">
+                    <Button
+                        android:id="@+id/MotorONBtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignEnd="@+id/PowerONBtn"
+                        android:layout_alignRight="@+id/PowerONBtn"
+                        android:layout_below="@+id/PowerONBtn"
+                        android:layout_column="0"
+                        android:onClick="SetMotor_ON"
+                        android:text="Motor ON" />
+
+                    <Button
+                        android:id="@+id/MotorOFFBtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_alignParentRight="true"
+                        android:layout_below="@+id/PowerOFFBtn"
+                        android:layout_column="1"
+                        android:onClick="SetMotor_OFF"
+                        android:text="Motor OFF" />
+
+
+                    <TextView
+                        android:id="@+id/motor_text_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_above="@+id/DailyReport"
+                        android:layout_toEndOf="@+id/PowerONBtn"
+                        android:layout_toRightOf="@+id/PowerONBtn"
+                        android:layout_column="2"
+                        android:hint="MOTOR ?"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+                </TableRow>
+                <TableRow>
+                    <TextView
+                        android:id="@+id/system_status_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_span="3"
+                        android:layout_column="0"
+                        android:hint="SYSTEM STATUS = "
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+                </TableRow>
+                <TableRow>
+
+                    <Button
+                        android:id="@+id/send_event_button"
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:onClick="SendEventButton"
+                        android:text="SEND EVENT" />
+
+                    <Button
+                        android:id="@+id/send_hourly_data_button"
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:onClick="SendHourlyDataButton"
+                        android:text="HOURLY DATA"
+                        android:clickable="true" />
+
+                    <Button
+                        android:id="@+id/send_daily_data_button"
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="2"
+                        android:onClick="SendDailyDataButton"
+                        android:text="DAILY DATA" />
+
+                </TableRow>
+            </TableLayout>
+        </TableRow>
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TableLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/textView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:text="Accelerometer"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                    <!--Button
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Fake Button"
+                        android:id="@+id/send_event_button"
+                        android:layout_column="1"
+                        android:onClick="FakeButton" /-->
+
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/acc_view_x"
+                        android:layout_width="100dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:text="Acc X (m/s^2): "
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/acc_x_tview"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:text="0.0"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/acc_minx_tview"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="2"
+                        android:text="0.0"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/acc_max_x_tview"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="3"
+                        android:text="0.0"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/acc_view_y"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:text="Acc Y (m/s^2): "
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/acc_y_tview"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:text="0.0"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/acc_min_y_tview"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="2"
+                        android:text="0.0"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/acc_max_y_tview"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="3"
+                        android:text="0.0"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/acc_view_z"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:text="Acc Z (m/s^2): "
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/acc_z_tview"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:text="0.0"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/acc_min_z_tview"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="2"
+                        android:text="0.0"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/acc_max_z_tview"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="3"
+                        android:text="0.0"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/acc_vel_x_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:text="Velocity X: "
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                    <TextView
+                        android:id="@+id/acc_vel_x_val_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:text="0.0 m/s"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+
+                    <TextView
+                        android:id="@+id/acc_dist_x_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:text="Distance X: "
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                    <TextView
+                        android:id="@+id/acc_distance_x_val_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:text="0.0 m"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/textView2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:layout_span="3"
+                        android:text="Gyroscope"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/gyro_omega_x_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:text="Omega X :"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                    <TextView
+                        android:id="@+id/gyro_omega_x_val_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:text="0.0 °/s"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/gyro_angle_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:text="Angle :"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                    <TextView
+                        android:id="@+id/gyro_angle_val_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:text="0.0 °"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                </TableRow>
+
+
+                <!--TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/textView3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:layout_span="3"
+                        android:text="General Data"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                </TableRow-->
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/MaxiIO_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:layout_span="3"
+                        android:hint="Maxi-IO: data"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+
+                    <TextView
+                        android:id="@+id/event_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:layout_span="3"
+                        android:hint="Maxi-IO: events"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/temperature_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:hint="Temperature: "
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                    <TextView
+                        android:id="@+id/temperature_mean_tview"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:text="0.0"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/temperature_min_tview"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="2"
+                        android:text="0.0"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/temperature_max_tview"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="3"
+                        android:text="0.0"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/battery_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:hint="Battery level"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                    <TextView
+                        android:id="@+id/battery_val_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:text="0 %"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/signal_level_text_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:hint="Signal level"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                    <TextView
+                        android:id="@+id/signal_level_val_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:text="0"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+
+
+                </TableRow>
+
+                <!--TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"></TableRow-->
+
+                <!--TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <!Switch
+                        android:id="@+id/switch1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:text="New Switch" />
+                </TableRow-->
+
+            </TableLayout>
+        </TableRow>
+    </TableLayout>
+    <!--TableLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"-->
+
+
+</RelativeLayout>

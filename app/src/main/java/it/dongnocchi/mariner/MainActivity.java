@@ -242,7 +242,7 @@ public class MainActivity extends Activity
             btMotorOn.setEnabled(false);
             btMotorOff.setEnabled(false);
 
-            Intent intent = getIntent();
+            //Intent intent = getIntent();
             //user = (User) intent.getSerializableExtra("user");      // GET INPUT FROM INIT ACTIVITY
             lastfiles = new it.dongnocchi.mariner.LastFiles();                              // SET OUTPUT TO INIT ACTIVITY
 

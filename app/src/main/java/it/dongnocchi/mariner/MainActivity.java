@@ -18,8 +18,6 @@ import android.os.Handler;
 import android.os.SystemClock;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -38,6 +36,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+/*
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -64,14 +63,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.yoctopuce.YoctoAPI.YAPI;
-import com.yoctopuce.YoctoAPI.YAPI_Exception;
-import com.yoctopuce.YoctoAPI.YDigitalIO;
-import com.yoctopuce.YoctoAPI.YModule;
-
 import org.json.JSONObject;
-
-import static com.yoctopuce.YoctoAPI.YDigitalIO.FindDigitalIO;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -84,6 +76,17 @@ import java.util.Date;
 import java.util.List;
 
 import java.sql.Timestamp;
+
+*/
+
+import com.yoctopuce.YoctoAPI.YAPI;
+import com.yoctopuce.YoctoAPI.YAPI_Exception;
+import com.yoctopuce.YoctoAPI.YDigitalIO;
+import com.yoctopuce.YoctoAPI.YModule;
+
+
+import static com.yoctopuce.YoctoAPI.YDigitalIO.FindDigitalIO;
+
 
 //==========================================================================
 public class MainActivity extends Activity
@@ -181,9 +184,9 @@ public class MainActivity extends Activity
     it.dongnocchi.mariner.NetworkInfo myNetworkInfo;
     //int SignalStrength = 0;
 
-    it.dongnocchi.mariner.MyAzureManager myBlobManager;
-    it.dongnocchi.mariner.MyConfiguration myConfig;
-    it.dongnocchi.mariner.MyAzureEventManager myEventManager;
+    AzureManager myBlobManager;
+    Configuration myConfig;
+    AzureEventManager myEventManager;
 
     int actual_hour_measured;
     BroadcastReceiver OnceAnHour_Receiver;
@@ -259,13 +262,13 @@ public class MainActivity extends Activity
             //registerReceiver(mBatOkay, new IntentFilter(Intent.ACTION_BATTERY_OKAY));
             registerReceiver(mBatChanged, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 
-            myConfig = new it.dongnocchi.mariner.MyConfiguration();
+            myConfig = new Configuration();
             myData = new it.dongnocchi.mariner.WheelchairData();
 
             myBatteryManager = new BatteryManager();
 
 
-            myBlobManager = new it.dongnocchi.mariner.MyAzureManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
+            myBlobManager = new AzureManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
                 @Override
                 public void processFinish(String last_uploaded_file) {
                     // se ho caricato il file xml coi nomi dei file caricati, non scriverlo sul nuovo file xml
@@ -287,7 +290,7 @@ public class MainActivity extends Activity
             start_network_listener();
 
             // inizializzazione eventhub manager
-            myEventManager = new it.dongnocchi.mariner.MyAzureEventManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
+            myEventManager = new AzureEventManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
                 @Override
                 public void processFinish(String output) {
                 }
@@ -354,10 +357,15 @@ public class MainActivity extends Activity
     //==============================================================================================
     //==============================================================================================
     public boolean isSupplyPowerPresent() {
+        boolean to_return = false;
+
         //Context context = getApplicationContext();
         Intent intent = this.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
-        return plugged == BatteryManager.BATTERY_PLUGGED_AC || plugged == BatteryManager.BATTERY_PLUGGED_USB;
+
+        to_return = (plugged == BatteryManager.BATTERY_PLUGGED_AC || plugged == BatteryManager.BATTERY_PLUGGED_USB);
+
+        return to_return;
     }
 
     //==========================================================================
@@ -669,7 +677,7 @@ public class MainActivity extends Activity
             public void onReceive(Context context, Intent intent) {
 
                 SimpleDateFormat formatter = new SimpleDateFormat("HH_mm_ss");
-                Date now = new Date();
+                //Date now = new Date();
                 //stringafake = formatter.format(now);
                 //event_textview.setText(stringafake);
 
@@ -800,7 +808,7 @@ public class MainActivity extends Activity
                 */
 
             //myData.ID = "SMN-TEST-0S6";
-            String EventType = "HOURLY_STATUS";
+            //String EventType = "HOURLY_STATUS";
             myData.HourlyNote = "Just good news";
 
             JSONObject ParamsToSend = new JSONObject();
@@ -1097,10 +1105,10 @@ public class MainActivity extends Activity
     YModule tmp;
     int Motor_OldInputData;
     int Motor_NewInputData;
-    int Wheelchair_OldInputData;
-    int Wheelchair_NewInputData;
+    //int Wheelchair_OldInputData;
+    //int Wheelchair_NewInputData;
     public static final short MaxiIO_MotorPin = 7;
-    public static final short MaxiIO_WheelcPin = 6;
+    //public static final short MaxiIO_WheelcPin = 6;
 
     //==========================================================================
     protected void Start_Yocto() {
@@ -1162,7 +1170,7 @@ public class MainActivity extends Activity
     }
     //==========================================================================
     private Handler handler = new Handler();
-    private int _outputdata;
+    //private int _outputdata;
     final Runnable r = new Runnable()
     {
         public void run()

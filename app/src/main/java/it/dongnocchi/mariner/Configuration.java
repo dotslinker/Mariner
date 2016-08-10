@@ -24,7 +24,7 @@ import static android.os.Environment.getExternalStorageDirectory;
 /**
  * Created by DianaM on 02/09/2015.
  */
-public class MyConfiguration {
+public class Configuration {
 
     private String storageConnectionString;
     private String SAS;
@@ -73,7 +73,7 @@ public class MyConfiguration {
 
 
     //==========================================================================
-    public MyConfiguration(){
+    public Configuration(){
     //==========================================================================
         //Xml_handle = new XML_handler();
         //User ThisChild = Xml_handle.read();

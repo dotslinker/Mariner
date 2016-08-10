@@ -20,11 +20,11 @@ public class NotSentFileHandler {
     private String FilePath;
     private String TempFilePath;
     FileOutputStream outputStream;
-    //MyConfiguration keys;
+    //Configuration keys;
     private List<String> records;
 
     public NotSentFileHandler(String path){
-        //keys = new MyConfiguration();
+        //keys = new Configuration();
         FileName = "FilesToSend.txt";
         Temp_FileName = "FilesToSend_tmp.txt";
         FilePath = path + FileName;

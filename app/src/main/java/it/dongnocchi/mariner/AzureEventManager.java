@@ -8,20 +8,12 @@ import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.Base64;
 
 import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONObject;
 
-import java.net.URI;
 import java.net.URLEncoder;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.List;
 
 import javax.crypto.Mac;
@@ -36,7 +28,7 @@ import javax.crypto.spec.SecretKeySpec;
 //==========================================================================
 
 //==========================================================================
-public class MyAzureEventManager {
+public class AzureEventManager {
     //==========================================================================
     public static final short IntervalInHours = 24;
     public static final int CHECK_EVENTS_INTERVAL = IntervalInHours * 3600000; // conversion from hours to milliseconds
@@ -52,7 +44,7 @@ public class MyAzureEventManager {
 
     //private JSONObject JsonPacketToSend;
 
-    MyConfiguration myConfig;
+    Configuration myConfig;
     //User user_local;
     Context context;
 
@@ -71,7 +63,7 @@ public class MyAzureEventManager {
 
     // costruttore
     //==========================================================================
-    public MyAzureEventManager(Context in_context, AsyncResponse asyncResponse, MyConfiguration mc) {
+    public AzureEventManager(Context in_context, AsyncResponse asyncResponse, Configuration mc) {
         //==========================================================================
         myConfig = mc;
         context = in_context;

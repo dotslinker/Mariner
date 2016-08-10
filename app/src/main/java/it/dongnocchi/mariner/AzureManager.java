@@ -21,7 +21,7 @@ import org.xmlpull.v1.XmlSerializer;
 /**
  * Created by DianaM on 27/08/2015.
  */
-public class MyAzureManager{
+public class AzureManager {
 
     public static String storageConnectionString;
     public List<String> FilesToSend = new ArrayList<>(); //not sent files memory
@@ -32,7 +32,7 @@ public class MyAzureManager{
     private final int BATTERY_LOW_THRESHOLD = 10;  //espresso in percentuale
     private boolean isBusy = false;
 
-    MyConfiguration myConfig;
+    Configuration myConfig;
 
     protected final int COMMAND_UPDATE_APK = -1;
     protected final int COMMAND_SIMPLE_TRANSFER = 0;
@@ -42,7 +42,7 @@ public class MyAzureManager{
     NotSentFileHandler notSent;
 
     // costruttore*/
-    public MyAzureManager(Context AppContext, AsyncResponse in_upload_delegate, MyConfiguration mc) {
+    public AzureManager(Context AppContext, AsyncResponse in_upload_delegate, Configuration mc) {
 
         upload_delegate = in_upload_delegate;
         myConfig = mc;
@@ -398,7 +398,7 @@ public class MyAzureManager{
 
         //TODO: verificare la procedura per l'aggiornamento
         public CheckVersion(){
-            //myConfig = new MyConfiguration();
+            //myConfig = new Configuration();
             BlobContainer_local = myConfig.get_APK_Container();
             WhereToSaveIt_local = myConfig.get_WhereToSaveXML_LocalPath();
             BlobName_local = myConfig.get_XML_FileName();

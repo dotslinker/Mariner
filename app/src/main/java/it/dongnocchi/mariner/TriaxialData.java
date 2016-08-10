@@ -8,8 +8,10 @@ import android.os.SystemClock;
  */
 public class TriaxialData {
 
-    static final int NUM_OF_SMPLES = 720000; //= 4 ore * 50 Hz * 3600 secondi
-    static final float CONV_COEF = 1.0f / 50000000.0f;
+    //TODO: verificare le seguenti
+
+    //static final int NUM_OF_SMPLES = 720000; //= 4 ore * 50 Hz * 3600 secondi
+    //static final float CONV_COEF = 1.0f / 50000000.0f;
 
     public int Timestamps[]; //expressed in 50us (1ms / 20)
     public float X[];
@@ -27,7 +29,7 @@ public class TriaxialData {
     public int data_acquired;
 
     public long reference_time;
-    public long last_timestamp;
+    //public long last_timestamp;
 
     float dt;
 
@@ -47,17 +49,36 @@ public class TriaxialData {
         max_y = -1000.0f;
         max_z = -1000.0f;
 
-
-        reference_time = _new_ref_time;
+        //reference_time = _new_ref_time;
     }
 
-    public TriaxialData(long _new_ref_time)
+    public TriaxialData(int dim)
     {
-        data_array_size = NUM_OF_SMPLES;
-        this.Timestamps=new int[NUM_OF_SMPLES];
-        this.X=new float[NUM_OF_SMPLES];
-        this.Y=new float[NUM_OF_SMPLES];
-        this.Z=new float[NUM_OF_SMPLES];
+        data_array_size = dim;
+        this.Timestamps=new int[dim];
+        this.X=new float[dim];
+        this.Y=new float[dim];
+        this.Z=new float[dim];
+
+        min_x = 1000.0f;
+        min_y = 1000.0f;
+        min_z = 1000.0f;
+
+        max_x = -1000.0f;
+        max_y = -1000.0f;
+        max_z = -1000.0f;
+
+        reference_time = SystemClock.elapsedRealtime();
+    }
+
+
+    public TriaxialData(long _new_ref_time, int num_of_samples)
+    {
+        data_array_size = num_of_samples;
+        this.Timestamps=new int[num_of_samples];
+        this.X=new float[num_of_samples];
+        this.Y=new float[num_of_samples];
+        this.Z=new float[num_of_samples];
 
         min_x = 1000.0f;
         min_y = 1000.0f;
@@ -75,7 +96,7 @@ public class TriaxialData {
     public void ResetData(long _new_ref_time)
     {
         data_counter = 0;
-        reference_time = _new_ref_time;
+        //reference_time = _new_ref_time;
         data_acquired = 0;
 
         min_x = 1000.0f;
@@ -86,8 +107,32 @@ public class TriaxialData {
         max_y = -1000.0f;
         max_z = -1000.0f;
 
+        reference_time = _new_ref_time;
+
         //TODO: verify the need to actually clear array data
     }
+
+    public void ResetData()
+    {
+
+        data_counter = 0;
+        //reference_time = _new_ref_time;
+        data_acquired = 0;
+
+        min_x = 1000.0f;
+        min_y = 1000.0f;
+        min_z = 1000.0f;
+
+        max_x = -1000.0f;
+        max_y = -1000.0f;
+        max_z = -1000.0f;
+
+        reference_time = SystemClock.elapsedRealtime();
+
+        //TODO: verify the need to actually clear array data
+    }
+
+
 
 
     public void AddData(SensorEvent event)
@@ -101,6 +146,7 @@ public class TriaxialData {
 
     public void AddData(float x, float y, float z)
     {
+        //TODO: verificare la ragione del *20 nella formula sottostante
         Timestamps[data_counter] = (int) ((SystemClock.elapsedRealtime() - reference_time)*20);
         X[data_counter] = x - bias_x;
         Y[data_counter] = y - bias_y;

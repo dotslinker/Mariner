@@ -114,6 +114,9 @@ public class MainActivity extends Activity
 
     private static final int NUM_OF_SECONDS_CALIBRATION = 10;
 
+    DataArray acc_x_calib, acc_y_calib, acc_z_calib;
+    DataArray gyro_x_calib, gyro_y_calib, gyro_z_calib;
+
     // TextView
     TextView acc_x_tview, acc_y_tview, acc_z_tview;
     TextView acc_vel_x_tview;
@@ -143,13 +146,14 @@ public class MainActivity extends Activity
     private int Status;
 
     final static int STATUS_INIT = 1;
+    final static int STATUS_FIRST_INITIALIZATION = 2;
     final static int STATUS_STARTING = 3;
     final static int STATUS_SLEEP = 5;
     final static int STATUS_IDLE = 7;
     final static int STATUS_ACQUIRING = 9;
     final static int STATUS_SHUTTING_DOWN = 21;
 
-    int Temperature_data_array_index;
+    //int Temperature_data_array_index;
 
     // PATHS OF STORED FILES
     String Acc_FilePath = "";
@@ -177,7 +181,7 @@ public class MainActivity extends Activity
 
     // variables used for the 30 sec acquisition for calibration
     boolean IsCalibrating = false;
-    int CalibArray_Index = 0;
+    //int CalibArray_Index = 0;
 
     // phone network variables
     TelephonyManager TelephonManager;
@@ -301,6 +305,18 @@ public class MainActivity extends Activity
             App_Start_Date = new Date();
             Daily_Reference_Date = new Date();
             Daily_Reference_Time = SystemClock.elapsedRealtime(); // real time elapsed since boot in milli seconds
+
+
+            acc_x_calib = new DataArray(20);
+            for(int i=0; i < 20; i++ )
+                acc_x_calib.Add((float)i);
+
+            acc_x_calib.UpdateStats();
+
+            float a = acc_x_calib.mean;
+
+            a = acc_x_calib.stdev;
+
 
             //CreateMyWheelchairFile();
             //call_toast(ByteOrder.nativeOrder().toString()); system is little endian
@@ -1269,6 +1285,7 @@ public class MainActivity extends Activity
     public void CalibrateInertialSensors(View view)
     {
         //Step 0. Clean the needed data structures and set flags
+
 
 
         //Step 1. Activate the sensors

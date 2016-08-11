@@ -114,8 +114,8 @@ public class MainActivity extends Activity
 
     private static final int NUM_OF_SECONDS_CALIBRATION = 10;
 
-    DataArray acc_x_calib, acc_y_calib, acc_z_calib;
-    DataArray gyro_x_calib, gyro_y_calib, gyro_z_calib;
+    TimestampedDataArray acc_x_calib, acc_y_calib, acc_z_calib;
+    TimestampedDataArray gyro_x_calib, gyro_y_calib, gyro_z_calib;
 
     // TextView
     TextView acc_x_tview, acc_y_tview, acc_z_tview;
@@ -307,15 +307,25 @@ public class MainActivity extends Activity
             Daily_Reference_Time = SystemClock.elapsedRealtime(); // real time elapsed since boot in milli seconds
 
 
-            acc_x_calib = new DataArray(20);
-            for(int i=0; i < 20; i++ )
-                acc_x_calib.Add((float)i);
 
+            //TODO: la parte seguente è da togliere. e' solo un test sui TimestampedDataArray
+            acc_x_calib = new TimestampedDataArray(200);
+            for(int i=0; i < 200; i++ ) {
+                long t = SystemClock.elapsedRealtime();
+                acc_x_calib.Add((float) i, t);
+                Thread.sleep(10);
+            }
             acc_x_calib.UpdateStats();
 
             float a = acc_x_calib.mean;
 
-            a = acc_x_calib.stdev;
+            float b = acc_x_calib.stdev;
+
+            float c = acc_x_calib.mean_deltatime;
+
+            float d = acc_x_calib.stdev_deltatime;
+
+            float e = 0.0f;
 
 
             //CreateMyWheelchairFile();

@@ -93,12 +93,12 @@ public class MainActivity extends Activity
         implements SensorEventListener, YDigitalIO.UpdateCallback {
     //==========================================================================
 
-    SensorManager mSensorManager;
-    Sensor mAcc;
-    Sensor mGyro;
-    Sensor mTemperature;
+    private SensorManager mSensorManager;
+    private Sensor mAcc;
+    private Sensor mGyro;
+    private Sensor mTemperature;
 
-    BatteryManager myBatteryManager;
+    private BatteryManager myBatteryManager;
 
     boolean AccAquiring = false;
     private static final int ACC_READING_PERDIOD = 20000; // 20 ms
@@ -107,18 +107,34 @@ public class MainActivity extends Activity
     boolean TemperatureAcquiring = false;
     private static final int TEMPERATURE_READING_PERDIOD = 10000000; //10s
 
+
+    private static final int ACC_READING_PERDIOD_CALIB = 50000;
+    private static final int GYRO_READING_PERDIOD_CALIB = 50000;
+
+
     //boolean isWheelchair_ON = false;
 
     private static final int NUM_OF_TEMPERARURE_SAMPLES = 8650; //8640 sarebbe il numero corretto
     private static final int NUM_OF_SIGNAL_STRENGTH_SAMPLES = 8650; //8640 sarebbe il numero corretto
 
+
+    // variables used for the 30 sec acquisition for calibration
+    boolean isCalibrating = false;
+
+    boolean isAcquiring = false;
+
     private static final int NUM_OF_SECONDS_CALIBRATION = 10;
+
+    private static final int CALIB_DATA_SIZE = 600; // 500 per 10 secondi
+
+    private long CalibrationStartTime;
 
     TimestampedDataArray acc_x_calib, acc_y_calib, acc_z_calib;
     TimestampedDataArray gyro_x_calib, gyro_y_calib, gyro_z_calib;
 
     // TextView
     TextView acc_x_tview, acc_y_tview, acc_z_tview;
+    TextView acc_min_x_tview, acc_min_y_tview, acc_min_z_tview;
     TextView acc_vel_x_tview;
     TextView acc_distance_x_tview;
 
@@ -179,8 +195,6 @@ public class MainActivity extends Activity
     static Date App_Start_Date;
     //int BatteryLevel;
 
-    // variables used for the 30 sec acquisition for calibration
-    boolean IsCalibrating = false;
     //int CalibArray_Index = 0;
 
     // phone network variables
@@ -222,6 +236,11 @@ public class MainActivity extends Activity
             acc_x_tview = (TextView) findViewById(R.id.acc_x_tview);
             acc_y_tview = (TextView) findViewById(R.id.acc_y_tview);
             acc_z_tview = (TextView) findViewById(R.id.acc_z_tview);
+
+            acc_min_x_tview = (TextView) findViewById(R.id.acc_min_x_tview);
+            acc_min_y_tview = (TextView) findViewById(R.id.acc_min_y_tview);
+            acc_min_z_tview = (TextView) findViewById(R.id.acc_min_z_tview);
+
             acc_vel_x_tview = (TextView) findViewById(R.id.acc_vel_x_val_tview);
             acc_distance_x_tview = (TextView) findViewById(R.id.acc_distance_x_val_tview);
 
@@ -255,6 +274,7 @@ public class MainActivity extends Activity
 
             // INITIALISE SENSOR MANAGER
             mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+
             mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             mGyro = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
             mTemperature = mSensorManager.getDefaultSensor(Sensor.TYPE_AMBIENT_TEMPERATURE);
@@ -271,7 +291,6 @@ public class MainActivity extends Activity
 
             myBatteryManager = new BatteryManager();
 
-
             myBlobManager = new AzureManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
                 @Override
                 public void processFinish(String last_uploaded_file) {
@@ -287,11 +306,25 @@ public class MainActivity extends Activity
             //un evento fittizio di PowerON
             if (isSupplyPowerPresent()) {
                 myData.AddPowerONEvent();
-                TemperatureStartAcquiring();
+
             }
+
+            acc_x_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            acc_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            acc_z_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+
+            gyro_x_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            gyro_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            gyro_z_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+
+            StartCalibrateInertialSensors();
+
+            TemperatureStartAcquiring();
 
             Set_PeriodicalOperations();
             start_network_listener();
+
+            //UpdateTextViews();
 
             // inizializzazione eventhub manager
             myEventManager = new AzureEventManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
@@ -307,26 +340,21 @@ public class MainActivity extends Activity
             Daily_Reference_Time = SystemClock.elapsedRealtime(); // real time elapsed since boot in milli seconds
 
 
-
-            //TODO: la parte seguente è da togliere. e' solo un test sui TimestampedDataArray
-            acc_x_calib = new TimestampedDataArray(200);
-            for(int i=0; i < 200; i++ ) {
+            /*
+            //TODO: da togliere. è servito per effettuare il test su TimestampedDataArray
+            for(int i=0; i < 2000; i++ ) {
                 long t = SystemClock.elapsedRealtime();
                 acc_x_calib.Add((float) i, t);
-                Thread.sleep(10);
+                Thread.sleep(5);
             }
             acc_x_calib.UpdateStats();
 
             float a = acc_x_calib.mean;
-
             float b = acc_x_calib.stdev;
-
             float c = acc_x_calib.mean_deltatime;
-
             float d = acc_x_calib.stdev_deltatime;
-
             float e = 0.0f;
-
+            */
 
             //CreateMyWheelchairFile();
             //call_toast(ByteOrder.nativeOrder().toString()); system is little endian
@@ -364,6 +392,8 @@ public class MainActivity extends Activity
     @Override
     protected void onRestart() {
         super.onRestart();
+
+        //UpdateTextViews();
     }
 
     @Override
@@ -374,7 +404,23 @@ public class MainActivity extends Activity
     @Override
     protected void onResume() {
         super.onResume();
+
+
+
     }
+
+    private void Sleep(int ms_to_sleep)
+    {
+        try{
+            Thread.sleep(ms_to_sleep);
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
+
+    }
+
 
 
     //==============================================================================================
@@ -719,7 +765,7 @@ public class MainActivity extends Activity
 
                     SaveData();
 
-                    CalibrateAccelerometer();
+                    //CalibrateAccelerometer();
 
                     UpdateListofFilesToUpload();
 
@@ -952,7 +998,7 @@ public class MainActivity extends Activity
         SwitchOffEverything();
         //NumOfWCActivation_Current = NumOfWCActivation;
 
-        IsCalibrating = true;
+        isCalibrating = true;
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         AccAquiring = mSensorManager.registerListener(this, mAcc, 50000);
@@ -965,17 +1011,43 @@ public class MainActivity extends Activity
     //==========================================================================
     public void onSensorChanged(SensorEvent event) {
         //==========================================================================
-        // APPEND INERTIAL SENSORS DATA AND SAVE THEM TO FILES
+        // APPEND INERTIAL SENSORS DATA
         switch (event.sensor.getType()) {
             case Sensor.TYPE_ACCELEROMETER:
-                //Acc_AppendData(event, false);
-                myData.myInertialData.UpdateAccData(event);
+                if(isCalibrating)
+                {
+                    acc_x_calib.Add(event.values[0],event.timestamp );
+                    acc_y_calib.Add(event.values[1],event.timestamp );
+                    acc_z_calib.Add(event.values[2],event.timestamp );
+
+                    if (CheckIfCalibrationCompleted())
+                        StopCalibrateInertialSensors();
+
+                }                //Acc_AppendData(event, false);
+
+                if(isAcquiring)
+                {
+                    myData.myInertialData.UpdateAccData(event);
+                }
+
                 break;
 
             case Sensor.TYPE_GYROSCOPE:
                 //Gyro_AppendData(event, false);
+                if(isCalibrating)
+                {
+                    gyro_x_calib.Add(event.values[0],event.timestamp );
+                    gyro_y_calib.Add(event.values[1],event.timestamp );
+                    gyro_z_calib.Add(event.values[2],event.timestamp );
 
-                myData.myInertialData.UpdateGyroData(event);
+                    if (CheckIfCalibrationCompleted())
+                        StopCalibrateInertialSensors();
+
+                }                //Acc_AppendData(event, false);
+                if(isAcquiring)
+                {
+                    myData.myInertialData.UpdateGyroData(event);
+                }
 
             case Sensor.TYPE_AMBIENT_TEMPERATURE:
                 myData.myTempData.AppendData(event);
@@ -984,20 +1056,36 @@ public class MainActivity extends Activity
                 UpdateTextViews();
 
                 break;
+            //UpdateTextViews();
         }
-
-        //UpdateTextViews();
-
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
     }
 
-    private void StartInertialAcquisition() {
-        AccAquiring = mSensorManager.registerListener(this, mAcc, ACC_READING_PERDIOD);
-        GyroAcquiring = mSensorManager.registerListener(this, mGyro, GYRO_READING_PERDIOD);// 20.000 us ----> FsAMPLE = 50Hz
-
+    private void StartInertialAcquisition(boolean _for_calibration) {
+        //        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        //        mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        //        mGyro = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        try {
+            if( _for_calibration)
+            {
+                AccAquiring = mSensorManager.registerListener(this, mAcc, ACC_READING_PERDIOD_CALIB, 1000);
+                GyroAcquiring = mSensorManager.registerListener(this, mGyro, GYRO_READING_PERDIOD_CALIB, 1000);// 20.000 us ----> FsAMPLE = 50Hz
+            }
+            else
+            {
+                //TODO: verificare che 500 us sia il limite superiore per il jitter
+                AccAquiring = mSensorManager.registerListener(this, mAcc, ACC_READING_PERDIOD, 500);
+                GyroAcquiring = mSensorManager.registerListener(this, mGyro, GYRO_READING_PERDIOD, 500);// 20.000 us ----> FsAMPLE = 50Hz
+            }
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+            SaveErrorLog(ex.toString());
+        }
         //AccStartAcquiring();
         //GyroStartAcquiring();
     }
@@ -1006,14 +1094,15 @@ public class MainActivity extends Activity
 
         if (AccAquiring) {
             //super.onPause();
-            mSensorManager.unregisterListener(this, mAcc);
             AccAquiring = false;
+            mSensorManager.unregisterListener(this, mAcc);
+
         }
 
         if (GyroAcquiring) {
             //super.onPause();
-            mSensorManager.unregisterListener(this, mGyro);
             GyroAcquiring = false;
+            mSensorManager.unregisterListener(this, mGyro);
         }
 
         //AccStartAcquiring();
@@ -1079,40 +1168,60 @@ public class MainActivity extends Activity
     //==========================================================================
     private void UpdateTextViews() {
         //==========================================================================
+        try {
+            if (isCalibrating) {
+                acc_x_calib.UpdateStats();
+                acc_y_calib.UpdateStats();
+                acc_z_calib.UpdateStats();
 
-        acc_x_tview.setText(String.valueOf(myData.myInertialData.m_acc_x));
-        acc_y_tview.setText(String.valueOf(myData.myInertialData.m_acc_y));
-        acc_z_tview.setText(String.valueOf(myData.myInertialData.m_acc_z));
+                acc_x_tview.setText(String.format("%.3f", acc_x_calib.mean));
+                acc_y_tview.setText(String.format("%.3f", acc_y_calib.mean));
+                acc_z_tview.setText(String.format("%.3f", acc_z_calib.mean));
 
-        acc_vel_x_tview.setText(String.valueOf(myData.myInertialData.velocity_x));
+                acc_min_x_tview.setText(String.format("%.4f", acc_x_calib.stdev));
+                acc_min_y_tview.setText(String.format("%.4f", acc_y_calib.stdev));
+                acc_min_z_tview.setText(String.format("%.4f", acc_z_calib.stdev));
 
-        acc_distance_x_tview.setText(String.valueOf(myData.myInertialData.HourlyDistanceCovered));
+            } else {
 
-        //String s = "Temp. (°C): " + String.format("%.2f", myData.myTempData.GetMeanTemperature()) + " [Max " + String.format("%.2f", myData.myTempData.GetMaxTemperature()) + "]";
+                acc_x_tview.setText(String.valueOf(myData.myInertialData.m_acc_x));
+                acc_y_tview.setText(String.valueOf(myData.myInertialData.m_acc_y));
+                acc_z_tview.setText(String.valueOf(myData.myInertialData.m_acc_z));
+            }
 
-        temperature_mean_val_tview.setText(String.format("%.2f °C", myData.myTempData.GetMeanTemperature()));
-        temperature_min_val_tview.setText(String.format("%.2f °C", myData.myTempData.GetMinTemperature()));
-        temperature_max_val_tview.setText(String.format("%.2f °C", myData.myTempData.GetMaxTemperature()));
+            acc_vel_x_tview.setText(String.valueOf(myData.myInertialData.velocity_x));
+
+            acc_distance_x_tview.setText(String.valueOf(myData.myInertialData.HourlyDistanceCovered));
+
+            //String s = "Temp. (°C): " + String.format("%.2f", myData.myTempData.GetMeanTemperature()) + " [Max " + String.format("%.2f", myData.myTempData.GetMaxTemperature()) + "]";
+
+            temperature_mean_val_tview.setText(String.format("%.2f °C", myData.myTempData.GetMeanTemperature()));
+            temperature_min_val_tview.setText(String.format("%.2f °C", myData.myTempData.GetMinTemperature()));
+            temperature_max_val_tview.setText(String.format("%.2f °C", myData.myTempData.GetMaxTemperature()));
 
 
-        //temperature_tview.setText(s);
+            //temperature_tview.setText(s);
 
-        omega_val_tview.setText("-.-");
-        signal_level_tview.setText(String.valueOf(myNetworkInfo.getSignalStrength()) + " dBm");
+            omega_val_tview.setText("-.-");
+            signal_level_tview.setText(String.valueOf(myNetworkInfo.getSignalStrength()) + " dBm");
 
-        battery_textview.setText(myData.BatteryLevel + "%");
+            battery_textview.setText(myData.BatteryLevel + "%");
 
-        //signal_level_tview.setText(String.valueOf());
-        //updatetview_counter = 0;
-        //}
+            //signal_level_tview.setText(String.valueOf());
+            //updatetview_counter = 0;
+            //}
+
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
 
     }
 
-
-
     //========== UPLOADS LAST FILES ACQUIRED ===================================
     private void upload_lastFiles () {
-        //==========================================================================
+    //==========================================================================
 
         myBlobManager.UploadBlob(myData.BatteryLevel);
 
@@ -1120,6 +1229,7 @@ public class MainActivity extends Activity
         myBlobManager.CheckNewUpdates(myData.BatteryLevel);
     }
 
+    //TODO: da verificare se sia necessario tenere qui tutti i metodi Yocto, dato che ci sono le stesse funzioni anche in Yoctopuce
 
     //==============================================================================================
     //==============================================================================================
@@ -1138,7 +1248,7 @@ public class MainActivity extends Activity
 
     //==========================================================================
     protected void Start_Yocto() {
-        //==========================================================================
+    //==========================================================================
         // Connect to Yoctopuce Maxi-IO
         try {
             YAPI.EnableUSBHost(getApplicationContext());
@@ -1190,12 +1300,14 @@ public class MainActivity extends Activity
 
     //==========================================================================
     protected void Stop_Yocto() {
-        //==========================================================================
+    //==========================================================================
         YAPI.FreeAPI();
         handler.removeCallbacks(r);
     }
+
     //==========================================================================
     private Handler handler = new Handler();
+    //==========================================================================
     //private int _outputdata;
     final Runnable r = new Runnable()
     {
@@ -1291,30 +1403,61 @@ public class MainActivity extends Activity
         return YoctoInUse;
     }
 
-
-    public void CalibrateInertialSensors(View view)
+    private boolean CheckIfCalibrationCompleted()
     {
+        boolean ret_val = false;
+        long now =  Calendar.getInstance().getTime().getTime();
+
+        long delta_time = now - CalibrationStartTime;
+
+        if( delta_time > (long)(NUM_OF_SECONDS_CALIBRATION * 1000))
+            ret_val = true;
+
+        return ret_val;
+    }
+
+    public void StartCalibrateInertialSensors()
+    {
+        //int CountDown =  NUM_OF_SECONDS_CALIBRATION * 5;
+
+        CalibrationStartTime = Calendar.getInstance().getTime().getTime();
+
         //Step 0. Clean the needed data structures and set flags
+        acc_x_calib.reset_data();
+        acc_y_calib.reset_data();
+        acc_z_calib.reset_data();
 
+        gyro_x_calib.reset_data();
+        gyro_y_calib.reset_data();
+        gyro_z_calib.reset_data();
 
+        isCalibrating = true;
 
         //Step 1. Activate the sensors
+        StartInertialAcquisition(true);
 
 
-        //Step 2. collect data, waiting a certain number of seconds
+    }
 
+    public void StopCalibrateInertialSensors()
+    {
+        try {
 
-        //Step 3. Stop sensors
+            StopInertialAcquisition();
+            //Sleep(100);
 
+            acc_x_calib.UpdateStats();
+            acc_y_calib.UpdateStats();
+            acc_z_calib.UpdateStats();
 
-        //Step 4. Wait a bit
-
-
-        //Step 5. Do the Math and extract the Offsets and coefficients
-
-
-        //Step 6. Set flags for normal work and ends
-
+            gyro_x_calib.UpdateStats();
+            gyro_y_calib.UpdateStats();
+            gyro_z_calib.UpdateStats();
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
 
     }
 
@@ -1339,7 +1482,7 @@ public class MainActivity extends Activity
         SwitchOffEverything ();
         //NumOfWCActivation_Current = NumOfWCActivation;
 
-        IsCalibrating = true;
+        isCalibrating = true;
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         AccAquiring = mSensorManager.registerListener(this, mAcc, 50000);
@@ -1465,29 +1608,6 @@ public class MainActivity extends Activity
             ex.printStackTrace();
             SaveErrorLog(ex.toString());
         }
-
-    }
-
-    private void CalibrateInertialSensors()
-    {
-
-
-
-    }
-
-
-
-    private void CalibrateAccelerometer()
-    {
-
-
-
-    }
-
-    private void CalibrateGyro()
-    {
-
-
 
     }
 

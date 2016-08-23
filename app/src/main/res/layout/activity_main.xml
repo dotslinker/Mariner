@@ -194,7 +194,7 @@
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/acc_minx_tview"
+                        android:id="@+id/acc_min_x_tview"
                         android:layout_width="70dp"
                         android:layout_height="wrap_content"
                         android:layout_column="2"

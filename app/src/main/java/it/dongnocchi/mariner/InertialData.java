@@ -107,6 +107,8 @@ public class InertialData {
 
         float dt = (float)(event.timestamp - last_acc_timestamp) * NS2S;
 
+        //TODO: verificare che questo sia il migliore compromesso tra velocità
+        //      e precisione, e che non sia necessario usare una rotazione matriciale
         new_acc_x = event.values[0] - acc_bias[0];
         new_acc_y = event.values[1] - acc_bias[1];
         new_acc_z = event.values[2] - acc_bias[2];

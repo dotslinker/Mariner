@@ -11,7 +11,7 @@ public class TemperatureData {
     public long[] TemperatureTimestampArray; // = new long[NUM_OF_TEMPERARURE_SAMPLES];
     public float [] TemperatureDataArray; // = new float [NUM_OF_TEMPERARURE_SAMPLES];
     int Temperature_data_array_index;
-    public int TotalNumOfSamples;
+    //public int TotalNumOfSamples;
     MovingAverage TempMA;
     public float MaxTemperature;
     public float MinTemperature;
@@ -43,10 +43,10 @@ public class TemperatureData {
         TemperatureTimestampArray[Temperature_data_array_index] = data.timestamp;
 
         //Se sforo il
-        if(++Temperature_data_array_index >NumOfTemperatureSamples)
+        if(++Temperature_data_array_index >= NumOfTemperatureSamples)
             Temperature_data_array_index = 0;
 
-        TotalNumOfSamples++;
+        //TotalNumOfSamples++;
 
         if (act_temp > MaxTemperature)
             MaxTemperature = act_temp;

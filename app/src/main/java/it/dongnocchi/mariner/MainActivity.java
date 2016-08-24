@@ -107,7 +107,6 @@ public class MainActivity extends Activity
     boolean TemperatureAcquiring = false;
     private static final int TEMPERATURE_READING_PERDIOD = 10000000; //10s
 
-
     private static final int ACC_READING_PERDIOD_CALIB = 50000;
     private static final int GYRO_READING_PERDIOD_CALIB = 50000;
 
@@ -125,7 +124,7 @@ public class MainActivity extends Activity
 
     private static final int NUM_OF_SECONDS_CALIBRATION = 10;
 
-    private static final int CALIB_DATA_SIZE = 600; // 500 per 10 secondi
+    private static final int CALIB_DATA_SIZE = 1000; // 500 per 10 secondi
 
     private long CalibrationStartTime;
 
@@ -324,8 +323,6 @@ public class MainActivity extends Activity
             Set_PeriodicalOperations();
             start_network_listener();
 
-            //UpdateTextViews();
-
             // inizializzazione eventhub manager
             myEventManager = new AzureEventManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
                 @Override
@@ -393,7 +390,6 @@ public class MainActivity extends Activity
     protected void onRestart() {
         super.onRestart();
 
-        //UpdateTextViews();
     }
 
     @Override
@@ -1012,53 +1008,61 @@ public class MainActivity extends Activity
     public void onSensorChanged(SensorEvent event) {
         //==========================================================================
         // APPEND INERTIAL SENSORS DATA
-        switch (event.sensor.getType()) {
-            case Sensor.TYPE_ACCELEROMETER:
-                if(isCalibrating)
-                {
-                    acc_x_calib.Add(event.values[0],event.timestamp );
-                    acc_y_calib.Add(event.values[1],event.timestamp );
-                    acc_z_calib.Add(event.values[2],event.timestamp );
 
-                    if (CheckIfCalibrationCompleted())
-                        StopCalibrateInertialSensors();
+        //TODO: da rimuovere quando si andrà in produzione
+        try {
+            switch (event.sensor.getType()) {
+                case Sensor.TYPE_ACCELEROMETER:
+                    if (isCalibrating) {
+                        acc_x_calib.Add(event.values[0], event.timestamp);
+                        acc_y_calib.Add(event.values[1], event.timestamp);
+                        acc_z_calib.Add(event.values[2], event.timestamp);
 
-                }                //Acc_AppendData(event, false);
+                        if (CheckIfCalibrationCompleted())
+                            StopCalibrateInertialSensors();
 
-                if(isAcquiring)
-                {
-                    myData.myInertialData.UpdateAccData(event);
-                }
+                        //TODO: da togliere in produzione. opzione di Debug temporanea
+                        UpdateTextViews();
+                    }                //Acc_AppendData(event, false);
 
-                break;
+                    if (isAcquiring) {
+                        myData.myInertialData.UpdateAccData(event);
+                    }
 
-            case Sensor.TYPE_GYROSCOPE:
-                //Gyro_AppendData(event, false);
-                if(isCalibrating)
-                {
-                    gyro_x_calib.Add(event.values[0],event.timestamp );
-                    gyro_y_calib.Add(event.values[1],event.timestamp );
-                    gyro_z_calib.Add(event.values[2],event.timestamp );
+                    break;
 
-                    if (CheckIfCalibrationCompleted())
-                        StopCalibrateInertialSensors();
+                case Sensor.TYPE_GYROSCOPE:
+                    //Gyro_AppendData(event, false);
+                    if (isCalibrating) {
+                        gyro_x_calib.Add(event.values[0], event.timestamp);
+                        gyro_y_calib.Add(event.values[1], event.timestamp);
+                        gyro_z_calib.Add(event.values[2], event.timestamp);
 
-                }                //Acc_AppendData(event, false);
-                if(isAcquiring)
-                {
-                    myData.myInertialData.UpdateGyroData(event);
-                }
+                        if (CheckIfCalibrationCompleted())
+                            StopCalibrateInertialSensors();
 
-            case Sensor.TYPE_AMBIENT_TEMPERATURE:
-                myData.myTempData.AppendData(event);
+                    }                //Acc_AppendData(event, false);
+                    if (isAcquiring) {
+                        myData.myInertialData.UpdateGyroData(event);
+                    }
+                    break;
 
-                //Aggiorno la visualizzazione dei dati
-                UpdateTextViews();
+                case Sensor.TYPE_AMBIENT_TEMPERATURE:
+                    myData.myTempData.AppendData(event);
 
-                break;
-            //UpdateTextViews();
+                    //Aggiorno la visualizzazione dei dati
+                    UpdateTextViews();
+
+                    break;
+            }
         }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
+
     }
+
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -1170,9 +1174,9 @@ public class MainActivity extends Activity
         //==========================================================================
         try {
             if (isCalibrating) {
-                acc_x_calib.UpdateStats();
-                acc_y_calib.UpdateStats();
-                acc_z_calib.UpdateStats();
+//                acc_x_calib.UpdateStats();
+//                acc_y_calib.UpdateStats();
+//                acc_z_calib.UpdateStats();
 
                 acc_x_tview.setText(String.format("%.3f", acc_x_calib.mean));
                 acc_y_tview.setText(String.format("%.3f", acc_y_calib.mean));
@@ -1436,23 +1440,22 @@ public class MainActivity extends Activity
         //Step 1. Activate the sensors
         StartInertialAcquisition(true);
 
-
     }
 
     public void StopCalibrateInertialSensors()
     {
         try {
+                isCalibrating = false;
+                StopInertialAcquisition();
+                //Sleep(100);
 
-            StopInertialAcquisition();
-            //Sleep(100);
+                acc_x_calib.UpdateStats();
+                acc_y_calib.UpdateStats();
+                acc_z_calib.UpdateStats();
 
-            acc_x_calib.UpdateStats();
-            acc_y_calib.UpdateStats();
-            acc_z_calib.UpdateStats();
-
-            gyro_x_calib.UpdateStats();
-            gyro_y_calib.UpdateStats();
-            gyro_z_calib.UpdateStats();
+                gyro_x_calib.UpdateStats();
+                gyro_y_calib.UpdateStats();
+                gyro_z_calib.UpdateStats();
         }
         catch(Exception ex)
         {
@@ -1535,6 +1538,7 @@ public class MainActivity extends Activity
             myEventManager.SendJsonEvent(ParamsToSend, myConfig.DailyUpdate_EventHub_url, myConfig.DailyUpdate_EventHub_connstring);
         }
         catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
 

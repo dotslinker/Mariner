@@ -35,8 +35,11 @@ public class InertialData {
     float [] min_gyro_values;
     float [] max_gyro_values;
 
-    float[] acc_bias;
-    float[] gyro_bias;
+    float[] acc_offset;
+    float[] gyro_offset;
+
+    //float[] acc_bias;
+    //float[] gyro_bias;
 
     float last_acc_x;
     public float velocity_x;
@@ -93,8 +96,8 @@ public class InertialData {
     min_gyro_values = new float[3];
     max_gyro_values = new float[3];
 
-    acc_bias = new float[3];
-    gyro_bias = new float[3];
+    acc_offset = new float[3];
+    gyro_offset = new float[3];
     }
 
     public void UpdateAccData(SensorEvent event)
@@ -109,9 +112,9 @@ public class InertialData {
 
         //TODO: verificare che questo sia il migliore compromesso tra velocità
         //      e precisione, e che non sia necessario usare una rotazione matriciale
-        new_acc_x = event.values[0] - acc_bias[0];
-        new_acc_y = event.values[1] - acc_bias[1];
-        new_acc_z = event.values[2] - acc_bias[2];
+        new_acc_x = event.values[0] - acc_offset[0];
+        new_acc_y = event.values[1] - acc_offset[1];
+        new_acc_z = event.values[2] - acc_offset[2];
 
         m_acc_x = ma_acc_x.UpdateValue(new_acc_x);
         m_acc_y = ma_acc_y.UpdateValue(new_acc_y);
@@ -186,9 +189,10 @@ public class InertialData {
 
         float dt = (float)(event.timestamp - last_gyro_timestamp) * NS2S;
 
-        new_gyro_x = event.values[0] - gyro_bias[0];
-        new_gyro_y = event.values[1] - gyro_bias[1];
-        new_gyro_z = event.values[2] - gyro_bias[2];
+        //TODO: da verificare ed eventualmente modificare
+        new_gyro_x = event.values[0] - gyro_offset[0];
+        new_gyro_y = event.values[1] - gyro_offset[1];
+        new_gyro_z = event.values[2] - gyro_offset[2];
 
         //testo massimo e minimo
         if( min_gyro_values[0] > new_gyro_x)
@@ -308,6 +312,19 @@ public class InertialData {
         }
     }
 
+    public void UpdateBias(float ax, float ay, float az, float gx, float gy,float gz)
+    {
+        acc_offset[0] = ax;
+        acc_offset[1] = ay;
+        acc_offset[2] = az;
+
+        gyro_offset[0] = gx;
+        gyro_offset[1] = gy;
+        gyro_offset[2] = gz;
+    }
+
+
+/*
     //==========================================================================
     //private void Phone_CheckAxes(){
     public void SetAccBias(){
@@ -321,9 +338,9 @@ public class InertialData {
         Acc_DevStd_Y = getStdDev(Acc_Mean_Y, Acc_30s_data.Y);
         Acc_DevStd_Z = getStdDev(Acc_Mean_Z, Acc_30s_data.Z);
 
-        acc_bias[0] = Acc_Mean_X;
-        acc_bias[1] = Acc_Mean_Y;
-        acc_bias[2] = 9.81f + Acc_Mean_Z;
+        //acc_bias[0] = Acc_Mean_X;
+        //acc_bias[1] = Acc_Mean_Y;
+        //acc_bias[2] = 9.81f + Acc_Mean_Z;
 
         //TODO: verificare che non ci sia nulla da salvsare
         /*
@@ -337,7 +354,7 @@ public class InertialData {
         }
         */
 
-    }
+//    }
 
     //==========================================================================
     float getMean(float[] data){

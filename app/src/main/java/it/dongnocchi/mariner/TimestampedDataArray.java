@@ -42,25 +42,26 @@ public class TimestampedDataArray extends DataArray
 
         for (int i = 0; i < data_counter_1; i++)
         {
-            mean_deltatime_d += (double) tstamp[i+1] - (double) tstamp[i];
+            mean_deltatime_d += (double) (tstamp[i+1] - tstamp[i]);
         }
 
         if( data_counter > 0)
         mean_deltatime_d /= (double)data_counter;
 
-        mean_deltatime = (float) mean_deltatime_d;
-
         for (int i = 0; i < data_counter_1; i++)
         {
-            temp_d = ((double) tstamp[i+1] - (double) tstamp[i]) - mean_deltatime_d;
+            temp_d = ((double) (tstamp[i+1] - tstamp[i])) - mean_deltatime_d;
             sum_squared_deltatime_d += temp_d * temp_d;
         }
 
         if ( data_counter_1 > 1)
             sum_squared_deltatime_d /= (float)(data_counter_1 - 1);
 
-        stdev_deltatime = (float)Math.sqrt((double)sum_squared_deltatime_d);
+        //Event time is expressed in nanoseconds, and we need milliseconds
+        mean_deltatime_d /= 1000000.0;
+        mean_deltatime = (float) mean_deltatime_d;
 
+        stdev_deltatime = (float)(Math.sqrt(sum_squared_deltatime_d)/1000000.0);
     }
 
 

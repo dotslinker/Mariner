@@ -23,6 +23,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentTop="true"
                 android:layout_centerHorizontal="true">
+
                 <TableRow>
 
 
@@ -30,6 +31,7 @@
                         android:id="@+id/PowerONBtn"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        style="?android:attr/buttonStyleSmall"
                         android:layout_alignParentLeft="true"
                         android:layout_alignParentStart="true"
                         android:layout_alignParentTop="true"
@@ -43,6 +45,7 @@
                         android:id="@+id/PowerOFFBtn"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        style="?android:attr/buttonStyleSmall"
                         android:layout_alignParentEnd="true"
                         android:layout_alignParentRight="true"
                         android:layout_alignParentTop="true"
@@ -68,6 +71,7 @@
                         android:id="@+id/MotorONBtn"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        style="?android:attr/buttonStyleSmall"
                         android:layout_alignEnd="@+id/PowerONBtn"
                         android:layout_alignRight="@+id/PowerONBtn"
                         android:layout_below="@+id/PowerONBtn"
@@ -79,6 +83,7 @@
                         android:id="@+id/MotorOFFBtn"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        style="?android:attr/buttonStyleSmall"
                         android:layout_alignParentEnd="true"
                         android:layout_alignParentRight="true"
                         android:layout_below="@+id/PowerOFFBtn"
@@ -106,7 +111,36 @@
                         android:layout_span="3"
                         android:layout_column="0"
                         android:hint="SYSTEM STATUS = "
-                        android:textAppearance="?android:attr/textAppearanceMedium" />
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:id="@+id/system_time_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_span="1"
+                        android:layout_column="0"
+                        android:hint="App Uptime: "
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/app_uptime_tview"
+                        android:layout_width="60dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:gravity="center"
+                        android:text="00:00:00"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/current_duty_uptime_tview"
+                        android:layout_width="60dp"
+                        android:layout_height="wrap_content"
+                        android:layout_column="2"
+                        android:gravity="center"
+                        android:text="00:00:00"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
                 </TableRow>
                 <TableRow>
 
@@ -139,6 +173,39 @@
                         android:text="DAILY DATA" />
 
                 </TableRow>
+                <TableRow>
+
+                    <Button
+                        android:id="@+id/calibrate_button"
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:onClick="CalibrateButton"
+                        android:text="Calibrate" />
+
+                    <Button
+                        android:id="@+id/toggle_display_button"
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:onClick="ToggleViewButton"
+                        android:text="Toggle View"
+                        android:clickable="true" />
+
+                    <Switch
+                        android:textOff="Man."
+                        android:textOn="Auto"
+                        />
+
+                </TableRow>
+                <TableRow>
+
+
+
+                </TableRow>
+
             </TableLayout>
         </TableRow>
 
@@ -158,31 +225,31 @@
 
                     <TextView
                         android:id="@+id/acc_view_x"
-                        android:layout_width="100dp"
+                        android:layout_width="90dp"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:text="Acc X (m/s^2): "
+                        android:text="Ax (m/s^2): "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/acc_x_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/acc_x_1_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
                         android:text="0.0"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/acc_min_x_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/acc_x_2_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
                         android:text="0.0"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/acc_max_x_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/acc_x_3_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="3"
                         android:text="0.0"
@@ -199,28 +266,28 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:text="Acc Y (m/s^2): "
+                        android:text="Ay (m/s^2): "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/acc_y_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/acc_y_1_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
                         android:text="0.0"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/acc_min_y_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/acc_y_2_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
                         android:text="0.0"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/acc_max_y_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/acc_y_3_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="3"
                         android:text="0.0"
@@ -237,28 +304,28 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:text="Acc Z (m/s^2): "
+                        android:text="Az (m/s^2): "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/acc_z_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/acc_z_1_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
                         android:text="0.0"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/acc_min_z_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/acc_z_2_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
                         android:text="0.0"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/acc_max_z_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/acc_z_3_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="3"
                         android:text="0.0"
@@ -275,12 +342,12 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:text="Acc Period(ms): "
+                        android:text="Acc T(ms): "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
                         android:id="@+id/acc_period_mean_tview"
-                        android:layout_width="70dp"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
                         android:text="0.0"
@@ -288,7 +355,7 @@
 
                     <TextView
                         android:id="@+id/acc_period_stdev_tview"
-                        android:layout_width="70dp"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
                         android:text="0.0"
@@ -296,7 +363,7 @@
 
                     <TextView
                         android:id="@+id/acc_period_max_tview"
-                        android:layout_width="70dp"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="3"
                         android:text="0.0"
@@ -313,7 +380,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:text="Speed X: "
+                        android:text="Speed (m/s):"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
@@ -329,7 +396,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
-                        android:text="Distance:"
+                        android:text="Dist.(m):"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
@@ -348,31 +415,31 @@
 
                     <TextView
                         android:id="@+id/gyro_view_x"
-                        android:layout_width="100dp"
+                        android:layout_width="90dp"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
                         android:text="&#0969;X (°/s): "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/gyro_mean_x_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/gyro_x_1_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
                         android:text="0.0"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/gyro_min_x_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/gyro_x_2_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
                         android:text="0.0"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/gyro_max_x_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/gyro_x_3_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="3"
                         android:text="0.0"
@@ -393,24 +460,24 @@
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/gyro_y_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/gyro_y_1_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
                         android:text="0.0"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/gyro_min_y_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/gyro_y_2_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
                         android:text="0.0"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/gyro_max_y_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/gyro_y_3_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="3"
                         android:text="0.0"
@@ -431,24 +498,24 @@
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/gyro_z_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/gyro_z_1_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
                         android:text="0.0"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/gyro_min_z_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/gyro_z_2_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
                         android:text="0.0"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/gyro_max_z_tview"
-                        android:layout_width="70dp"
+                        android:id="@+id/gyro_z_3_tview"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="3"
                         android:text="0.0"
@@ -465,12 +532,12 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:text="Gyro Period(ms): "
+                        android:text="Gyro T (ms): "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
                         android:id="@+id/gyro_period_mean_tview"
-                        android:layout_width="70dp"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
                         android:text="0.0"
@@ -478,7 +545,7 @@
 
                     <TextView
                         android:id="@+id/gyro_period_stdev_tview"
-                        android:layout_width="70dp"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
                         android:text="0.0"
@@ -486,7 +553,7 @@
 
                     <TextView
                         android:id="@+id/gyro_period_max_tview"
-                        android:layout_width="70dp"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="3"
                         android:text="0.0"
@@ -499,15 +566,15 @@
                     android:layout_height="match_parent">
 
                     <TextView
-                        android:id="@+id/gyro_omega_x_tview"
+                        android:id="@+id/gyro_ang_x_travelled_tview"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:text="&#0969;X (°/s): "
+                        android:text="&#0945; Travel (°):"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
-                        android:id="@+id/gyro_omega_x_mean_tview"
+                        android:id="@+id/gyro_ang_x_travelled_val_tview"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
@@ -519,7 +586,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
-                        android:text="Angle:"
+                        android:text="&#0945; (°):"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
@@ -548,6 +615,10 @@
                         android:textAppearance="?android:attr/textAppearanceMedium" />
 
                 </TableRow-->
+            </TableLayout>
+        </TableRow>
+        <TableRow>
+            <TableLayout>
 
                 <TableRow
                     android:layout_width="match_parent"
@@ -560,7 +631,7 @@
                         android:layout_column="0"
                         android:layout_span="3"
                         android:hint="Maxi-IO: data"
-                        android:textAppearance="?android:attr/textAppearanceMedium" />
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 </TableRow>
 
@@ -576,7 +647,7 @@
                         android:layout_column="0"
                         android:layout_span="3"
                         android:hint="Maxi-IO: events"
-                        android:textAppearance="?android:attr/textAppearanceMedium" />
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
                 </TableRow>
 
                 <TableRow
@@ -589,7 +660,7 @@
                         android:layout_height="wrap_content"
                         android:layout_column="0"
                         android:hint="Temperature: "
-                        android:textAppearance="?android:attr/textAppearanceMedium" />
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
                         android:id="@+id/temperature_mean_tview"
@@ -628,7 +699,7 @@
                         android:layout_height="wrap_content"
                         android:layout_column="0"
                         android:hint="Battery level"
-                        android:textAppearance="?android:attr/textAppearanceMedium" />
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
                         android:id="@+id/battery_val_tview"
@@ -638,9 +709,6 @@
                         android:text="0 %"
                         android:textAppearance="?android:attr/textAppearanceMedium" />
 
-                </TableRow>
-
-                <TableRow
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
 
@@ -648,15 +716,15 @@
                         android:id="@+id/signal_level_text_view"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_column="0"
-                        android:hint="Signal level"
-                        android:textAppearance="?android:attr/textAppearanceMedium" />
+                        android:layout_column="2"
+                        android:hint="Signal "
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
                         android:id="@+id/signal_level_val_tview"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_column="1"
+                        android:layout_column="3"
                         android:text="0"
                         android:textAppearance="?android:attr/textAppearanceMedium" />
 

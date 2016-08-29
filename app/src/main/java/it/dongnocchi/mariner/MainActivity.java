@@ -23,6 +23,9 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.Switch;
 
 import org.json.JSONObject;
 
@@ -35,6 +38,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+
+import android.util.Log;
 
 /*
 import android.app.Activity;
@@ -62,9 +67,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import org.json.JSONObject;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -72,11 +75,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-
 import java.util.List;
-
 import java.sql.Timestamp;
-
 */
 
 import com.yoctopuce.YoctoAPI.YAPI;
@@ -93,12 +93,17 @@ public class MainActivity extends Activity
         implements SensorEventListener, YDigitalIO.UpdateCallback {
     //==========================================================================
 
+    private static final String TAG = MainActivity.class.getSimpleName();
+
     private SensorManager mSensorManager;
     private Sensor mAcc;
     private Sensor mGyro;
     private Sensor mTemperature;
 
     private BatteryManager myBatteryManager;
+
+
+    private boolean ManualMode = false;
 
     boolean AccAquiring = false;
     private static final int ACC_READING_PERDIOD = 20000; // 20 ms
@@ -127,8 +132,21 @@ public class MainActivity extends Activity
     private static final int CALIB_DATA_SIZE = 600; // 500 per 10 secondi
 
     private long LastMeasuredTime;
-    private long ApplicationStartTime;
+    //private long ApplicationStartTime;
     private String AppUptimeString, DutyUptimeString;
+
+    //Reference date reporting the reset performed at the very first start
+    //and at the reset each night. Needs to be evaluated very close to Daily_referece_time
+    static Date Daily_Reference_Date;
+
+    //daily Reference time to be used for timestamping the acquisitions
+    static long Daily_Reference_Time;
+
+    // App starting date - this is unique until the app restarts
+    static Date App_Start_Date;
+
+    // App starting time
+    static long AppStartTime;
 
     private long CalibrationStartTime;
     private long AcquisitionStartTime;
@@ -167,6 +185,10 @@ public class MainActivity extends Activity
     TextView app_uptime_tview, duty_uptime_tview;
 
     Button btPowerOn, btPowerOff, btMotorOn, btMotorOff;
+    Button btSendEvent, btSendDailyReport, btSendHourlyReport;
+    Button btCalibrate, btToggleView, btToggleMode;
+
+    //Switch mySwitch;
 
     //int updatetview_counter;
 
@@ -194,22 +216,12 @@ public class MainActivity extends Activity
     String Temperature_FilePath = "";
     String XML_FilePath = "";
 
+    //Array containing the information about the running time of the App
+    int [] RunningTime;
+
     // CLASSES FOR COMMUNICATIONS BETWEEN ACTIVITIES
     //User user;              //input to this class
     it.dongnocchi.mariner.LastFiles lastfiles;    //output
-
-    //Reference date reporting the reset performed at the very first start
-    //and at the reset each night. Needs to be evaluated very close to Daily_referece_time
-    static Date Daily_Reference_Date;
-
-    //daily Reference time to be used for timestamping the acquisitions
-    //static long Daily_Reference_Time;
-
-    // App starting time - this is unique until the app restarts
-    static Date App_Start_Date;
-    //int BatteryLevel;
-
-    //int CalibArray_Index = 0;
 
     // phone network variables
     TelephonyManager TelephonManager;
@@ -240,10 +252,15 @@ public class MainActivity extends Activity
     @Override
     //==========================================================================
     protected void onCreate(Bundle savedInstanceState) {
-        //==========================================================================
+    //==========================================================================
 
         try {
-            ApplicationStartTime = Calendar.getInstance().getTime().getTime();
+            AppStartTime = System.nanoTime();
+            App_Start_Date = new Date();
+
+            //Daily_Reference_Time = SystemClock.elapsedRealtime(); // real time elapsed since boot in milli seconds
+
+            RunningTime = new int[5]; //0 = days, 1 = hours, 2 = mins, 3 = sec, 4 = ms
 
             super.onCreate(savedInstanceState);
             setContentView(R.layout.activity_main);
@@ -305,6 +322,18 @@ public class MainActivity extends Activity
             btMotorOn = (Button) findViewById(R.id.MotorONBtn);
             btMotorOff = (Button) findViewById(R.id.MotorOFFBtn);
 
+            btSendEvent= (Button) findViewById(R.id.send_event_button);
+            btSendHourlyReport= (Button) findViewById(R.id.send_hourly_data_button);
+            btSendDailyReport= (Button) findViewById(R.id.send_daily_data_button);
+
+            btCalibrate = (Button) findViewById(R.id.calibrate_button);
+            btToggleView = (Button) findViewById(R.id.toggle_display_button);
+            btToggleMode = (Button) findViewById(R.id.toggle_manualmode_button);
+
+            //TODO: cercare di capire perchè non funziona (lo switch non appare)
+            //mySwitch = (Switch) findViewById(R.id.mySwitch);
+            //mySwitch.setChecked(true);
+
             btPowerOff.setEnabled(false);
             btMotorOn.setEnabled(false);
             btMotorOff.setEnabled(false);
@@ -347,7 +376,6 @@ public class MainActivity extends Activity
             //un evento fittizio di PowerON
             if (isSupplyPowerPresent()) {
                 myData.AddPowerONEvent();
-
             }
 
             acc_x_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
@@ -374,11 +402,7 @@ public class MainActivity extends Activity
 
             notSent = new it.dongnocchi.mariner.NotSentFileHandler(myConfig.get_Wheelchair_path());
 
-            App_Start_Date = new Date();
-
-            Daily_Reference_Date = new Date();
-            //Daily_Reference_Time = SystemClock.elapsedRealtime(); // real time elapsed since boot in milli seconds
-
+            ResetData();
 
             /*
             //TODO: da togliere. è servito per effettuare il test su TimestampedDataArray
@@ -398,8 +422,10 @@ public class MainActivity extends Activity
 
             //CreateMyWheelchairFile();
             //call_toast(ByteOrder.nativeOrder().toString()); system is little endian
+            Log.d(TAG, "onCreate completed");
         } catch (Exception ex) {
             ex.printStackTrace();
+            Log.d(TAG, "onCreate", ex);
         }
     }
 
@@ -458,23 +484,49 @@ public class MainActivity extends Activity
         catch(Exception ex)
         {
             ex.printStackTrace();
+            Log.d(TAG, "Sleep", ex);
         }
 
     }
 
     public void UpdateRunningTime()
     {
-        LastMeasuredTime = Calendar.getInstance().getTime().getTime();
 
-        long mills = App_Start_Date.getTime() - LastMeasuredTime;
+        LastMeasuredTime = System.nanoTime();//Calendar.getInstance().getTime().getTime();
+
+        long mills = (LastMeasuredTime - Daily_Reference_Time) / 1000000;
+
+
 
         int Hours = (int) (mills / (1000 * 60 * 60));
         int Mins = (int) (mills / (1000 * 60)) % 60;
-        int Secs = (int)( mills - (long)Hours * (1000 * 60 * 60) - (long)(Mins) * (1000 * 60));
+        int Secs = (int)( mills - (long)Hours * (1000 * 60 * 60) - (long)(Mins) * (1000 * 60))/1000;
+        int ms = 0;
 
-        AppUptimeString = String.format("%d:%d:%d", Hours, Mins, Secs);
+        RunningTime[0] = Hours / 24;
+        RunningTime[1] = Hours % 24;
+        RunningTime[2] = Mins;
+        RunningTime[3] = Secs;
+
+        //AppUptimeString = String.format("%2d:%2d:%2d", Hours, Mins, Secs);
 
     }
+
+
+    private void ResetData()
+    {
+        //TODO: implementare il reset di tutte le strutture dati utilizzate
+        Daily_Reference_Time = System.nanoTime();
+        Daily_Reference_Date = new Date();
+
+        myData.DailyReset(Daily_Reference_Time);
+
+
+
+
+    }
+
+
     //==============================================================================================
     //==============================================================================================
     //  CHARGE CONTROL
@@ -533,6 +585,7 @@ public class MainActivity extends Activity
             TelephonManager.listen(myNetworkInfo, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
         } catch (Exception ex) {
             ex.printStackTrace();
+            Log.d(TAG, "start_network_listener()", ex);
         }
     }
     //==============================================================================================
@@ -1021,6 +1074,7 @@ public class MainActivity extends Activity
         catch(Exception ex)
         {
             ex.printStackTrace();
+            Log.d(TAG, "onSensorChanged", ex);
         }
 
     }
@@ -1052,7 +1106,9 @@ public class MainActivity extends Activity
         catch(Exception ex)
         {
             ex.printStackTrace();
+            //TODO: verificare cos'è sto saveerrorlog
             SaveErrorLog(ex.toString());
+            Log.d(TAG, "StartInertialAcquisition", ex);
         }
         //AccStartAcquiring();
         //GyroStartAcquiring();
@@ -1198,16 +1254,19 @@ public class MainActivity extends Activity
 
             battery_textview.setText(myData.BatteryLevel + "%");
 
-            app_uptime_tview.setText(AppUptimeString);
+
+            app_uptime_tview.setText(String.format("%02d:%02d:%02d", RunningTime[1], RunningTime[2], RunningTime[3]));
+            duty_uptime_tview.setText("00:00:00");
+            //app_uptime_tview.setText(AppUptimeString);
 
             //signal_level_tview.setText(String.valueOf());
             //updatetview_counter = 0;
             //}
-
         }
         catch(Exception ex)
         {
             ex.printStackTrace();
+            Log.d(TAG, "UpdateTextViews", ex);
         }
 
     }
@@ -1266,9 +1325,10 @@ public class MainActivity extends Activity
                 tmp = tmp.nextModule();
             }
             r.run();
-        } catch (YAPI_Exception e) {
-            e.printStackTrace();
-            SaveErrorLog("start_main\t" + e.toString());
+        } catch (YAPI_Exception ex) {
+            ex.printStackTrace();
+            SaveErrorLog("start_main\t" + ex.toString());
+            Log.d(TAG, "Start_Yocto", ex);
         }
 
         //Faccio partire tra un secondo il runnable di rilevamento del dato dal sensore
@@ -1288,6 +1348,7 @@ public class MainActivity extends Activity
         catch(YAPI_Exception e){
             e.printStackTrace();
             SaveErrorLog(e.toString());
+            Log.d(TAG, "Init_Yocto", e);
         }
     }
 
@@ -1321,6 +1382,7 @@ public class MainActivity extends Activity
                     e.printStackTrace();
                     //SaveErrorLog("run_Y\t" + e.toString());
                     // tolto questo salvataggio perchè genera errori ma il runnable fa quello che deve fare
+                    Log.d(TAG, "final Runnable r", e);
                 }
             }
             handler.postDelayed(this, 200);
@@ -1358,6 +1420,7 @@ public class MainActivity extends Activity
         } catch (YAPI_Exception e) {
             e.printStackTrace();
             SaveErrorLog("yNewValue_main\t" + e.toString());
+            Log.d(TAG, "yNewValue", e);
         }
     }
     //==========================================================================
@@ -1391,6 +1454,7 @@ public class MainActivity extends Activity
         } catch (YAPI_Exception e) {
             e.printStackTrace();
             SaveErrorLog("isYoctoConnected_main\t" + e.toString());
+            Log.d(TAG, "IsYoctoConnected", e);
         }
         lastfiles.isyoctoinuse = YoctoInUse;
         return YoctoInUse;
@@ -1408,11 +1472,12 @@ public class MainActivity extends Activity
     private boolean CheckIfCalibrationCompleted()
     {
         boolean ret_val = false;
-        long now =  Calendar.getInstance().getTime().getTime();
+        long now =  System.nanoTime();//Calendar.getInstance().getTime().getTime();
 
-        long delta_time = now - CalibrationStartTime;
+        //TODO: controllare che non si possa usare una sola costante
+        long delta_time = (now - CalibrationStartTime) / 1000000000;
 
-        if( delta_time > (long)(NUM_OF_SECONDS_CALIBRATION * 1000))
+        if( delta_time > NUM_OF_SECONDS_CALIBRATION)
             ret_val = true;
 
         return ret_val;
@@ -1422,7 +1487,7 @@ public class MainActivity extends Activity
     {
         //int CountDown =  NUM_OF_SECONDS_CALIBRATION * 5;
 
-        CalibrationStartTime = Calendar.getInstance().getTime().getTime();
+        CalibrationStartTime = System.nanoTime();//Calendar.getInstance().getTime().getTime();
 
         //Step 0. Clean the needed data structures and set flags
         acc_x_calib.reset_data();
@@ -1461,6 +1526,7 @@ public class MainActivity extends Activity
         catch(Exception ex)
         {
             ex.printStackTrace();
+            Log.d(TAG, "StopCalibrateInertialSensors", ex);
         }
 
     }
@@ -1568,7 +1634,8 @@ public class MainActivity extends Activity
             */
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            //throw new RuntimeException(e);
+            Log.d(TAG, "SendHourlyStatusEvent", e);
         }
     }
 
@@ -1625,6 +1692,7 @@ public class MainActivity extends Activity
         }
         catch (Exception ex) {
             ex.printStackTrace();
+            Log.d(TAG, "SendDailyReport", ex);
         }
     }
 
@@ -1663,6 +1731,49 @@ public class MainActivity extends Activity
         StartCalibrateInertialSensors();
 
     }
+
+
+    public void ToggleManualModeButton(View view)
+    {
+        if( ManualMode )
+        {
+            btCalibrate.setEnabled(false);
+            btToggleView.setEnabled(false);
+            btPowerOn.setEnabled(false);
+            btPowerOff.setEnabled(false);
+            btMotorOn.setEnabled(false);
+            btMotorOff.setEnabled(false);
+            btSendEvent.setEnabled(false);
+            btSendHourlyReport.setEnabled(false);
+            btSendDailyReport.setEnabled(false);
+
+            btToggleMode.setText("Manual Mode");
+            btToggleMode.setBackgroundColor(Color.GREEN);
+
+            ManualMode = false;
+        }
+        else
+        {
+            btCalibrate.setEnabled(true);
+            btToggleView.setEnabled(true);
+            btPowerOn.setEnabled(true);
+            btPowerOff.setEnabled(true);
+            btMotorOn.setEnabled(true);
+            btMotorOff.setEnabled(true);
+            btSendEvent.setEnabled(true);
+            btSendHourlyReport.setEnabled(true);
+            btSendDailyReport.setEnabled(true);
+
+            btToggleMode.setText("Auto Mode");
+            btToggleMode.setBackgroundColor(Color.YELLOW);
+
+            ManualMode = true;
+        }
+
+
+    }
+
+
 
     //******************************************************************
     public void SendHourlyDataButton_Click(View view)
@@ -1727,6 +1838,7 @@ public class MainActivity extends Activity
         {
             ex.printStackTrace();
             SaveErrorLog(ex.toString());
+            Log.d(TAG, "SaveData", ex);
         }
     }
 

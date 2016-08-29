@@ -127,9 +127,9 @@
                     <TextView
                         android:id="@+id/app_uptime_tview"
                         android:layout_width="60dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="match_parent"
                         android:layout_column="1"
-                        android:gravity="center"
+                        android:gravity="center_horizontal"
                         android:text="00:00:00"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
@@ -138,8 +138,8 @@
                         android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
-                        android:gravity="center"
                         android:text="00:00:00"
+                        android:gravity="center_horizontal"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
                 </TableRow>
                 <TableRow>
@@ -194,10 +194,16 @@
                         android:text="Toggle View"
                         android:clickable="true" />
 
-                    <Switch
-                        android:textOff="Man."
-                        android:textOn="Auto"
-                        />
+                    <Button
+                        android:id="@+id/toggle_manualmode_button"
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="2"
+                        android:onClick="ToggleManualModeButton"
+                        android:text="Manual Mode"
+                        android:clickable="true" />
+
 
                 </TableRow>
                 <TableRow>
@@ -731,6 +737,19 @@
 
 
                 </TableRow>
+                <!--TableRow>
+
+                    <Switch
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Manual Mode"
+                        android:padding="0dp"
+                        android:layout_span="4"
+                        android:id="@+id/mySwitch"
+                        android:gravity="top"
+                        android:textAppearance="?android:attr/textAppearanceMedium"/>
+
+                </TableRow-->
 
                 <!--TableRow
                     android:layout_width="match_parent"

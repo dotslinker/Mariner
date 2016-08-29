@@ -18,7 +18,6 @@ public class MovingAverage {
             data = new float[dimension];
 
             ratio = 1.0 / (float)dimension;
-
         }
 
 
@@ -42,10 +41,10 @@ public class MovingAverage {
             else
             {
                 MeanVal -= data[data_counter] * ratio;
-                data[data_counter++] = val;
+                data[data_counter] = val;
                 MeanVal += val * ratio;
 
-                if(data_counter > dimension)
+                if(++data_counter >= dimension)
                     data_counter = 0;
             }
 

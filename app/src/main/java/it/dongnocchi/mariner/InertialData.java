@@ -10,7 +10,7 @@ public class InertialData {
     public float [] AccXDataArray;
     public float [] AccYDataArray;
     public float [] AccZDataArray;
-    public int [] AccTimestampArray; //expressed in 50us (1ms / 20)
+    public int [] AccTimestampArray; //expressed in 100us (1ms / 10)
 
     public float [] GyroXDataArray;
     public float [] GyroYDataArray;
@@ -142,7 +142,9 @@ public class InertialData {
         AccXDataArray[acc_data_counter] = new_acc_x;
         AccYDataArray[acc_data_counter] = new_acc_y;
         AccZDataArray[acc_data_counter] = new_acc_z;
-        AccTimestampArray[acc_data_counter] = (int) ((event.timestamp - reference_time) * 20);
+
+
+        AccTimestampArray[acc_data_counter] = (int) ((event.timestamp - reference_time) / 100000);
 
         if(++acc_data_counter >= NUM_OF_SMPLES )
             acc_data_counter = NUM_OF_SMPLES - 1;
@@ -216,7 +218,9 @@ public class InertialData {
         AccXDataArray[gyro_data_counter] = new_gyro_x;
         AccYDataArray[gyro_data_counter] = new_gyro_y;
         AccZDataArray[gyro_data_counter] = new_gyro_z;
-        AccTimestampArray[gyro_data_counter] = (int) ((event.timestamp - reference_time) * 20);
+
+
+        AccTimestampArray[gyro_data_counter] = (int) ((event.timestamp - reference_time) / 100000);
 
         if(++gyro_data_counter >= NUM_OF_SMPLES )
             gyro_data_counter = NUM_OF_SMPLES - 1;

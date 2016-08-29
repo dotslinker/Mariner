@@ -35,7 +35,10 @@ public class WheelchairData {
     public float HourlyPowerOnTime;
     public float HourlyMotorOnTime;
 
+    // Amount of seconds the power is on
     public float DailyPowerOnTime;
+
+    //Amount of seconds the motor is on
     public float DailyMotorOnTime;
 
     public float HourlyUse;
@@ -191,7 +194,12 @@ public class WheelchairData {
         DailyUse = 0;
     }
 
+    public void DailyReset(long _dailyReferenceTime)
+    {
+        myInertialData.ResetDailyData(_dailyReferenceTime);
 
+
+    }
 
     public void updateHourlyUse()
     {

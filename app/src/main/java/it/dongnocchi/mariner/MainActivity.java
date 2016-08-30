@@ -16,6 +16,7 @@ import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.support.annotation.NonNull;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.view.View;
@@ -23,14 +24,13 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
-import android.widget.Switch;
 
 import org.json.JSONObject;
 
 import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -101,7 +101,6 @@ public class MainActivity extends Activity
     private Sensor mTemperature;
 
     private BatteryManager myBatteryManager;
-
 
     private boolean ManualMode = false;
 
@@ -192,6 +191,8 @@ public class MainActivity extends Activity
 
     //int updatetview_counter;
 
+    private String CommonFilePreamble;
+
     // INDICATE WHEN YOCTO IS IN USE (AVAILABLE)
     private boolean YoctoInUse = false;
 
@@ -205,9 +206,10 @@ public class MainActivity extends Activity
     final static int STATUS_ACQUIRING = 9;
     final static int STATUS_SHUTTING_DOWN = 21;
 
-    //int Temperature_data_array_index;
+    //int data_counter;
 
     // PATHS OF STORED FILES
+    /*
     String Acc_FilePath = "";
     String Gyro_FilePath = "";
     String Motor_FilePath = "";
@@ -215,6 +217,7 @@ public class MainActivity extends Activity
     String Power_FilePath = "";
     String Temperature_FilePath = "";
     String XML_FilePath = "";
+    */
 
     //Array containing the information about the running time of the App
     int [] RunningTime;
@@ -249,10 +252,13 @@ public class MainActivity extends Activity
 
     it.dongnocchi.mariner.WheelchairData myData;
 
+    FileLog myLogger;
+    static final int MAX_LOGFILE_SIZE = 20000000;
+
     @Override
     //==========================================================================
     protected void onCreate(Bundle savedInstanceState) {
-    //==========================================================================
+        //==========================================================================
 
         try {
             AppStartTime = System.nanoTime();
@@ -402,7 +408,9 @@ public class MainActivity extends Activity
 
             notSent = new it.dongnocchi.mariner.NotSentFileHandler(myConfig.get_Wheelchair_path());
 
-            ResetData();
+            myLogger = new FileLog();
+
+            DailyResetData();
 
             /*
             //TODO: da togliere. è servito per effettuare il test su TimestampedDataArray
@@ -513,7 +521,7 @@ public class MainActivity extends Activity
     }
 
 
-    private void ResetData()
+    private void DailyResetData()
     {
         //TODO: implementare il reset di tutte le strutture dati utilizzate
         Daily_Reference_Time = System.nanoTime();
@@ -521,7 +529,19 @@ public class MainActivity extends Activity
 
         myData.DailyReset(Daily_Reference_Time);
 
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+        CommonFilePreamble = formatter.format(Daily_Reference_Date);
 
+        String new_logger_filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + ".log";
+
+        //CLose the existing Logger (if any)
+        FileLog.close();
+
+        //Step 8 - Save logfile
+        myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), myLogger.getFileName(), myConfig.get_Acquisition_Container());
+
+        //Open the new one for the new day
+        FileLog.open(new_logger_filename, Log.ASSERT, MAX_LOGFILE_SIZE);
 
 
     }
@@ -750,6 +770,8 @@ public class MainActivity extends Activity
 
             //Wheelchair_AppendData(Motor_OFF_ID, false);
 
+
+            /*
             //da modificare per non inviare parte finale del buffer che è piena di zeri
             //accel data
             if (!Acc_FilePath.equals("")) {
@@ -798,7 +820,7 @@ public class MainActivity extends Activity
                 //Wheelchair_AppendData((short) -1, true);
             }
             //isWheelchair_ON = false;
-
+        */
 //                // if wheelchair hasn't been used last acquisition, acquired files are garbage
 //                if (NumOfSecWorking_LastAcquisition == 0){
 //                    //DeleteTodayFiles();
@@ -807,6 +829,8 @@ public class MainActivity extends Activity
 //                NumOfSecWorking_LastAcquisition = 0; //reset working minutes counter
         }
     }
+
+
 
     //TODO: verificare se sia da tenere o meno...
 
@@ -874,7 +898,7 @@ public class MainActivity extends Activity
 
                     //CalibrateAccelerometer();
 
-                    UpdateListofFilesToUpload();
+                    //UpdateListofFilesToUpload();
 
                     upload_lastFiles();
 
@@ -953,6 +977,7 @@ public class MainActivity extends Activity
         String AcquisitionPath = myConfig.getAcquisitionsFolder();
         String DateString = formatter.format(now);
 
+        /*
         Acc_FilePath = AcquisitionPath + "/" + DateString + "-" + getResources().getString(R.string.ACC_filename_prefix) + ".bin";
         Gyro_FilePath = AcquisitionPath + "/" + DateString + "-" + getResources().getString(R.string.GYRO_filename_prefix) + ".bin";
         Motor_FilePath = AcquisitionPath + "/" + DateString + "-" + getResources().getString(R.string.MOTOR_filename_prefix) + ".bin";
@@ -960,6 +985,7 @@ public class MainActivity extends Activity
         Power_FilePath = AcquisitionPath + "/" + DateString + "-" + getResources().getString(R.string.POWER_filename_prefix) + ".bin";
         Temperature_FilePath = AcquisitionPath + "/" + DateString + "-" + getResources().getString(R.string.TEMP_filename_prefix) + ".bin";
         XML_FilePath = AcquisitionPath + "/" + DateString + ".xml";
+        */
     }
 
 
@@ -1273,13 +1299,16 @@ public class MainActivity extends Activity
 
     //========== UPLOADS LAST FILES ACQUIRED ===================================
     private void upload_lastFiles () {
-    //==========================================================================
+        //==========================================================================
 
-        myBlobManager.UploadBlob(myData.BatteryLevel);
+        myBlobManager.UploadBlobs(myData.BatteryLevel);
 
         // CHECK NEW APP UPDATES ==================================
         myBlobManager.CheckNewUpdates(myData.BatteryLevel);
     }
+
+
+
 
     //TODO: da verificare se sia necessario tenere qui tutti i metodi Yocto, dato che ci sono le stesse funzioni anche in Yoctopuce
 
@@ -1300,7 +1329,7 @@ public class MainActivity extends Activity
 
     //==========================================================================
     protected void Start_Yocto() {
-    //==========================================================================
+        //==========================================================================
         // Connect to Yoctopuce Maxi-IO
         try {
             YAPI.EnableUSBHost(getApplicationContext());
@@ -1354,7 +1383,7 @@ public class MainActivity extends Activity
 
     //==========================================================================
     protected void Stop_Yocto() {
-    //==========================================================================
+        //==========================================================================
         YAPI.FreeAPI();
         handler.removeCallbacks(r);
     }
@@ -1508,20 +1537,20 @@ public class MainActivity extends Activity
     public void StopCalibrateInertialSensors()
     {
         try {
-                isCalibrating = false;
-                StopInertialAcquisition();
-                //Sleep(100);
+            isCalibrating = false;
+            StopInertialAcquisition();
+            //Sleep(100);
 
-                acc_x_calib.UpdateStats();
-                acc_y_calib.UpdateStats();
-                acc_z_calib.UpdateStats();
+            acc_x_calib.UpdateStats();
+            acc_y_calib.UpdateStats();
+            acc_z_calib.UpdateStats();
 
-                gyro_x_calib.UpdateStats();
-                gyro_y_calib.UpdateStats();
-                gyro_z_calib.UpdateStats();
+            gyro_x_calib.UpdateStats();
+            gyro_y_calib.UpdateStats();
+            gyro_z_calib.UpdateStats();
 
-                myData.myInertialData.UpdateBias(acc_x_calib.mean, acc_y_calib.mean, acc_z_calib.mean,
-                                                    gyro_x_calib.mean, gyro_y_calib.mean, gyro_z_calib.mean );
+            myData.myInertialData.UpdateBias(acc_x_calib.mean, acc_y_calib.mean, acc_z_calib.mean,
+                    gyro_x_calib.mean, gyro_y_calib.mean, gyro_z_calib.mean );
         }
         catch(Exception ex)
         {
@@ -1540,7 +1569,7 @@ public class MainActivity extends Activity
         //TODO: Verificare che questa sequenza di operazioni sia esaustiva rispetto a quello che ci interessa
 
         //upload_lastFiles();
-        myBlobManager.UploadBlob(myData.BatteryLevel);
+        myBlobManager.UploadBlobs(myData.BatteryLevel);
         // CHECK NEW APP UPDATES ==================================
         myBlobManager.CheckNewUpdates(myData.BatteryLevel);
 
@@ -1793,7 +1822,7 @@ public class MainActivity extends Activity
 
     //==========================================================================
     public void SendEventButton(View view){
-    //==========================================================================
+        //==========================================================================
 
         //int i = 0;
         //i = i+1;
@@ -1806,15 +1835,144 @@ public class MainActivity extends Activity
     //==========================================================================
     {
 
-        FileOutputStream outputStream;
-        FileOutputStream BinaryOutputStream;
+//        FileOutputStream outputStream;
+//        FileOutputStream BinaryOutputStream;
+        DataOutputStream data_out;
+        String filename;
 
-        try
+        //Step 1 - Save Calibration file data
+        try {
+            filename = CommonFilePreamble + "-calib.bin";
+
+            data_out = getDataOutputStream(filename);
+
+            data_out.writeFloat(myData.myInertialData.acc_offset[0]);
+            data_out.writeFloat(myData.myInertialData.acc_offset[1]);
+            data_out.writeFloat(myData.myInertialData.acc_offset[2]);
+
+            data_out.writeFloat(myData.myInertialData.gyro_offset[0]);
+            data_out.writeFloat(myData.myInertialData.gyro_offset[1]);
+            data_out.writeFloat(myData.myInertialData.gyro_offset[2]);
+
+            data_out.flush();
+            data_out.close();
+
+            myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+        }
+        catch(Exception ex)
         {
-            BinaryOutputStream = new FileOutputStream(Acc_FilePath, true); //true: append to file
-            BufferedOutputStream out = new BufferedOutputStream(BinaryOutputStream);//,numOfBytesInTheBuffer);
+            LogException(ex);
+        }
 
-            //TODO: verificare le seguenti linee tolte
+
+        //Step 2 - Save Accelerometer data if available
+        try {
+            if (myData.myInertialData.acc_data_counter > 0) {
+
+                filename = CommonFilePreamble + "-acc.bin";
+                data_out = getDataOutputStream(filename);
+
+                for (int i = 0; i < myData.myInertialData.acc_data_counter; i++) {
+                    data_out.write(myData.myInertialData.AccTimestampArray[i]);
+                    data_out.writeFloat(myData.myInertialData.AccXDataArray[i]);
+                    data_out.writeFloat(myData.myInertialData.AccYDataArray[i]);
+                    data_out.writeFloat(myData.myInertialData.AccZDataArray[i]);
+                }
+
+                data_out.flush();
+                data_out.close();
+
+                myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+            }
+        }
+        catch(Exception ex) {
+            LogException(ex);
+        }
+
+        //Step 3 - Save Gyro data if available
+        try {
+            if (myData.myInertialData.gyro_data_counter > 0) {
+                filename = CommonFilePreamble + "-gyro.bin";
+                data_out = getDataOutputStream(filename);
+
+                for (int i = 0; i < myData.myInertialData.gyro_data_counter; i++) {
+                    data_out.write(myData.myInertialData.GyroTimestampArray[i]);
+                    data_out.writeFloat(myData.myInertialData.GyroXDataArray[i]);
+                    data_out.writeFloat(myData.myInertialData.GyroYDataArray[i]);
+                    data_out.writeFloat(myData.myInertialData.GyroZDataArray[i]);
+                }
+
+                data_out.flush();
+                data_out.close();
+
+                myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+
+            }
+        }
+        catch(Exception ex) {
+            LogException(ex);
+        }
+        //Step 4 - Save Temperature data
+
+        try {
+            filename = CommonFilePreamble + "-temp.bin";
+            data_out = getDataOutputStream(filename);
+
+            data_out.flush();
+            data_out.close();
+
+            myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+
+        }catch(Exception ex)
+        {
+            LogException(ex);
+        }
+        //Step 5 - Save Event info
+        try {
+
+            filename = CommonFilePreamble + "-event.bin";
+            data_out = getDataOutputStream(filename);
+
+
+
+
+            data_out.flush();
+            data_out.close();
+
+            myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+
+        }
+        catch(Exception ex) {
+            LogException(ex);
+        }
+
+
+
+        //Step 7 - Save Battery Data
+        try {
+            filename = CommonFilePreamble + "-bat.bin";
+
+
+        }
+        catch(Exception ex) {
+            LogException(ex);
+        }
+
+
+
+        //TODO: verificare le seguenti linee tolte
+
+
+
+
+/*      2016-0830
+            BinaryOutputStream = new FileOutputStream(Acc_FilePath, true); //true: append to file
+
+            BufferedOutputStream out = new BufferedOutputStream(BinaryOutputStream);//,numOfBytesInTheBuffer);
+            data_out = new DataOutputStream(BinaryOutputStream);
+
+*/
+
                 /* 2016-0622 -
                 for (int i = 0; i < InertialData.length; i++)
                 {
@@ -1833,23 +1991,31 @@ public class MainActivity extends Activity
                 }
                 */
 
-        }
-        catch (Exception ex)
-        {
-            ex.printStackTrace();
-            SaveErrorLog(ex.toString());
-            Log.d(TAG, "SaveData", ex);
-        }
+    }
+
+    private void LogException(Exception ex){
+        ex.printStackTrace();
+        SaveErrorLog(ex.toString());
+        Log.e(TAG, "SaveData", ex);
+        FileLog.e(TAG, "SaveData", ex );
     }
 
 
-    private void UpdateListofFilesToUpload()
+
+    @NonNull
+    private DataOutputStream getDataOutputStream(String filename) throws FileNotFoundException {
+        DataOutputStream data_out;
+        data_out = new DataOutputStream(
+                new BufferedOutputStream(
+                        new FileOutputStream(filename)));
+        return data_out;
+    }
+
+    private int getDeltaTime()
     {
-
-
+        return (int)(System.nanoTime() - Daily_Reference_Time);
 
     }
-
 
 
 } // fine della MainActivity

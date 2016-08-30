@@ -29,14 +29,14 @@ public class InertialData {
 
     static final float NS2S = 1.0f / 1000000000.0f;
 
-    float [] min_acc_values;
-    float [] max_acc_values;
+    public float [] min_acc_values;
+    public float [] max_acc_values;
 
-    float [] min_gyro_values;
-    float [] max_gyro_values;
+    public float [] min_gyro_values;
+    public float [] max_gyro_values;
 
-    float[] acc_offset;
-    float[] gyro_offset;
+    public float[] acc_offset;
+    public float[] gyro_offset;
 
     //float[] acc_bias;
     //float[] gyro_bias;
@@ -139,10 +139,10 @@ public class InertialData {
         if( max_acc_values[2] < new_acc_z)
             max_acc_values[2] = new_acc_z;
 
+        //TODO: verificare se sia il acso di memorizzare i dati con o senza offset
         AccXDataArray[acc_data_counter] = new_acc_x;
         AccYDataArray[acc_data_counter] = new_acc_y;
         AccZDataArray[acc_data_counter] = new_acc_z;
-
 
         AccTimestampArray[acc_data_counter] = (int) ((event.timestamp - reference_time) / 100000);
 

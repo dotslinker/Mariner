@@ -1,6 +1,5 @@
 package it.dongnocchi.mariner;
 
-import android.renderscript.Element;
 import android.util.Xml;
 
 import org.w3c.dom.Document;
@@ -49,7 +48,7 @@ public class Configuration {
     private String Azure_Acquisition_Container;
     private String APK_Container;
 
-    private String Azure_Acquisition_Folder;
+    private String AcquisitionFolderPath;
     private String WhereToSaveAPK_LocalPath;
     private String WhereToSaveXML_LocalPath;
     private String Wheelchair_path;
@@ -161,7 +160,7 @@ public class Configuration {
         WhereToSaveXML_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/WheelchairData/" + "XmlFiles/";
         WhereToSaveAPK_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/WheelchairData/" + "APK/";
         Wheelchair_path =           getExternalStorageDirectory().getAbsolutePath() + "/WheelchairData/";
-        Azure_Acquisition_Folder =        getExternalStorageDirectory().getAbsolutePath() + "/WheelchairData/" + "AcquisitionFolder/";
+        AcquisitionFolderPath =        getExternalStorageDirectory().getAbsolutePath() + "/WheelchairData/" + "Data/";
 
     }
 
@@ -173,7 +172,7 @@ public class Configuration {
     public String get_Wheelchair_path()            {return Wheelchair_path;}
     public String get_WhereToSaveAPK_LocalPath()   {return WhereToSaveAPK_LocalPath;}
     public String get_WhereToSaveXML_LocalPath()   {return WhereToSaveXML_LocalPath;}
-    public String get_Acquisition_Folder()         {return Azure_Acquisition_Folder;}
+    public String get_Acquisition_Folder()         {return AcquisitionFolderPath;}
 
     public String get_APK_Container()              {return APK_Container;}
     public String get_Acquisition_Container()      {return Azure_Acquisition_Container;}
@@ -214,7 +213,7 @@ public class Configuration {
         return s;
     }
 
-    public String getAcquisitionsFolder() {return LocalAcquisitionFolder;};
+    public String getAcquisitionsFolder() {return LocalAcquisitionFolder;}
 
     public void LoadConfigOld()
     {

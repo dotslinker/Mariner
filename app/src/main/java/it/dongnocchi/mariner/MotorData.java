@@ -55,7 +55,7 @@ public class MotorData {
     }
 
 
-    public void ResetData()
+    public void Reset()
     {
         for(int i= 0; i<data_size;i++)
         {

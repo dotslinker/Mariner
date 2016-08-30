@@ -65,7 +65,7 @@ public class PowerData {
     }
 
 
-    public void ResetData(long _reference_time)
+    public void Reset(long _reference_time)
     {
         data_counter = 0;
         reference_time = _reference_time;

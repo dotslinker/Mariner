@@ -52,6 +52,10 @@ public class MovingAverage {
 
         }
 
-
+        public void ResetData()
+        {
+            firstval = true;
+            MeanVal = 0.0f;
+        }
 
     }

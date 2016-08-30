@@ -53,7 +53,7 @@ public class AzureManager {
 
 
     //==========================================================================
-    protected void UploadBlob(int battery){//String FileInternalPath, String FileName, String BlobContainer, int battery){
+    protected void UploadBlobs(int battery){//String FileInternalPath, String FileName, String BlobContainer, int battery){
     //==========================================================================
         // FileInternalPath = local folder where the file is located
         // FileName: name of the file, like "foto.png"
@@ -67,14 +67,14 @@ public class AzureManager {
 
             // Size_FilesToSend = 0 se stiamo caricando un nuovo file
             //                  = FilesToSend.size se stiamo caricando vecchi file dalla lista
-            //UploadBlob_Async prova = new UploadBlob_Async(FileInternalPath, FileName, BlobContainer, COMMAND_SIMPLE_TRANSFER);
-            UploadBlob_Async UploadBlobs = new UploadBlob_Async(folder, name, container, COMMAND_SIMPLE_TRANSFER);
+            //UploadBlobs_Async prova = new UploadBlobs_Async(FileInternalPath, FileName, BlobContainer, COMMAND_SIMPLE_TRANSFER);
+            UploadBlobs_Async UploadBlobs = new UploadBlobs_Async(folder, name, container, COMMAND_SIMPLE_TRANSFER);
             UploadBlobs.execute();
         }
     }
 
     //==========================================================================
-    private class UploadBlob_Async extends AsyncTask<Void, Boolean, String> {
+    private class UploadBlobs_Async extends AsyncTask<Void, Boolean, String> {
     //==========================================================================
         String FileInternalPath_local = "";
         String FileName_local = "";
@@ -84,7 +84,7 @@ public class AzureManager {
 
         // Size_FilesToSend = 0 se stiamo caricando un nuovo file
         //                  = FilesToSend.size se stiamo caricando vecchi file dalla lista
-        public UploadBlob_Async(String FileInternalPath, String FileName, String in_BlobContainer, int IN_Size_FilesToSend){
+        public UploadBlobs_Async(String FileInternalPath, String FileName, String in_BlobContainer, int IN_Size_FilesToSend){
             FileInternalPath_local = FileInternalPath;
             FileName_local = FileName;
             BlobContainer = in_BlobContainer;
@@ -159,7 +159,7 @@ public class AzureManager {
             }
             if (isAllOK){
                 notSent.DeleteLine(File_FullPath);
-                UploadBlob(BatLev);
+                UploadBlobs(BatLev);
             }
         }
     }
@@ -235,7 +235,7 @@ public class AzureManager {
         //if (FilesToSend.size() != 0) {
 
 
-            UploadBlob_Async new_upload = new UploadBlob_Async(FilesToSend.get(FilesToSend.size() - 2), FilesToSend.get(FilesToSend.size() - 1), FilesToSend.get(FilesToSend.size()), FilesToSend.size());
+            UploadBlobs_Async new_upload = new UploadBlobs_Async(FilesToSend.get(FilesToSend.size() - 2), FilesToSend.get(FilesToSend.size() - 1), FilesToSend.get(FilesToSend.size()), FilesToSend.size());
             new_upload.execute();
         //}
     }
@@ -659,7 +659,7 @@ public class AzureManager {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                UploadBlob_Async UploadNewXml = new UploadBlob_Async(myConfig.get_WhereToSaveXML_LocalPath(), myConfig.get_UploadedFiles_XmlName(), myConfig.get_APK_Container(), 0);
+                UploadBlobs_Async UploadNewXml = new UploadBlobs_Async(myConfig.get_WhereToSaveXML_LocalPath(), myConfig.get_UploadedFiles_XmlName(), myConfig.get_APK_Container(), 0);
                 UploadNewXml.execute();
             }
         }

@@ -43,6 +43,9 @@ public class UpdateApp extends AsyncTask<String,Void,Boolean> {
         }
 
     }
+
+    //TODO: da rivedere completamente la politica di logging asincrono
+
     //==========================================================================
     private void SaveErrorLog(String msg){
         //==========================================================================

@@ -7,20 +7,21 @@ import android.hardware.SensorEvent;
  */
 public class TemperatureData {
 
-    public int NumOfTemperatureSamples;
-    public long[] TemperatureTimestampArray; // = new long[NUM_OF_TEMPERARURE_SAMPLES];
-    public float [] TemperatureDataArray; // = new float [NUM_OF_TEMPERARURE_SAMPLES];
-    int Temperature_data_array_index;
+    public int data_size;
+    public long[] TimestampArray; // = new long[NUM_OF_TEMPERARURE_SAMPLES];
+    public float [] DataArray; // = new float [NUM_OF_TEMPERARURE_SAMPLES];
+    int data_counter;
     //public int TotalNumOfSamples;
+
     MovingAverage TempMA;
     public float MaxTemperature;
     public float MinTemperature;
 
     public TemperatureData(int num_of_samples, int sampling_period_ms, int num_of_seconds_for_mean)
     {
-        NumOfTemperatureSamples = num_of_samples;
-        TemperatureTimestampArray = new long[num_of_samples];
-        TemperatureDataArray = new float [num_of_samples];
+        data_size = num_of_samples;
+        TimestampArray = new long[num_of_samples];
+        DataArray = new float [num_of_samples];
         int ma_size;
 
         if (sampling_period_ms != 0 && num_of_seconds_for_mean != 0)
@@ -37,14 +38,14 @@ public class TemperatureData {
     {
         float act_temp = data.values[0];
 
-        TemperatureDataArray[Temperature_data_array_index] = act_temp;
+        DataArray[data_counter] = act_temp;
         TempMA.UpdateValue(act_temp);
 
-        TemperatureTimestampArray[Temperature_data_array_index] = data.timestamp;
+        TimestampArray[data_counter] = data.timestamp;
 
         //Se sforo il
-        if(++Temperature_data_array_index >= NumOfTemperatureSamples)
-            Temperature_data_array_index = 0;
+        if(++data_counter >= data_size)
+            data_counter = 0;
 
         //TotalNumOfSamples++;
 
@@ -60,6 +61,20 @@ public class TemperatureData {
     {
         MaxTemperature = 0.0f;
         MinTemperature = 100.0f;
+    }
+
+    public void Reset()
+    {
+        for(int i= 0; i<data_size;i++)
+        {
+            TimestampArray[i] = 0;
+            DataArray[i] = 0;
+        }
+        data_counter = 0;
+
+        ResetMinMax();
+
+        TempMA.ResetData();
     }
 
     public float GetMaxTemperature()

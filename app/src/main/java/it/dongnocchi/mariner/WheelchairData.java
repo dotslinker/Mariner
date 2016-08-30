@@ -53,6 +53,7 @@ public class WheelchairData {
     public MotorData myMotorData;
     public PowerData myPowerData;
     public TemperatureData myTempData;
+    public BatteryData myBatteryData;
 
     Date LastPowerOnDatetime; //serve per rilevare il tempo in cui la carrozzina è stato acceso nell'ultima ora
     Date LastPowerOffDateTime;
@@ -76,6 +77,7 @@ public class WheelchairData {
         myMotorData = new MotorData();
         myPowerData = new PowerData();
         myTempData = new TemperatureData(NUM_OF_TEMPERARURE_SAMPLES, 10000, 3600);
+        myBatteryData = new BatteryData();
     }
 
     //Metodo da chiamare quando si fa partire il programma, in modo che
@@ -197,7 +199,11 @@ public class WheelchairData {
     public void DailyReset(long _dailyReferenceTime)
     {
         myInertialData.ResetDailyData(_dailyReferenceTime);
-
+        myTempData.Reset();
+        myEventData.Reset();
+        myMotorData.Reset();
+        myPowerData.Reset();
+        myBatteryData.Reset();
 
     }
 
@@ -235,5 +241,6 @@ public class WheelchairData {
         DailyUse = DailyMotorOnTime / 86400000f;
 
     }
+
 
 }

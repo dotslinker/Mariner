@@ -32,6 +32,7 @@ public class WheelchairData {
     public float DegreesCoveredTurningLeft;
     public float DegreesCoveredTurningRight;
 
+    //Amount of time in seconds
     public float HourlyPowerOnTime;
     public float HourlyMotorOnTime;
 
@@ -50,122 +51,158 @@ public class WheelchairData {
     private Lock MotorStatusLocker = new ReentrantLock();
 
     public InertialData myInertialData;
-    public MotorData myMotorData;
-    public PowerData myPowerData;
+//    public MotorData myMotorData;
+//    public PowerData myPowerData;
     public TemperatureData myTempData;
     public BatteryData myBatteryData;
 
-    Date LastPowerOnDatetime; //serve per rilevare il tempo in cui la carrozzina è stato acceso nell'ultima ora
-    Date LastPowerOffDateTime;
+    //TODO: da sistemare il periodo di aggiornamento del dato relativo alla potenza del segnale
+    public int SignalStrength;
 
-    Date LastMotorOnDatetime; //serve per rilevare il tempo in cui il motore è stato acceso nell'ultima ora
-    Date LastMotorOffDateTime;
+    public EventData myEventData;
+
+    long LastPowerOnTime, LastPowerOffTime, LastMotorOnTime, LastMotorOffTime;
+
+    long DailyReferenceTime;
+
 
     private static final int NUM_OF_TEMPERARURE_SAMPLES = 8650; //8640 sarebbe il numero corretto
 
-    //Long MotorOnMsDuringLastHour = 0L;  //Tempo di accensione del motore nell'ultima ora
-    //Long MotorOnMsDuringLastDay = 0L;  //Tempo di accensione del motore nell'ultimo giorno
-
-    //Long PowerONMsDuringLastHour = 0L;
-    //Long PowerONMsDuringLastDay = 0L;
-
-    public int BatteryLevel;
+    //public int BatteryLevel;
 
     public WheelchairData()
     {
         myInertialData = new InertialData();
-        myMotorData = new MotorData();
-        myPowerData = new PowerData();
+//        myMotorData = new MotorData();
+//        myPowerData = new PowerData();
         myTempData = new TemperatureData(NUM_OF_TEMPERARURE_SAMPLES, 10000, 3600);
         myBatteryData = new BatteryData();
+        myEventData = new EventData();
     }
+
 
     //Metodo da chiamare quando si fa partire il programma, in modo che
     //verifichi se l'alimentazione è già presente, ed in questo caso non aspetta
     //l'evento PowerON
 
-    public void AddPowerONEvent()
+    public void AddPowerONEvent(long EventTime)
     {
         PowerONHourlyCounter++;
         PowerONDailyCounter++;
 
-        if( LastPowerOnDatetime == null)
-            LastPowerOnDatetime = Calendar.getInstance().getTime();
+        if( LastPowerOnTime == 0)
+            LastPowerOnTime = EventTime;
+
+        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000);
+
+//        if( LastPowerOnDatetime == null)
+//            LastPowerOnDatetime = Calendar.getInstance().getTime();
+
+        myEventData.AddData(deltatime, EventData.POWER_ON);
 
         PowerON = true;
     }
 
 
-    public void AddPowerOFFEvent()
+    public void AddPowerOFFEvent(long EventTime)
     {
         PowerOFFHourlyCounter++;
         PowerOFFDailyCounter++;
 
-        LastMotorOffDateTime =  Calendar.getInstance().getTime();
-        if( LastPowerOnDatetime != null)
-            HourlyMotorOnTime += (float)(LastMotorOffDateTime.getTime() - LastMotorOnDatetime.getTime())*1000f;
+        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000);
 
-        //TODO: verificare che sia corretto (mirimetto in attesa di un evento MotorON
-        LastMotorOnDatetime = null;
+//        LastMotorOffDateTime =  Calendar.getInstance().getTime();
+        LastPowerOffTime = EventTime;
+        if( LastPowerOnTime != 0) {
+            HourlyMotorOnTime += (float) (LastMotorOffTime - LastMotorOnTime) / 1000000000.0f;
+
+        }
+
+        myEventData.AddData(deltatime, EventData.POWER_OFF);
+
+        LastMotorOnTime = 0;
 
         //Se il motore è ancora acceso,
         //significa che ci siamo persi un motor OFF e quindi lo segnalo come spento
         if(MotorON)
         {
-            AddMotorOFFEvent();
+            AddMotorOFFEvent(EventTime);
         }
 
         PowerON = false;
     }
 
-    public void AddMotorONEvent()
-    {
-        //TODO: aggiungere anche l'inserimento in una lista delle accensioni del motore, comprensiva di timestamp
+    public void AddMotorONEvent(long EventTime) {
+        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000);
+
 
         MotorStatusLocker.lock();
         try {
-            MotorON = true;
+            //Check if Motor is OFF
+            if (!MotorON)
 
-            // access the resource protected by this lock
-            MotorONHourlyCounter++;
-            MotorONDailyCounter++;
+                MotorON = true;
 
-            //Date tempDate = Calendar.getInstance().getTime();
+                // access the resource protected by this lock
+                MotorONHourlyCounter++;
+                MotorONDailyCounter++;
 
-            //Se non ho ancora memorizzato il tempo di parteza delle acquisizioni,
-            //lo faccio ora
-            if ( LastMotorOnDatetime == null )
-                LastMotorOnDatetime = Calendar.getInstance().getTime();
+
+                //Date tempDate = Calendar.getInstance().getTime();
+
+                //Se non ho ancora memorizzato il tempo di parteza delle acquisizioni,
+                //lo faccio ora
+                if (LastMotorOnTime == 0)
+                    LastMotorOnTime = EventTime;
+
+                myEventData.AddData(deltatime, EventData.MOTOR_ON);
                 //MotorOnMsDuringLastHour += tempDate.getTime() - LastMotorOnDatetime.getTime();
                 //LastMotorOnDatetime = tempDate;
 
-        } finally {
+        }
+        catch(Exception ex) {
+
+        }
+        finally {
             MotorStatusLocker.unlock();
         }
     }
 
 
-    public void AddMotorOFFEvent()
+    public void AddMotorOFFEvent(long EventTime)
     {
         //calcolo la differenza di tempo ed aggiorno la variabile del tempo
+        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000);
+
+
         MotorStatusLocker.lock();
         try {
+            // access the resource protected by this lock
+
+            //Check if Motor is ON
+            if(MotorON )
             MotorON = false;
 
-            // access the resource protected by this lock
             MotorOFFHourlyCounter++;
             MotorOFFDailyCounter++;
 
-            LastMotorOffDateTime =  Calendar.getInstance().getTime();
-            if( LastMotorOnDatetime != null)
-                HourlyMotorOnTime += (float)(LastMotorOffDateTime.getTime() - LastMotorOnDatetime.getTime())*1000f;
+            LastMotorOffTime = EventTime;
+            if( LastMotorOnTime != 0)
+                HourlyMotorOnTime += (float)(LastMotorOffTime - LastMotorOnTime)/1000000000.0f;
 
-            //TODO: verificare che sia corretto (mirimetto in attesa di un evento MotorON
-            LastMotorOnDatetime = null;
+            myEventData.AddData(deltatime, EventData.MOTOR_OFF);
+
+            LastMotorOnTime = 0;
         }
         finally {
             MotorStatusLocker.unlock();
         }
+    }
+
+    public void AddBatteryValChangeEvent(long EventTime, int new_val)
+    {
+        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000);
+        myBatteryData.AddData(deltatime, new_val);
     }
 
     public void ResetHourlyCounters()
@@ -198,13 +235,15 @@ public class WheelchairData {
 
     public void DailyReset(long _dailyReferenceTime)
     {
+        DailyReferenceTime = _dailyReferenceTime;
         myInertialData.ResetDailyData(_dailyReferenceTime);
         myTempData.Reset();
         myEventData.Reset();
-        myMotorData.Reset();
-        myPowerData.Reset();
+        //myMotorData.Reset();
+        //myPowerData.Reset();
         myBatteryData.Reset();
 
+        ResetDailyCounters();
     }
 
     public void updateHourlyUse()
@@ -215,15 +254,16 @@ public class WheelchairData {
             if( MotorON )
             {
                 //se il motore è acceso, allora aggiorno i dati relativiall'utilizzo orario
-                Date tempDate = Calendar.getInstance().getTime();
+                long tempTime = System.nanoTime();
+                //Date tempDate = Calendar.getInstance().getTime();
 
-                if ( LastMotorOnDatetime != null ) {
-                    HourlyMotorOnTime += (float) (tempDate.getTime() - LastMotorOnDatetime.getTime()) * 1000f;
+                if ( LastMotorOnTime != 0 ) {
+                    HourlyMotorOnTime += (float) (tempTime - LastMotorOnTime) / 1000000000.0f;
                 }
-                LastMotorOnDatetime = tempDate;
+                LastMotorOnTime = tempTime;
             }
 
-            HourlyUse = HourlyMotorOnTime / 3600000f;
+            HourlyUse = HourlyMotorOnTime / 3600.0f;
 
         } finally {
             MotorStatusLocker.unlock();
@@ -238,7 +278,7 @@ public class WheelchairData {
         public void updateDailyUse()
     {
         //TODO: verificare che l'utilizzo quotidiano sia dato lungo le 24 ore o rispetto alle ore di accensione della carrozzina
-        DailyUse = DailyMotorOnTime / 86400000f;
+        DailyUse = DailyMotorOnTime / 86400.0f;
 
     }
 

@@ -8,6 +8,8 @@ public class BatteryData {
     protected int Timestamps[];
     protected int Values[];
 
+    public int level;
+
     int data_counter;
     int data_size;
 
@@ -33,11 +35,15 @@ public class BatteryData {
     public void AddData(int new_elapsed_time, int new_value)
     {
 
+        level = new_value;
+
         Timestamps[data_counter] = new_elapsed_time;
         Values[data_counter] = new_value;
 
         if (++data_counter >= data_size)
             data_counter--;
+
+
 
     }
 
@@ -55,6 +61,8 @@ public class BatteryData {
 
     public void Reset()
     {
+        level = 0;
+
         for(int i= 0; i<data_size;i++)
         {
             Timestamps[i] = 0;

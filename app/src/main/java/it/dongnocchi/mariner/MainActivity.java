@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -25,59 +26,16 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.json.JSONObject;
-
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import android.util.Log;
-
-/*
-import android.app.Activity;
-import android.app.AlarmManager;
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.graphics.Color;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
-import android.os.BatteryManager;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.SystemClock;
-import android.telephony.PhoneStateListener;
-import android.telephony.TelephonyManager;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.WindowManager;
-import android.widget.Button;
-import android.widget.TextView;
-import android.widget.Toast;
-import org.json.JSONObject;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.sql.Timestamp;
-*/
 
 import com.yoctopuce.YoctoAPI.YAPI;
 import com.yoctopuce.YoctoAPI.YAPI_Exception;
@@ -93,7 +51,8 @@ public class MainActivity extends Activity
         implements SensorEventListener, YDigitalIO.UpdateCallback {
     //==========================================================================
 
-    private static final String TAG = MainActivity.class.getSimpleName();
+    //TODO: da verificare tutta la politica di Logging
+    public static final String TAG = MainActivity.class.getSimpleName();
 
     private SensorManager mSensorManager;
     private Sensor mAcc;
@@ -111,6 +70,16 @@ public class MainActivity extends Activity
     boolean TemperatureAcquiring = false;
     private static final int TEMPERATURE_READING_PERDIOD = 10000000; //10s
 
+
+    public static final int STATUS_INIT = 0;
+    public static final int STATUS_SLEEP = 1;
+    public static final int STATUS_IDLE = 2;
+    public static final int STATUS_ACTIVE = 3;
+    public static final int STATUS_DAILY_UPDATE = 4;
+    public static final int STATUS_OFFLINE = 5;
+
+    public static final String[] STATUS_STRING = {"INIT", "SLEEP", "IDLE", "ACTIVE", "DAILY_UPDATE", "OFFLINE"};
+
     //During the Calibration, we require a less frequent sampling period
     private static final int ACC_READING_PERDIOD_CALIB = 50000;
     private static final int GYRO_READING_PERDIOD_CALIB = 50000;
@@ -123,14 +92,15 @@ public class MainActivity extends Activity
     private static final int NUM_OF_SIGNAL_STRENGTH_SAMPLES = 8650; //8640 sarebbe il numero corretto
 
     // variables used for the 30 sec acquisition for calibration
-    boolean isCalibrating = false;
-    boolean isAcquiring = false;
+    boolean CalibrationMode = false;
 
     private static final int NUM_OF_SECONDS_CALIBRATION = 10;
 
     private static final int CALIB_DATA_SIZE = 600; // 500 per 10 secondi
 
+    //TODO: verificare che sia utile
     private long LastMeasuredTime;
+
     //private long ApplicationStartTime;
     private String AppUptimeString, DutyUptimeString;
 
@@ -186,10 +156,7 @@ public class MainActivity extends Activity
     Button btPowerOn, btPowerOff, btMotorOn, btMotorOff;
     Button btSendEvent, btSendDailyReport, btSendHourlyReport;
     Button btCalibrate, btToggleView, btToggleMode;
-
-    //Switch mySwitch;
-
-    //int updatetview_counter;
+    Button btDoHourlyUpdate, btDoDailyUpdate;
 
     private String CommonFilePreamble;
 
@@ -197,27 +164,6 @@ public class MainActivity extends Activity
     private boolean YoctoInUse = false;
 
     private int Status;
-
-    final static int STATUS_INIT = 1;
-    final static int STATUS_FIRST_INITIALIZATION = 2;
-    final static int STATUS_STARTING = 3;
-    final static int STATUS_SLEEP = 5;
-    final static int STATUS_IDLE = 7;
-    final static int STATUS_ACQUIRING = 9;
-    final static int STATUS_SHUTTING_DOWN = 21;
-
-    //int data_counter;
-
-    // PATHS OF STORED FILES
-    /*
-    String Acc_FilePath = "";
-    String Gyro_FilePath = "";
-    String Motor_FilePath = "";
-    String Battery_FilePath = "";
-    String Power_FilePath = "";
-    String Temperature_FilePath = "";
-    String XML_FilePath = "";
-    */
 
     //Array containing the information about the running time of the App
     int [] RunningTime;
@@ -264,88 +210,13 @@ public class MainActivity extends Activity
             AppStartTime = System.nanoTime();
             App_Start_Date = new Date();
 
-            //Daily_Reference_Time = SystemClock.elapsedRealtime(); // real time elapsed since boot in milli seconds
-
             RunningTime = new int[5]; //0 = days, 1 = hours, 2 = mins, 3 = sec, 4 = ms
 
             super.onCreate(savedInstanceState);
             setContentView(R.layout.activity_main);
 
-            acc_x_1_tview = (TextView) findViewById(R.id.acc_x_1_tview);
-            acc_y_1_tview = (TextView) findViewById(R.id.acc_y_1_tview);
-            acc_z_1_tview = (TextView) findViewById(R.id.acc_z_1_tview);
+            InitUX();
 
-            acc_x_2_tview = (TextView) findViewById(R.id.acc_x_2_tview);
-            acc_y_2_tview = (TextView) findViewById(R.id.acc_y_2_tview);
-            acc_z_2_tview = (TextView) findViewById(R.id.acc_z_2_tview);
-
-            acc_x_3_tview = (TextView) findViewById(R.id.acc_x_3_tview);
-            acc_y_3_tview = (TextView) findViewById(R.id.acc_y_3_tview);
-            acc_z_3_tview = (TextView) findViewById(R.id.acc_z_3_tview);
-
-            acc_period_mean_tview = (TextView) findViewById(R.id.acc_period_mean_tview);
-            acc_period_stdev_tview = (TextView) findViewById(R.id.acc_period_stdev_tview);
-
-            acc_vel_x_tview = (TextView) findViewById(R.id.acc_vel_x_val_tview);
-            acc_distance_x_tview = (TextView) findViewById(R.id.acc_distance_x_val_tview);
-
-            gyro_x_1_tview = (TextView) findViewById(R.id.gyro_x_1_tview);
-            gyro_y_1_tview = (TextView) findViewById(R.id.gyro_y_1_tview);
-            gyro_z_1_tview = (TextView) findViewById(R.id.gyro_z_1_tview);
-
-            gyro_x_2_tview = (TextView) findViewById(R.id.gyro_x_2_tview);
-            gyro_y_2_tview = (TextView) findViewById(R.id.gyro_y_2_tview);
-            gyro_z_2_tview = (TextView) findViewById(R.id.gyro_z_2_tview);
-
-            gyro_x_3_tview = (TextView) findViewById(R.id.gyro_x_3_tview);
-            gyro_y_3_tview = (TextView) findViewById(R.id.gyro_y_3_tview);
-            gyro_z_3_tview = (TextView) findViewById(R.id.gyro_z_3_tview);
-
-            gyro_angle_total_tview = (TextView) findViewById(R.id.gyro_ang_x_travelled_val_tview);
-            gyro_angle_tview = (TextView) findViewById(R.id.gyro_angle_x_val_tview);
-
-            gyro_period_mean_tview = (TextView) findViewById(R.id.gyro_period_mean_tview);
-            gyro_period_stdev_tview = (TextView) findViewById(R.id.gyro_period_stdev_tview);
-
-            battery_textview = (TextView) findViewById(R.id.battery_val_tview);
-            MaxiIO_textview = (TextView) findViewById(R.id.MaxiIO_view);
-            event_textview = (TextView) findViewById(R.id.event_view);
-            sys_stat_textview = (TextView) findViewById(R.id.system_status_view);
-
-            app_uptime_tview = (TextView) findViewById(R.id.app_uptime_tview);
-            duty_uptime_tview = (TextView) findViewById(R.id.current_duty_uptime_tview);
-
-            signal_level_tview = (TextView) findViewById(R.id.signal_level_val_tview);
-            //temp_val_tview = (TextView) findViewById(R.id.temperature_val_tview);
-
-            //temperature_tview = (TextView) findViewById(R.id.temperature_tview);
-            temperature_mean_val_tview = (TextView) findViewById(R.id.temperature_mean_tview);
-            temperature_min_val_tview = (TextView) findViewById(R.id.temperature_min_tview);
-            temperature_max_val_tview = (TextView) findViewById(R.id.temperature_max_tview);
-
-            btPowerOn = (Button) findViewById(R.id.PowerONBtn);
-            btPowerOff = (Button) findViewById(R.id.PowerOFFBtn);
-            btMotorOn = (Button) findViewById(R.id.MotorONBtn);
-            btMotorOff = (Button) findViewById(R.id.MotorOFFBtn);
-
-            btSendEvent= (Button) findViewById(R.id.send_event_button);
-            btSendHourlyReport= (Button) findViewById(R.id.send_hourly_data_button);
-            btSendDailyReport= (Button) findViewById(R.id.send_daily_data_button);
-
-            btCalibrate = (Button) findViewById(R.id.calibrate_button);
-            btToggleView = (Button) findViewById(R.id.toggle_display_button);
-            btToggleMode = (Button) findViewById(R.id.toggle_manualmode_button);
-
-            //TODO: cercare di capire perchè non funziona (lo switch non appare)
-            //mySwitch = (Switch) findViewById(R.id.mySwitch);
-            //mySwitch.setChecked(true);
-
-            btPowerOff.setEnabled(false);
-            btMotorOn.setEnabled(false);
-            btMotorOff.setEnabled(false);
-
-            //Intent intent = getIntent();
-            //user = (User) intent.getSerializableExtra("user");      // GET INPUT FROM INIT ACTIVITY
             lastfiles = new it.dongnocchi.mariner.LastFiles();                              // SET OUTPUT TO INIT ACTIVITY
 
             // INITIALISE SENSOR MANAGER
@@ -354,6 +225,8 @@ public class MainActivity extends Activity
             mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             mGyro = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
             mTemperature = mSensorManager.getDefaultSensor(Sensor.TYPE_AMBIENT_TEMPERATURE);
+
+            myBatteryManager = new BatteryManager();
 
             // REGISTER BROADCAST RECEIVER FOR BATTERY EVENTS
             registerReceiver(mBatChargeOff, new IntentFilter(Intent.ACTION_POWER_DISCONNECTED));
@@ -365,7 +238,13 @@ public class MainActivity extends Activity
             myConfig = new Configuration();
             myData = new it.dongnocchi.mariner.WheelchairData();
 
-            myBatteryManager = new BatteryManager();
+            acc_x_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            acc_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            acc_z_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+
+            gyro_x_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            gyro_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            gyro_z_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
 
             myBlobManager = new AzureManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
                 @Override
@@ -381,30 +260,25 @@ public class MainActivity extends Activity
             //Verifica se è presente l'alimentazione, ed in questo caso aggiunge
             //un evento fittizio di PowerON
             if (isSupplyPowerPresent()) {
-                myData.AddPowerONEvent();
+                NotifyPowerON();
             }
-
-            acc_x_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
-            acc_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
-            acc_z_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
-
-            gyro_x_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
-            gyro_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
-            gyro_z_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
 
             StartCalibrateInertialSensors();
 
             TemperatureStartAcquiring();
 
-            Set_PeriodicalOperations();
+            StartPeriodicOperations();
+
             start_network_listener();
+
+            SetUXInteraction(false);
 
             // inizializzazione eventhub manager
             myEventManager = new AzureEventManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
                 @Override
                 public void processFinish(String output) {
                 }
-            }, myConfig);
+            }, myConfig, myData);
 
             notSent = new it.dongnocchi.mariner.NotSentFileHandler(myConfig.get_Wheelchair_path());
 
@@ -431,36 +305,13 @@ public class MainActivity extends Activity
             //CreateMyWheelchairFile();
             //call_toast(ByteOrder.nativeOrder().toString()); system is little endian
             Log.d(TAG, "onCreate completed");
+
         } catch (Exception ex) {
             ex.printStackTrace();
-            Log.d(TAG, "onCreate", ex);
+            Log.e(TAG, "onCreate", ex);
         }
     }
 
-//
-//    @Override
-//    //==========================================================================
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        //==========================================================================
-//        // Inflate the menu; this adds items to the action bar if it is present.
-//        getMenuInflater().inflate(R.menu.menu_main, menu);
-//        return true;
-//    }
-//
-//    @Override
-//    //==========================================================================
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        //==========================================================================
-//        // Handle action bar item clicks here. The action bar will
-//        // automatically handle clicks on the Home/Up button, so long
-//        // as you specify a parent activity in AndroidManifest.xml.
-//        int id = item.getItemId();
-//        //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_settings) {
-//            return true;
-//        }
-//        return super.onOptionsItemSelected(item);
-//    }
 
 
     @Override
@@ -477,9 +328,6 @@ public class MainActivity extends Activity
     @Override
     protected void onResume() {
         super.onResume();
-
-
-
     }
 
 
@@ -492,7 +340,7 @@ public class MainActivity extends Activity
         catch(Exception ex)
         {
             ex.printStackTrace();
-            Log.d(TAG, "Sleep", ex);
+            Log.e(TAG, "Sleep", ex);
         }
 
     }
@@ -503,8 +351,6 @@ public class MainActivity extends Activity
         LastMeasuredTime = System.nanoTime();//Calendar.getInstance().getTime().getTime();
 
         long mills = (LastMeasuredTime - Daily_Reference_Time) / 1000000;
-
-
 
         int Hours = (int) (mills / (1000 * 60 * 60));
         int Mins = (int) (mills / (1000 * 60)) % 60;
@@ -517,7 +363,6 @@ public class MainActivity extends Activity
         RunningTime[3] = Secs;
 
         //AppUptimeString = String.format("%2d:%2d:%2d", Hours, Mins, Secs);
-
     }
 
 
@@ -542,10 +387,93 @@ public class MainActivity extends Activity
 
         //Open the new one for the new day
         FileLog.open(new_logger_filename, Log.ASSERT, MAX_LOGFILE_SIZE);
+    }
+
+    private void NotifyPowerON() {
+        myData.AddPowerONEvent(AppStartTime);
 
 
     }
 
+    private void NotifyPowerOFF() {
+        myData.AddPowerOFFEvent(AppStartTime);
+
+
+    }
+
+
+
+
+
+    private void InitUX() {
+        acc_x_1_tview = (TextView) findViewById(R.id.acc_x_1_tview);
+        acc_y_1_tview = (TextView) findViewById(R.id.acc_y_1_tview);
+        acc_z_1_tview = (TextView) findViewById(R.id.acc_z_1_tview);
+
+        acc_x_2_tview = (TextView) findViewById(R.id.acc_x_2_tview);
+        acc_y_2_tview = (TextView) findViewById(R.id.acc_y_2_tview);
+        acc_z_2_tview = (TextView) findViewById(R.id.acc_z_2_tview);
+
+        acc_x_3_tview = (TextView) findViewById(R.id.acc_x_3_tview);
+        acc_y_3_tview = (TextView) findViewById(R.id.acc_y_3_tview);
+        acc_z_3_tview = (TextView) findViewById(R.id.acc_z_3_tview);
+
+        acc_period_mean_tview = (TextView) findViewById(R.id.acc_period_mean_tview);
+        acc_period_stdev_tview = (TextView) findViewById(R.id.acc_period_stdev_tview);
+
+        acc_vel_x_tview = (TextView) findViewById(R.id.acc_vel_x_val_tview);
+        acc_distance_x_tview = (TextView) findViewById(R.id.acc_distance_x_val_tview);
+
+        gyro_x_1_tview = (TextView) findViewById(R.id.gyro_x_1_tview);
+        gyro_y_1_tview = (TextView) findViewById(R.id.gyro_y_1_tview);
+        gyro_z_1_tview = (TextView) findViewById(R.id.gyro_z_1_tview);
+
+        gyro_x_2_tview = (TextView) findViewById(R.id.gyro_x_2_tview);
+        gyro_y_2_tview = (TextView) findViewById(R.id.gyro_y_2_tview);
+        gyro_z_2_tview = (TextView) findViewById(R.id.gyro_z_2_tview);
+
+        gyro_x_3_tview = (TextView) findViewById(R.id.gyro_x_3_tview);
+        gyro_y_3_tview = (TextView) findViewById(R.id.gyro_y_3_tview);
+        gyro_z_3_tview = (TextView) findViewById(R.id.gyro_z_3_tview);
+
+        gyro_angle_total_tview = (TextView) findViewById(R.id.gyro_ang_x_travelled_val_tview);
+        gyro_angle_tview = (TextView) findViewById(R.id.gyro_angle_x_val_tview);
+
+        gyro_period_mean_tview = (TextView) findViewById(R.id.gyro_period_mean_tview);
+        gyro_period_stdev_tview = (TextView) findViewById(R.id.gyro_period_stdev_tview);
+
+        battery_textview = (TextView) findViewById(R.id.battery_val_tview);
+        MaxiIO_textview = (TextView) findViewById(R.id.MaxiIO_view);
+        event_textview = (TextView) findViewById(R.id.event_view);
+        sys_stat_textview = (TextView) findViewById(R.id.system_status_view);
+
+        app_uptime_tview = (TextView) findViewById(R.id.app_uptime_tview);
+        duty_uptime_tview = (TextView) findViewById(R.id.current_duty_uptime_tview);
+
+        signal_level_tview = (TextView) findViewById(R.id.signal_level_val_tview);
+        //temp_val_tview = (TextView) findViewById(R.id.temperature_val_tview);
+
+        //temperature_tview = (TextView) findViewById(R.id.temperature_tview);
+        temperature_mean_val_tview = (TextView) findViewById(R.id.temperature_mean_tview);
+        temperature_min_val_tview = (TextView) findViewById(R.id.temperature_min_tview);
+        temperature_max_val_tview = (TextView) findViewById(R.id.temperature_max_tview);
+
+        btPowerOn = (Button) findViewById(R.id.PowerONBtn);
+        btPowerOff = (Button) findViewById(R.id.PowerOFFBtn);
+        btMotorOn = (Button) findViewById(R.id.MotorONBtn);
+        btMotorOff = (Button) findViewById(R.id.MotorOFFBtn);
+
+        btSendEvent= (Button) findViewById(R.id.send_event_button);
+        btSendHourlyReport= (Button) findViewById(R.id.send_hourly_data_button);
+        btSendDailyReport= (Button) findViewById(R.id.send_daily_data_button);
+
+        btCalibrate = (Button) findViewById(R.id.calibrate_button);
+        btToggleView = (Button) findViewById(R.id.toggle_display_button);
+        btToggleMode = (Button) findViewById(R.id.toggle_manualmode_button);
+
+        btDoDailyUpdate = (Button) findViewById(R.id.daily_update_button);
+        btDoHourlyUpdate = (Button) findViewById(R.id.hourly_update_button);
+    }
 
     //==============================================================================================
     //==============================================================================================
@@ -586,122 +514,13 @@ public class MainActivity extends Activity
         public void onReceive(Context cont, Intent battery_intent) {
 
             // GET BATTERY LEVEL
-            myData.BatteryLevel = battery_intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+            long eventtime = System.nanoTime();
+            myData.AddBatteryValChangeEvent(eventtime, battery_intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1));
             //battery_textview.setText(myData.BatteryLevel + "%");
             // save data
             //Battery_AppendData(BatteryLevel, false);
         }
     };
-
-    //==============================================================================================
-    //==============================================================================================
-    //  NETWORK OPERATIONS
-    //==============================================================================================
-    //==============================================================================================
-    protected void start_network_listener() {
-        try {
-            myNetworkInfo = new it.dongnocchi.mariner.NetworkInfo();
-            TelephonManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-            TelephonManager.listen(myNetworkInfo, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            Log.d(TAG, "start_network_listener()", ex);
-        }
-    }
-    //==============================================================================================
-    //==============================================================================================
-    //  MOTOR AND POWER EVENTS HANDLING
-    //==============================================================================================
-    //==============================================================================================
-
-
-    //==========================================================================
-    public void ReportPowerONEvent(View view)
-    //==========================================================================
-    {
-        myEventManager.SendEventNew("POWER_ON", 0, "");
-        myData.AddPowerONEvent();
-        sys_stat_textview.setText("POWER ON");
-    }
-
-    //==========================================================================
-    public void ReportPowerOFFvent(View view)
-    //==========================================================================
-    {
-        myEventManager.SendEventNew("POWER_OFF", Status, "");
-        myData.AddPowerOFFEvent();
-        sys_stat_textview.setText("POWER OFF");
-    }
-
-    //==========================================================================
-    public void ReportMotorONEvent(View view)
-    //==========================================================================
-    {
-        //myEventManager.SendEventNew("POWER_ON", 0, "");
-        myData.AddMotorONEvent();
-        sys_stat_textview.setText("MOTOR ON");
-    }
-
-    //==========================================================================
-    public void ReportMotorOFFvent(View view)
-    //==========================================================================
-    {
-        //myEventManager.SendEventNew("POWER_OFF", Status, "");
-        myData.AddMotorOFFEvent();
-        sys_stat_textview.setText("MOTOR OFF");
-    }
-
-
-    //==========================================================================
-    public void SetPower_ON(View view) {
-        //==========================================================================
-        //invia evento su eventhub che segnala accensione carrozzina
-        if (!myData.PowerON) {
-            // accendi wifi
-            myNetworkInfo.MyWiFiManager(getApplicationContext(), true);
-
-            //long T_on = SystemClock.elapsedRealtime() - App_Start_Time;
-            myEventManager.SendEventNew("POWER_ON", 0, "");
-
-            //            myEventManager.SendEvent("WheelchairData ON", (float) T_on);
-            myData.AddPowerONEvent();
-
-            sys_stat_textview.setText("POWER ON");
-
-            // CREATE LOCAL FILES
-            //CreateMyFile();
-
-            //TODO: cos'è seconds_to_talk_with_yocto ?
-            long seconds_to_talk_with_yocto = SystemClock.elapsedRealtime();
-
-            //IsYoctoConnected(); // sets YoctoInUse if its connected
-            int k = 0;
-            YoctoInUse = false;
-            while (!(IsYoctoConnected())) {
-                k++;
-                if (k == 4000) {
-                    MaxiIO_textview.setText("Yocto not found");
-                    break;
-                }
-            }
-            if (YoctoInUse) {
-                seconds_to_talk_with_yocto = (SystemClock.elapsedRealtime() - seconds_to_talk_with_yocto);
-                Start_Yocto();
-                MaxiIO_textview.setText("Yocto connected in: " + seconds_to_talk_with_yocto + " ms");
-            }
-            //call_toast("k= " + k);
-
-            //AccStartAcquiring();
-            //GyroStartAcquiring();
-
-            //Wheelchair_AppendData(Motor_ON_ID, false);
-
-            LowerScreenBrightness();
-
-            //NumOfWCActivation++;
-            //isWheelchair_ON = true;
-        }
-    }
 
     //==========================================================================
     public void LowerScreenBrightness() {
@@ -721,112 +540,158 @@ public class MainActivity extends Activity
     }
 
 
+    //==============================================================================================
+    //==============================================================================================
+    //  NETWORK OPERATIONS
+    //==============================================================================================
+    //==============================================================================================
+    protected void start_network_listener() {
+        try {
+            myNetworkInfo = new it.dongnocchi.mariner.NetworkInfo();
+            TelephonManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+            TelephonManager.listen(myNetworkInfo, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            Log.e(TAG, "start_network_listener()", ex);
+        }
+    }
+    //==============================================================================================
+    //==============================================================================================
+    //  MOTOR AND POWER EVENTS HANDLING
+    //==============================================================================================
+    //==============================================================================================
+
+    //==========================================================================
+    public void SetPower_ON(View view) {
+        //==========================================================================
+        //invia evento su eventhub che segnala accensione carrozzina
+
+        try {
+            if (!myData.PowerON) {
+
+                // TODO: verificare questa parte del WiFi
+                // accendi wifi
+                myNetworkInfo.MyWiFiManager(getApplicationContext(), true);
+
+                //Send Event to Azure Back End
+                myEventManager.SendEventNew("POWER_ON", 0, "");
+
+                //Calculate the actual time
+                long new_power_on_time = System.nanoTime();
+
+                //Issue a new Power On Event
+                myData.AddPowerONEvent(new_power_on_time);
+
+                sys_stat_textview.setText("POWER ON");
+
+                // CREATE LOCAL FILES
+                //CreateMyFile();
+
+                //IsYoctoConnected(); // sets YoctoInUse if its connected
+                int k = 0;
+                YoctoInUse = false;
+                while (!(IsYoctoConnected())) {
+                    k++;
+                    if (k == 4000) {
+                        MaxiIO_textview.setText("Yocto not found");
+                        break;
+                    }
+                }
+                if (YoctoInUse) {
+                    float time_to_talk_with_yocto_ms = ((float) (System.nanoTime() - new_power_on_time)) / 1000000.0f;
+                    Start_Yocto();
+                    MaxiIO_textview.setText("Yocto connected in: " + time_to_talk_with_yocto_ms + " ms");
+                }
+                //call_toast("k= " + k);
+
+                //AccStartAcquiring();
+                //GyroStartAcquiring();
+
+                //Wheelchair_AppendData(Motor_ON_ID, false);
+
+                //TODO: verificare che non sia il caso di invertire LowerScreenBrighteness e ResetScreenBrightness
+                LowerScreenBrightness();
+
+                //NumOfWCActivation++;
+                //isWheelchair_ON = true;
+            }
+        }
+            catch(Exception ex)
+            {
+                ex.printStackTrace();
+                Log.e(TAG, "SetPower_ON", ex);
+            }
+    }
+
+    //==========================================================================
+    public void SetPower_OFF(View view) {
+        //==========================================================================
+        try{
+            if (myData.PowerON) {
+                ResetScreenBrightness();
+                //long T_off = SystemClock.elapsedRealtime() - App_Start_Time;
+                //myEventManager.SendEvent("WheelchairData OFF", (float) T_off);
+
+                myEventManager.SendEventNew("POWER_OFF", 0, "");
+
+                long new_power_off_time = System.nanoTime();
+
+                myData.AddPowerOFFEvent(new_power_off_time);
+                //PowerOFFHourlyCounter++;
+
+                sys_stat_textview.setText("Power OFF");
+
+                // STOP ACQUISITIONS
+                if (YoctoInUse) {
+                    Stop_Yocto();
+                    MaxiIO_textview.setText("Yocto = stopped");
+                } else
+                    MaxiIO_textview.setText("Yocto = not present");
+
+                //StopInertialAcquisition();
+            }
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+            Log.e(TAG, "SetPower_OFF", ex);
+        }
+    }
+
+
+
     //==========================================================================
     public void Power_OFF_Click(View view)
     //==========================================================================
     {
-        myEventManager.SendEventNew("POWER_OFF", 0, "");
-        myData.AddPowerOFFEvent();
-        sys_stat_textview.setText("OFF");
-        Status = STATUS_SLEEP;
+        try {
+            myEventManager.SendEventNew("POWER_OFF", 0, "");
+            long new_power_off_time = System.nanoTime();
+            myData.AddPowerOFFEvent(new_power_off_time);
+            sys_stat_textview.setText("Power OFF");
+            Status = STATUS_SLEEP;
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+            Log.e(TAG, "Power_OFF_Click", ex);
+
+        }
     }
 
     //==========================================================================
     public void Power_ON_Click(View view)
     //==========================================================================
     {
-        myEventManager.SendEventNew("POWER_ON", 0, "");
-        myData.AddPowerONEvent();
-        sys_stat_textview.setText("ON");
-        Status = STATUS_IDLE;
-    }
-
-    //==========================================================================
-    public void SetPower_OFF(View view) {
-        //==========================================================================
-        if (myData.PowerON) {
-            ResetScreenBrightness();
-            //long T_off = SystemClock.elapsedRealtime() - App_Start_Time;
-            //myEventManager.SendEvent("WheelchairData OFF", (float) T_off);
-
-            myEventManager.SendEventNew("POWER_OFF", 0, "");
-
-            myData.PowerOFFHourlyCounter++;
-
-            sys_stat_textview.setText("OFF");
-
-            // STOP ACQUISITIONS
-            if (YoctoInUse) {
-                Stop_Yocto();
-                MaxiIO_textview.setText("Yocto = stopped");
-            } else
-                MaxiIO_textview.setText("Yocto = not present");
-
-            StopInertialAcquisition();
-            //AccStopAcquiring();
-            //GyroStopAcquiring();
-
-            String filename;
-
-            //Wheelchair_AppendData(Motor_OFF_ID, false);
-
-
-            /*
-            //da modificare per non inviare parte finale del buffer che è piena di zeri
-            //accel data
-            if (!Acc_FilePath.equals("")) {
-                // append filename to azure blob's sending list
-                filename = Acc_FilePath.substring((myConfig.getAcquisitionsFolder().length() + 1), Acc_FilePath.length());
-                myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-
-                // save unfilled buffers
-                //  Acc_AppendData(null, true);
-            }
-            //gyro data
-            if (!Gyro_FilePath.equals("")) {
-                // append filename to azure blob's sending list
-                filename = Gyro_FilePath.substring((myConfig.getAcquisitionsFolder().length() + 1), Gyro_FilePath.length());
-                myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-
-                // save unfilled buffers
-                //Gyro_AppendData(null, true);
-            }
-            //motor data
-            if (!Motor_FilePath.equals("")) {
-                // append filename to azure blob's sending list
-                filename = Motor_FilePath.substring((myConfig.getAcquisitionsFolder().length() + 1), Motor_FilePath.length());
-                myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-
-                // save unfilled buffers
-                // Motor_AppendData(null, true);
-            }
-
-            //battery data
-            if (!Battery_FilePath.equals("")) {
-                // append filename to azure blob's sending list
-                filename = Battery_FilePath.substring((myConfig.getAcquisitionsFolder().length() + 1), Battery_FilePath.length());
-                myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-
-                // save unfilled buffers
-                //Battery_AppendData(-1, true);
-            }
-            // wheelchair data
-            if (!Power_FilePath.equals("")) {
-                // append filename to azure blob's sending list
-                filename = Power_FilePath.substring((myConfig.getAcquisitionsFolder().length() + 1), Power_FilePath.length());
-                myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-
-                // save unfilled buffers
-                //Wheelchair_AppendData((short) -1, true);
-            }
-            //isWheelchair_ON = false;
-        */
-//                // if wheelchair hasn't been used last acquisition, acquired files are garbage
-//                if (NumOfSecWorking_LastAcquisition == 0){
-//                    //DeleteTodayFiles();
-//                    DeleteLastAcquisitionFiles();
-//                } else{   }
-//                NumOfSecWorking_LastAcquisition = 0; //reset working minutes counter
+        try {
+            myEventManager.SendEventNew("POWER_ON", 0, "");
+            long new_power_on_time = System.nanoTime();
+            myData.AddPowerONEvent(new_power_on_time);
+            sys_stat_textview.setText("Power ON");
+            Status = STATUS_IDLE;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            Log.e(TAG, "Power_ON_Click", ex);
         }
     }
 
@@ -842,22 +707,13 @@ public class MainActivity extends Activity
         CancelAlarm(OnceAnHour_alarmMgr, OnceAnHour_pintent);
     }
 
-    //TODO: probabilmente da tagliare completamente, dato che non abbiamo più l'Init Activity
-    //==========================================================================
-    void ReturnToInit() {
-        //==========================================================================
-        // SWITCH OFF ACTIVITY AND SET RESULT TO INIT ACTIVITY
-        Intent intent = new Intent();
-        intent.putExtra("files", lastfiles);
-        setResult(RESULT_OK, intent);
-        finish();
-    }
-
     //==========================================================================
     public void SetMotor_ON(View view) {
         //==========================================================================
         btMotorOn.setBackgroundColor(Color.GREEN);
         btMotorOff.setEnabled(true);
+
+        StartInertialAcquisition();
     }
 
     //==========================================================================
@@ -865,10 +721,12 @@ public class MainActivity extends Activity
         //==========================================================================
         btMotorOn.setBackgroundColor(Color.GRAY);
         btMotorOff.setEnabled(false);
+
+        StopInertialAcquisition();
     }
 
     //==========================================================================
-    private void Set_PeriodicalOperations() {
+    private void StartPeriodicOperations() {
         //==========================================================================
         // this sets the system that calls WhatToDoAt2InTheNight at 2 in the night
         // and sends an event for each hour
@@ -879,7 +737,7 @@ public class MainActivity extends Activity
             @Override
             public void onReceive(Context context, Intent intent) {
 
-                SimpleDateFormat formatter = new SimpleDateFormat("HH_mm_ss");
+                //SimpleDateFormat formatter = new SimpleDateFormat("HH_mm_ss");
                 //Date now = new Date();
                 //stringafake = formatter.format(now);
                 //event_textview.setText(stringafake);
@@ -913,22 +771,33 @@ public class MainActivity extends Activity
             }
         };
 
-        SetHourlyTimer();
+        StartHourlyTimer();
 
         ViewRefreshUpdate_Receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 //Aggiorno i dati presenti sullo schermo
 
+                myData.SignalStrength = myNetworkInfo.getSignalStrength();
+
+                UpdateUX();
+
+
             }
         };
 
-        SetViewRefreshUpdateTimer();
+        StartUXUpdateTimer();
 
     }
 
+    private void Stop_Periodic_Operations()
+    {
+        CancelAlarm(OnceAnHour_alarmMgr, OnceAnHour_pintent);
+        CancelAlarm(ViewRefreshUpdate_alarmMgr, ViewRefreshUpdate_pintent);
+    }
+
     //==========================================================================
-    private void SetHourlyTimer() {
+    private void StartHourlyTimer() {
         //==========================================================================
         // sets the receiver for once an hour alarm
         this.registerReceiver(OnceAnHour_Receiver, new IntentFilter("new hour"));
@@ -939,14 +808,14 @@ public class MainActivity extends Activity
     }
 
     //==========================================================================
-    private void SetViewRefreshUpdateTimer() {
+    private void StartUXUpdateTimer() {
         //==========================================================================
         // sets the receiver for once an hour alarm
         this.registerReceiver(ViewRefreshUpdate_Receiver, new IntentFilter("new second"));
         ViewRefreshUpdate_pintent = PendingIntent.getBroadcast(this, 0, new Intent("new second"), 0);
         ViewRefreshUpdate_alarmMgr = (AlarmManager) (this.getSystemService(Context.ALARM_SERVICE));
         //OnceAnHour_alarmMgr.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), (600*1000) , OnceAnHour_pintent); // AlarmManager.INTERVAL_HOUR
-        ViewRefreshUpdate_alarmMgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), 10 * 1000, ViewRefreshUpdate_pintent); // AlarmManager.INTERVAL_HOUR
+        ViewRefreshUpdate_alarmMgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), 200, ViewRefreshUpdate_pintent); // AlarmManager.INTERVAL_HOUR
     }
 
     //==========================================================================
@@ -958,88 +827,7 @@ public class MainActivity extends Activity
     }
 
 
-    //******************************************************************
-    private void UpdateFilenames()
-    //******************************************************************
-    {
-            /*
-            String Acc_FilePath = "";
-            String Gyro_FilePath = "";
-            String Motor_FilePath = "";
-            String Battery_FilePath = "";
-            String Power_FilePath = "";
-            String Temperature_FilePath = "";
-            String XML_FilePath
-            */
 
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MMdd_HHmm");
-        Date now = new Date();
-        String AcquisitionPath = myConfig.getAcquisitionsFolder();
-        String DateString = formatter.format(now);
-
-        /*
-        Acc_FilePath = AcquisitionPath + "/" + DateString + "-" + getResources().getString(R.string.ACC_filename_prefix) + ".bin";
-        Gyro_FilePath = AcquisitionPath + "/" + DateString + "-" + getResources().getString(R.string.GYRO_filename_prefix) + ".bin";
-        Motor_FilePath = AcquisitionPath + "/" + DateString + "-" + getResources().getString(R.string.MOTOR_filename_prefix) + ".bin";
-        Battery_FilePath = AcquisitionPath + "/" + DateString + "-" + getResources().getString(R.string.BATTERY_filename_prefix) + ".bin";
-        Power_FilePath = AcquisitionPath + "/" + DateString + "-" + getResources().getString(R.string.POWER_filename_prefix) + ".bin";
-        Temperature_FilePath = AcquisitionPath + "/" + DateString + "-" + getResources().getString(R.string.TEMP_filename_prefix) + ".bin";
-        XML_FilePath = AcquisitionPath + "/" + DateString + ".xml";
-        */
-    }
-
-
-    //==========================================================================
-    private void DeleteLastAcquisitionFiles() {
-        //==========================================================================
-
-        String CurLine;
-        String CurLine_time;
-        int i;
-        List<String> records; //2016-0114 cancellato da pm = new ArrayList<>();
-        List<String> records_toBeDeleted = new ArrayList<>();
-        records = notSent.ReadTheWholeFile();
-
-        String LastLine = records.get(records.size() - 1);
-        String LastLine_time = LastLine.substring(48, 67); // qualcosa del tipo "2015_10_28_14_30_17"
-
-        for (i = 0; i < records.size(); i++) {
-            CurLine = records.get(i);
-            CurLine_time = CurLine.substring(48, 67); // qualcosa del tipo "2015_10_28_14_30_17"
-
-            if (CurLine_time.equals(LastLine_time)) {
-                String CurLine_source = CurLine.substring(44, 47); // qualcosa del tipo "Acc"
-                if (!(CurLine_source.equals(getResources().getString(R.string.POWER_filename_prefix)))
-                        && !(CurLine_source.equals(getResources().getString(R.string.BATTERY_filename_prefix)))) {
-                    // cancella i file, se non sono della batteria o della carrozzina
-                    records_toBeDeleted.add(CurLine);
-                }
-            }
-        }
-
-        // dopo che ho visto tutti gli elementi di records ri scrivo il file e cancello i file di dati
-        for (i = 0; i < records_toBeDeleted.size(); i++) {
-            notSent.DeleteLine(records_toBeDeleted.get(i));
-            File FileToBeDeleted = new File(records_toBeDeleted.get(i));
-            FileToBeDeleted.delete();
-        }
-    }
-
-    //==========================================================================
-    public void WhatToDoAt2InTheNight(View view) {
-        //==========================================================================
-        // stop acquisitions and calibrate phone position with a 30sec acquisition
-        SwitchOffEverything();
-        //NumOfWCActivation_Current = NumOfWCActivation;
-
-        isCalibrating = true;
-        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        AccAquiring = mSensorManager.registerListener(this, mAcc, 50000);
-    }
-
-
-    float ramp_acc = 0;
 
     @Override
     //==========================================================================
@@ -1047,11 +835,11 @@ public class MainActivity extends Activity
         //==========================================================================
         // APPEND INERTIAL SENSORS DATA
 
-        //TODO: da rimuovere quando si andrà in produzione
+        //TODO: il try-catch è da rimuovere quando si andrà in produzione
         try {
             switch (event.sensor.getType()) {
                 case Sensor.TYPE_ACCELEROMETER:
-                    if (isCalibrating) {
+                    if (CalibrationMode) {
                         acc_x_calib.Add(event.values[0], event.timestamp);
                         acc_y_calib.Add(event.values[1], event.timestamp);
                         acc_z_calib.Add(event.values[2], event.timestamp);
@@ -1060,10 +848,10 @@ public class MainActivity extends Activity
                             StopCalibrateInertialSensors();
 
                         //TODO: da togliere in produzione. opzione di Debug temporanea
-                        UpdateTextViews();
+                        //UpdateUX();
                     }                //Acc_AppendData(event, false);
-
-                    if (isAcquiring) {
+else
+                    {
                         myData.myInertialData.UpdateAccData(event);
                     }
 
@@ -1071,7 +859,7 @@ public class MainActivity extends Activity
 
                 case Sensor.TYPE_GYROSCOPE:
                     //Gyro_AppendData(event, false);
-                    if (isCalibrating) {
+                    if (CalibrationMode) {
                         gyro_x_calib.Add(event.values[0], event.timestamp);
                         gyro_y_calib.Add(event.values[1], event.timestamp);
                         gyro_z_calib.Add(event.values[2], event.timestamp);
@@ -1080,7 +868,7 @@ public class MainActivity extends Activity
                             StopCalibrateInertialSensors();
 
                     }                //Acc_AppendData(event, false);
-                    if (isAcquiring) {
+                    else{
                         myData.myInertialData.UpdateGyroData(event);
                     }
                     break;
@@ -1092,7 +880,7 @@ public class MainActivity extends Activity
                     UpdateRunningTime();
 
                     //Aggiorno la visualizzazione dei dati
-                    UpdateTextViews();
+                    //UpdateUX();
 
                     break;
             }
@@ -1116,13 +904,12 @@ public class MainActivity extends Activity
         //        mGyro = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         try {
 
-            if(isCalibrating)
+            if(CalibrationMode)
             {
                 AccAquiring = mSensorManager.registerListener(this, mAcc, ACC_READING_PERDIOD_CALIB, 10000);
                 GyroAcquiring = mSensorManager.registerListener(this, mGyro, GYRO_READING_PERDIOD_CALIB, 10000);// 20.000 us ----> FsAMPLE = 50Hz
             }
-
-            if( isAcquiring)
+            else
             {
                 //TODO: verificare che 500 us sia il limite superiore per il jitter
                 AccAquiring = mSensorManager.registerListener(this, mAcc, ACC_READING_PERDIOD, 5000);
@@ -1159,45 +946,6 @@ public class MainActivity extends Activity
         //GyroStopAcquiring();
     }
 
-/*
-    //==========================================================================
-    protected void AccStopAcquiring() {
-        //==========================================================================
-        if (AccAquiring) {
-            //super.onPause();
-            mSensorManager.unregisterListener(this, mAcc);
-            AccAquiring = false;
-        }
-    }
-
-    //==========================================================================
-    protected void AccStartAcquiring() {
-        //==========================================================================
-        //super.onResume();
-        //AccAquiring = mSensorManager.registerListener(this, mAcc, ACC_READING_PERDIOD, 1); //20000);// 20.000 us ----> FsAMPLE = 50Hz
-        AccAquiring = mSensorManager.registerListener(this, mAcc, ACC_READING_PERDIOD); //20000);// 20.000 us ----> FsAMPLE = 50Hz
-    }
-
-
-    //==========================================================================
-    protected void GyroStopAcquiring() {
-        //==========================================================================
-        if (GyroAcquiring) {
-            //super.onPause();
-            mSensorManager.unregisterListener(this, mGyro);
-            GyroAcquiring = false;
-        }
-    }
-
-    //==========================================================================
-    protected void GyroStartAcquiring() {
-        //==========================================================================
-        //super.onResume();
-        //GyroAcquiring = mSensorManager.registerListener(this, mGyro, GYRO_READING_PERDIOD, 1);// 20.000 us ----> FsAMPLE = 50Hz
-        GyroAcquiring = mSensorManager.registerListener(this, mGyro, GYRO_READING_PERDIOD);// 20.000 us ----> FsAMPLE = 50Hz
-    }
-
-*/
 
     //==========================================================================
     protected void TemperatureStartAcquiring() {
@@ -1218,10 +966,10 @@ public class MainActivity extends Activity
     }
 
     //==========================================================================
-    private void UpdateTextViews() {
+    private void UpdateUX() {
         //==========================================================================
         try {
-            if (isCalibrating) {
+            if (CalibrationMode) {
 //                acc_x_calib.UpdateStats();
 //                acc_y_calib.UpdateStats();
 //                acc_z_calib.UpdateStats();
@@ -1276,13 +1024,24 @@ public class MainActivity extends Activity
             //temperature_tview.setText(s);
 
             gyro_angle_tview.setText("-.-");
-            signal_level_tview.setText(String.valueOf(myNetworkInfo.getSignalStrength()) + " dBm");
+            signal_level_tview.setText(String.valueOf(myData.SignalStrength) + " dBm");
 
-            battery_textview.setText(myData.BatteryLevel + "%");
+            battery_textview.setText(myData.myBatteryData.level + "%");
 
 
             app_uptime_tview.setText(String.format("%02d:%02d:%02d", RunningTime[1], RunningTime[2], RunningTime[3]));
             duty_uptime_tview.setText("00:00:00");
+
+            if( myData.PowerON)
+                btPowerOn.getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
+            else
+                btPowerOn.getBackground().setColorFilter(Color.DKGRAY, PorterDuff.Mode.MULTIPLY);
+
+            if( myData.MotorON)
+                btMotorOn.getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
+            else
+                btMotorOn.getBackground().setColorFilter(Color.DKGRAY, PorterDuff.Mode.MULTIPLY);
+
             //app_uptime_tview.setText(AppUptimeString);
 
             //signal_level_tview.setText(String.valueOf());
@@ -1292,7 +1051,7 @@ public class MainActivity extends Activity
         catch(Exception ex)
         {
             ex.printStackTrace();
-            Log.d(TAG, "UpdateTextViews", ex);
+            Log.d(TAG, "UpdateUX", ex);
         }
 
     }
@@ -1301,10 +1060,10 @@ public class MainActivity extends Activity
     private void upload_lastFiles () {
         //==========================================================================
 
-        myBlobManager.UploadBlobs(myData.BatteryLevel);
+        myBlobManager.UploadBlobs(myData.myBatteryData.level);
 
         // CHECK NEW APP UPDATES ==================================
-        myBlobManager.CheckNewUpdates(myData.BatteryLevel);
+        myBlobManager.CheckNewUpdates(myData.myBatteryData.level);
     }
 
 
@@ -1320,7 +1079,7 @@ public class MainActivity extends Activity
     String MaxiIO_SerialN;
     YDigitalIO MaxiIO;
     YModule tmp;
-    int Motor_OldInputData;
+    //int Motor_OldInputData;
     int Motor_NewInputData;
     //int Wheelchair_OldInputData;
     //int Wheelchair_NewInputData;
@@ -1424,25 +1183,23 @@ public class MainActivity extends Activity
     public void yNewValue(YDigitalIO yDigitalIO, String s) {
         //==========================================================================
 
+        long new_event_time = System.nanoTime();
         event_textview.setText(s);
 
         try {
             // CHECK MOTOR PIN VALUE
-            Motor_OldInputData = Motor_NewInputData;
+            //Motor_OldInputData = Motor_NewInputData;
             Motor_NewInputData = MaxiIO.get_bitState(MaxiIO_MotorPin);
 
-            //TODO (2016-0622): verificare che possa andare bene rimuovere la seguente linea, sostituita delle linee successive
-            //myData.myMotorData. AddData(SystemClock.elapsedRealtime() - App_Start_Time, (short) Motor_NewInputData);
-
             // MOTOR EVENT HANDLING
-            if (Motor_NewInputData == myData.myMotorData.MOTOR_ON) {
-                myData.AddMotorONEvent();
-                //myData.updateMotorONStartTime();
+            if (Motor_NewInputData == 1) {
+                myData.AddMotorONEvent(new_event_time);
+                StartInertialAcquisition();//myData.updateMotorONStartTime();
             }
 
-            if (Motor_NewInputData == myData.myMotorData.MOTOR_OFF) {
+            if (Motor_NewInputData == 0) {
 
-                myData.AddMotorOFFEvent();
+                myData.AddMotorOFFEvent(new_event_time);
                 //myData.updateMotorONStartTime();
             }
 
@@ -1527,7 +1284,7 @@ public class MainActivity extends Activity
         gyro_y_calib.reset_data();
         gyro_z_calib.reset_data();
 
-        isCalibrating = true;
+        CalibrationMode = true; //isCalibrating = true;
 
         //Step 1. Activate the sensors
         StartInertialAcquisition();
@@ -1537,9 +1294,12 @@ public class MainActivity extends Activity
     public void StopCalibrateInertialSensors()
     {
         try {
-            isCalibrating = false;
+
             StopInertialAcquisition();
-            //Sleep(100);
+            TimeUnit.MILLISECONDS.sleep(200);
+            //Thread.sleep(200);//Sleep(100);
+
+            CalibrationMode = false;
 
             acc_x_calib.UpdateStats();
             acc_y_calib.UpdateStats();
@@ -1569,103 +1329,23 @@ public class MainActivity extends Activity
         //TODO: Verificare che questa sequenza di operazioni sia esaustiva rispetto a quello che ci interessa
 
         //upload_lastFiles();
-        myBlobManager.UploadBlobs(myData.BatteryLevel);
+        myBlobManager.UploadBlobs(myData.myBatteryData.level);
         // CHECK NEW APP UPDATES ==================================
-        myBlobManager.CheckNewUpdates(myData.BatteryLevel);
+        myBlobManager.CheckNewUpdates(myData.myBatteryData.level);
 
         myData.updateDailyUse();
-        SendDailyReport();
+        myEventManager.SendDailyReport();
 
         myData.ResetDailyCounters();
 
         // stop acquisitions and calibrate phone position with a 30sec acquisition
-        SwitchOffEverything ();
+        //SwitchOffEverything ();
         //NumOfWCActivation_Current = NumOfWCActivation;
 
-        isCalibrating = true;
+        CalibrationMode = true; //isCalibrating = true;
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         AccAquiring = mSensorManager.registerListener(this, mAcc, 50000);
-    }
-
-    /// Versione nuova del SendEvent_SystemStatus() modificata il 2016-0126 da pm
-
-    //******************************************************************
-    public void SendHourlyStatusEvent() {
-        //******************************************************************
-        // this is done once an hour thanks to alarm manager
-        // build event message and send it
-
-        float Latitude = 0.0f;
-        float Longitude = 0.0f;
-
-        try {
-            //SignalStrength = myNetworkInfo.getSignalStrength();
-
-            //myData.SetHourlyUse();
-
-                /*
-                [Id]                INT        IDENTITY (1, 1) NOT NULL,
-                [WheelchairID]      CHAR (30)  NULL,
-                [Time]         DATETIME   NULL,
-                [HourlyPowerOnTime] FLOAT (53) NULL,
-                [HourlyMotorOnTime] FLOAT (53) NULL,
-                [PhoneBatteryLevel] FLOAT (53) NULL,
-                [SignalStrength]    FLOAT (53) NULL,
-                [NumberOfPowerOn]   INT        NULL,
-                [NumberOfMotorOn]   INT        NULL,
-                [DistanceCovered]   FLOAT (53) NULL,
-                [AngleCovered]      FLOAT (53) NULL,
-                [MeanTemperature]   FLOAT (53) NULL,
-                [MaxTemperature]    FLOAT (53) NULL,
-                [Latitude]          FLOAT (53) NULL,
-                [Longitude]         FLOAT (53) NULL,
-                [Status]            INT        NULL,
-                [Note]              NTEXT      NULL,
-                */
-
-            //myData.ID = "SMN-TEST-0S6";
-            //String EventType = "HOURLY_STATUS";
-            myData.HourlyNote = "Just good news";
-
-            JSONObject ParamsToSend = new JSONObject();
-            java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(Calendar.getInstance().getTime().getTime());
-
-            ParamsToSend.put("WheelchairID", myConfig.WheelchairID); //puoi chiamarla più volte per mandare più param nello stesso evento
-            ParamsToSend.put("TimeInfo", currentTimestamp);
-            ParamsToSend.put("HourlyPowerOnTime", myData.HourlyPowerOnTime);
-            ParamsToSend.put("HourlyMotorOnTime", myData.HourlyMotorOnTime);
-            ParamsToSend.put("PhoneBatteryLevel", myData.BatteryLevel);
-            ParamsToSend.put("SignalStrength", (float) myNetworkInfo.getSignalStrength());
-            ParamsToSend.put("NumberOfPowerOn", myData.PowerONHourlyCounter);
-            ParamsToSend.put("NumberOfMotorOn", myData.MotorONHourlyCounter);
-
-            ParamsToSend.put("DistanceCovered", Latitude);
-            ParamsToSend.put("AngleCovered", Latitude);
-            ParamsToSend.put("MeanTemperature", myData.myTempData.GetMeanTemperature());
-            ParamsToSend.put("MaxTemperature", myData.myTempData.GetMaxTemperature());
-
-            ParamsToSend.put("Latitude", Latitude);
-            ParamsToSend.put("Longitude", Longitude);
-            ParamsToSend.put("Status", myData.Status);
-            ParamsToSend.put("Note", myData.HourlyNote); //puoi chiamarla più volte per mandare più param nello stesso evento
-
-            //String s = ParamsToSend.toString();
-            myEventManager.SendJsonEvent(ParamsToSend, myConfig.HourlyUpdate_EventHub_url, myConfig.HourlyUpdate_EventHub_connstring);
-
-            /*              Vecchio metodo (TODO: da verificare se tenere o canccellare
-
-                            myEventManager.SendHourlyEvent(myConfig.WheelchairID, EventType,
-                                    myData.HourlyUse, BatteryLevel, SignalStrength,
-                                    myData.PowerONHourlyCounter, myData.MotorONHourlyCounter,
-                                    0.0f, 0.0f,
-                                    myData.Status, myData.HourlyNote);
-            */
-
-        } catch (Exception e) {
-            //throw new RuntimeException(e);
-            Log.d(TAG, "SendHourlyStatusEvent", e);
-        }
     }
 
     private void ResetHourlyCounters() {
@@ -1673,57 +1353,6 @@ public class MainActivity extends Activity
         myData.myTempData.ResetMinMax();
     }
 
-    private void SendDailyReport() {
-        //Preparo l'oggeto Json da spedire con i dati giornalieri
-        try {
-            //Aggiorno i valori
-            JSONObject ParamsToSend = new JSONObject();
-            Timestamp currentTimestamp = new Timestamp(Calendar.getInstance().getTime().getTime());
-
-                /*
-                [Time]          DATETIME   NULL,
-                [WheelchairID]       CHAR (30)  NULL,
-                [DailyPowerOnTime]   FLOAT (53) NULL,
-                [DailyMotorOnTime]   FLOAT (53) NULL,
-                [PhoneBatteryLevel]  FLOAT (53) NULL,
-                [NumberOfPowerOn]    INT        NULL,
-                [NumberOfPowerOff]   INT        NULL,
-                [NumberOfMotorOn]    INT        NULL,
-                [NumberOfMotorOff]   INT        NULL,
-                [DistanceCoveredFw]  FLOAT (53) NULL,
-                [DistanceCoveredBw]  FLOAT (53) NULL,
-                [AngleCoveredL]      FLOAT (53) NULL,
-                [AngleCoveredR]      FLOAT (53) NULL,
-                [Status]             INT        NULL,
-                [XMLFilesStoredName] CHAR (30)  NULL,
-                [Note]               NTEXT      NULL,
-                  */
-
-            ParamsToSend.put("WheelchairID", myConfig.WheelchairID); //puoi chiamarla più volte per mandare più param nello stesso evento
-            ParamsToSend.put("TimeInfo", currentTimestamp);
-            ParamsToSend.put("DailyPowerOnTime", myData.DailyUse);
-            ParamsToSend.put("DailyMotorOnTime", myData.DailyUse);
-            ParamsToSend.put("PhoneBatteryLevel", myData.BatteryLevel);
-            ParamsToSend.put("NumberOfPowerOn", myData.PowerONDailyCounter);
-            ParamsToSend.put("NumberOfPowerOff", myData.PowerOFFDailyCounter);
-            ParamsToSend.put("NumberOfMotorOn", myData.MotorONDailyCounter);
-            ParamsToSend.put("NumberOfMotorOff", myData.MotorOFFDailyCounter);
-            ParamsToSend.put("DistanceCoveredFw", myData.FwMetersCovered);
-            ParamsToSend.put("DistanceCoveredBw", myData.BwMetersCovered);
-            ParamsToSend.put("AngleCoveredL", myData.DegreesCoveredTurningLeft);
-            ParamsToSend.put("AngleCoveredR", myData.DegreesCoveredTurningRight);
-            ParamsToSend.put("Status", 1);
-            //TODO: veirficare che sia corretta la seguente riga (per il nome del file XML contenente i nomi dei file di dati
-            ParamsToSend.put("XMLFilesStoredName", myConfig.get_UploadedFiles_XmlName());
-            ParamsToSend.put("Note", ""); //puoi chiamarla più volte per mandare più param nello stesso evento
-
-            myEventManager.SendJsonEvent(ParamsToSend, myConfig.DailyUpdate_EventHub_url, myConfig.DailyUpdate_EventHub_connstring);
-        }
-        catch (Exception ex) {
-            ex.printStackTrace();
-            Log.d(TAG, "SendDailyReport", ex);
-        }
-    }
 
     //==========================================================================
     private void call_toast(CharSequence text){
@@ -1766,50 +1395,46 @@ public class MainActivity extends Activity
     {
         if( ManualMode )
         {
-            btCalibrate.setEnabled(false);
-            btToggleView.setEnabled(false);
-            btPowerOn.setEnabled(false);
-            btPowerOff.setEnabled(false);
-            btMotorOn.setEnabled(false);
-            btMotorOff.setEnabled(false);
-            btSendEvent.setEnabled(false);
-            btSendHourlyReport.setEnabled(false);
-            btSendDailyReport.setEnabled(false);
+            SetUXInteraction(false);
 
             btToggleMode.setText("Manual Mode");
-            btToggleMode.setBackgroundColor(Color.GREEN);
+            btToggleMode.getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
 
             ManualMode = false;
         }
         else
         {
-            btCalibrate.setEnabled(true);
-            btToggleView.setEnabled(true);
-            btPowerOn.setEnabled(true);
-            btPowerOff.setEnabled(true);
-            btMotorOn.setEnabled(true);
-            btMotorOff.setEnabled(true);
-            btSendEvent.setEnabled(true);
-            btSendHourlyReport.setEnabled(true);
-            btSendDailyReport.setEnabled(true);
+            SetUXInteraction(true);
 
             btToggleMode.setText("Auto Mode");
-            btToggleMode.setBackgroundColor(Color.YELLOW);
+            btToggleMode.getBackground().setColorFilter(Color.LTGRAY, PorterDuff.Mode.MULTIPLY);
+            //setBackgroundColor(Color.LTGRAY);
 
             ManualMode = true;
         }
-
-
     }
 
+    private void SetUXInteraction(boolean enabled) {
+        btCalibrate.setEnabled(enabled);
+        btToggleView.setEnabled(enabled);
+        btPowerOn.setEnabled(enabled);
+        btPowerOff.setEnabled(enabled);
+        btMotorOn.setEnabled(enabled);
+        btMotorOff.setEnabled(enabled);
+        btSendEvent.setEnabled(enabled);
+        btSendHourlyReport.setEnabled(enabled);
+        btSendDailyReport.setEnabled(enabled);
 
+        btDoHourlyUpdate.setEnabled(enabled);
+        btDoDailyUpdate.setEnabled(enabled);
+    }
 
     //******************************************************************
     public void SendHourlyDataButton_Click(View view)
     //******************************************************************
     {
         //myData.updateHourlyUse();
-        SendHourlyStatusEvent();
+        myEventManager.SendHourlyStatusEvent();
         ResetHourlyCounters();
     }
 
@@ -1817,17 +1442,23 @@ public class MainActivity extends Activity
     public void SendDailyDataButton_Click(View view)
     //******************************************************************
     {
-        SendDailyReport();
+        myEventManager.SendDailyReport();
     }
 
     //==========================================================================
     public void SendEventButton(View view){
         //==========================================================================
+        try {
+            //int i = 0;
+            //i = i+1;
+            //myEventManager.SendStringEvent(tag_view.getText().toString(), value_view.getText().toString());
+            myEventManager.sendEventTestClick();
+        }
+        catch(Exception ex)
+        {
+            Log.e(TAG, "SendEventButton", ex);
+        }
 
-        //int i = 0;
-        //i = i+1;
-        //myEventManager.SendStringEvent(tag_view.getText().toString(), value_view.getText().toString());
-        myEventManager.sendEventTestClick();
     }
 
     //==========================================================================
@@ -1933,9 +1564,6 @@ public class MainActivity extends Activity
             filename = CommonFilePreamble + "-event.bin";
             data_out = getDataOutputStream(filename);
 
-
-
-
             data_out.flush();
             data_out.close();
 
@@ -2013,9 +1641,88 @@ public class MainActivity extends Activity
 
     private int getDeltaTime()
     {
-        return (int)(System.nanoTime() - Daily_Reference_Time);
+        return (int)((System.nanoTime() - Daily_Reference_Time)/100000);
 
     }
+
+    private void ChangeStatus(int new_status)
+    {
+        Status = new_status;
+        sys_stat_textview.setText("System status = " + STATUS_STRING[new_status]);
+
+    }
+
+
+    /*
+
+    //TODO: probabilmente da tagliare completamente, dato che non abbiamo più l'Init Activity
+    //==========================================================================
+    void ReturnToInit() {
+        //==========================================================================
+        // SWITCH OFF ACTIVITY AND SET RESULT TO INIT ACTIVITY
+        Intent intent = new Intent();
+        intent.putExtra("files", lastfiles);
+        setResult(RESULT_OK, intent);
+        finish();
+    }
+
+
+    //==========================================================================
+    private void DeleteLastAcquisitionFiles() {
+        //==========================================================================
+
+        String CurLine;
+        String CurLine_time;
+        int i;
+        List<String> records; //2016-0114 cancellato da pm = new ArrayList<>();
+        List<String> records_toBeDeleted = new ArrayList<>();
+        records = notSent.ReadTheWholeFile();
+
+        String LastLine = records.get(records.size() - 1);
+        String LastLine_time = LastLine.substring(48, 67); // qualcosa del tipo "2015_10_28_14_30_17"
+
+        for (i = 0; i < records.size(); i++) {
+            CurLine = records.get(i);
+            CurLine_time = CurLine.substring(48, 67); // qualcosa del tipo "2015_10_28_14_30_17"
+
+            if (CurLine_time.equals(LastLine_time)) {
+                String CurLine_source = CurLine.substring(44, 47); // qualcosa del tipo "Acc"
+                if (!(CurLine_source.equals(getResources().getString(R.string.POWER_filename_prefix)))
+                        && !(CurLine_source.equals(getResources().getString(R.string.BATTERY_filename_prefix)))) {
+                    // cancella i file, se non sono della batteria o della carrozzina
+                    records_toBeDeleted.add(CurLine);
+                }
+            }
+        }
+
+        // dopo che ho visto tutti gli elementi di records ri scrivo il file e cancello i file di dati
+        for (i = 0; i < records_toBeDeleted.size(); i++) {
+            notSent.DeleteLine(records_toBeDeleted.get(i));
+            File FileToBeDeleted = new File(records_toBeDeleted.get(i));
+            FileToBeDeleted.delete();
+        }
+    }
+
+    //TODO: da rivedere per bene
+    //==========================================================================
+    public void WhatToDoAt2InTheNight(View view) {
+        //==========================================================================
+        // stop acquisitions and calibrate phone position with a 30sec acquisition
+        SwitchOffEverything();
+        //NumOfWCActivation_Current = NumOfWCActivation;
+
+        CalibrationMode = true;
+        //isCalibrating = true;
+
+        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        AccAquiring = mSensorManager.registerListener(this, mAcc, 50000);
+    }
+
+
+    float ramp_acc = 0;
+*/
+
 
 
 } // fine della MainActivity

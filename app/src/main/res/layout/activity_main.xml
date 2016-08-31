@@ -31,16 +31,41 @@
                         android:id="@+id/PowerONBtn"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:padding="0dp"
                         style="?android:attr/buttonStyleSmall"
                         android:layout_alignParentLeft="true"
                         android:layout_alignParentStart="true"
                         android:layout_alignParentTop="true"
                         android:layout_column="0"
 
-                        android:onClick="Power_ON"
-                        android:text="Power ON" />
+                        android:onClick="Power_ON_Click"
+                        android:text="Power ON"
+                        android:layout_margin="0dp" />
 
 
+
+                    <Button
+                        android:id="@+id/MotorONBtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_column="1"
+                        android:onClick="SetMotor_ON"
+                        android:text="Motor ON" />
+
+                    <Button
+                        android:id="@+id/toggle_manualmode_button"
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_column="2"
+                        android:onClick="ToggleManualModeButton"
+                        android:text="Manual Mode"
+                        android:clickable="true" />
+
+
+                </TableRow>
+                <TableRow>
                     <Button
                         android:id="@+id/PowerOFFBtn"
                         android:layout_width="wrap_content"
@@ -49,35 +74,10 @@
                         android:layout_alignParentEnd="true"
                         android:layout_alignParentRight="true"
                         android:layout_alignParentTop="true"
-                        android:layout_column="1"
-
-                        android:onClick="SetPower_OFF"
-                        android:text="Power OFF" />
-
-                    <TextView
-                        android:id="@+id/power_text_view"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_above="@+id/DailyReport"
-                        android:layout_toEndOf="@+id/PowerONBtn"
-                        android:layout_toRightOf="@+id/PowerONBtn"
-                        android:layout_column="2"
-                        android:hint="POWER ?"
-                        android:textAppearance="?android:attr/textAppearanceMedium" />
-
-                </TableRow>
-                <TableRow android:layout_width="wrap_content">
-                    <Button
-                        android:id="@+id/MotorONBtn"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        style="?android:attr/buttonStyleSmall"
-                        android:layout_alignEnd="@+id/PowerONBtn"
-                        android:layout_alignRight="@+id/PowerONBtn"
-                        android:layout_below="@+id/PowerONBtn"
                         android:layout_column="0"
-                        android:onClick="SetMotor_ON"
-                        android:text="Motor ON" />
+
+                        android:onClick="Power_OFF_Click"
+                        android:text="Power OFF" />
 
                     <Button
                         android:id="@+id/MotorOFFBtn"
@@ -91,17 +91,15 @@
                         android:onClick="SetMotor_OFF"
                         android:text="Motor OFF" />
 
-
-                    <TextView
-                        android:id="@+id/motor_text_view"
+                    <Button
+                        android:id="@+id/calibrate_button"
+                        style="?android:attr/buttonStyleSmall"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_above="@+id/DailyReport"
-                        android:layout_toEndOf="@+id/PowerONBtn"
-                        android:layout_toRightOf="@+id/PowerONBtn"
                         android:layout_column="2"
-                        android:hint="MOTOR ?"
-                        android:textAppearance="?android:attr/textAppearanceMedium" />
+                        android:onClick="CalibrateButton"
+                        android:text="Calibrate" />
+
                 </TableRow>
                 <TableRow>
                     <TextView
@@ -151,7 +149,7 @@
                         android:layout_height="wrap_content"
                         android:layout_column="0"
                         android:onClick="SendEventButton"
-                        android:text="SEND EVENT" />
+                        android:text="Send Event" />
 
                     <Button
                         android:id="@+id/send_hourly_data_button"
@@ -160,7 +158,7 @@
                         android:layout_height="wrap_content"
                         android:layout_column="1"
                         android:onClick="SendHourlyDataButton"
-                        android:text="HOURLY DATA"
+                        android:text="Send Hourly"
                         android:clickable="true" />
 
                     <Button
@@ -170,39 +168,39 @@
                         android:layout_height="wrap_content"
                         android:layout_column="2"
                         android:onClick="SendDailyDataButton"
-                        android:text="DAILY DATA" />
+                        android:text="Send Daily" />
 
                 </TableRow>
                 <TableRow>
 
                     <Button
-                        android:id="@+id/calibrate_button"
+                        android:id="@+id/hourly_update_button"
                         style="?android:attr/buttonStyleSmall"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:onClick="CalibrateButton"
-                        android:text="Calibrate" />
+                        android:onClick="HourlyUpdateButton"
+                        android:text="Hourly Update" />
+
+                    <Button
+                        android:id="@+id/daily_update_button"
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:onClick="DailyUpdateButton"
+                        android:text="Daily Update" />
 
                     <Button
                         android:id="@+id/toggle_display_button"
                         style="?android:attr/buttonStyleSmall"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_column="1"
+                        android:layout_column="2"
                         android:onClick="ToggleViewButton"
                         android:text="Toggle View"
                         android:clickable="true" />
 
-                    <Button
-                        android:id="@+id/toggle_manualmode_button"
-                        style="?android:attr/buttonStyleSmall"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_column="2"
-                        android:onClick="ToggleManualModeButton"
-                        android:text="Manual Mode"
-                        android:clickable="true" />
 
 
                 </TableRow>

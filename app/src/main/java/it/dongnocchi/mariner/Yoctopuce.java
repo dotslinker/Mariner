@@ -30,7 +30,7 @@ public class Yoctopuce implements YDigitalIO.UpdateCallback{
     int  Motor_data_array_index = 0;
     //int Wheelchair_data_array_index = 0;
     static final short buffer_dim_batt_motor = 5;
-    MotorData Motor_data = new MotorData(buffer_dim_batt_motor);
+    //MotorData Motor_data = new MotorData(buffer_dim_batt_motor);
     //MotorData Wheelchair_data = new MotorData(buffer_dim_batt_motor);
 
     String Motor_Path;

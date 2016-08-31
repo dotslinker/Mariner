@@ -2,6 +2,7 @@ package it.dongnocchi.mariner;
 
 import android.content.Context;
 import android.os.SystemClock;
+import android.util.Log;
 
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
@@ -12,6 +13,7 @@ import org.apache.http.entity.StringEntity;
 import org.json.JSONObject;
 
 import java.net.URLEncoder;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -50,6 +52,8 @@ public class AzureEventManager {
 
     boolean result = false;
 
+    WheelchairData myData;
+
     public AsyncResponse delegate = null;//Call back interface
 
     // Aggiunte da PM
@@ -63,9 +67,10 @@ public class AzureEventManager {
 
     // costruttore
     //==========================================================================
-    public AzureEventManager(Context in_context, AsyncResponse asyncResponse, Configuration mc) {
+    public AzureEventManager(Context in_context, AsyncResponse asyncResponse, Configuration mc, WheelchairData wd) {
         //==========================================================================
         myConfig = mc;
+        myData = wd;
         context = in_context;
         delegate = asyncResponse;//Assigning call back interfacethrough constructor
 
@@ -182,6 +187,140 @@ public class AzureEventManager {
 
     }
 
+    /// Versione nuova del SendEvent_SystemStatus() modificata il 2016-0126 da pm
+
+    //******************************************************************
+    public void SendHourlyStatusEvent() {
+        //******************************************************************
+        // this is done once an hour thanks to alarm manager
+        // build event message and send it
+
+        float Latitude = 0.0f;
+        float Longitude = 0.0f;
+
+        try {
+            //SignalStrength = myNetworkInfo.getSignalStrength();
+
+            //myData.SetHourlyUse();
+
+                /*
+                [Id]                INT        IDENTITY (1, 1) NOT NULL,
+                [WheelchairID]      CHAR (30)  NULL,
+                [Time]         DATETIME   NULL,
+                [HourlyPowerOnTime] FLOAT (53) NULL,
+                [HourlyMotorOnTime] FLOAT (53) NULL,
+                [PhoneBatteryLevel] FLOAT (53) NULL,
+                [SignalStrength]    FLOAT (53) NULL,
+                [NumberOfPowerOn]   INT        NULL,
+                [NumberOfMotorOn]   INT        NULL,
+                [DistanceCovered]   FLOAT (53) NULL,
+                [AngleCovered]      FLOAT (53) NULL,
+                [MeanTemperature]   FLOAT (53) NULL,
+                [MaxTemperature]    FLOAT (53) NULL,
+                [Latitude]          FLOAT (53) NULL,
+                [Longitude]         FLOAT (53) NULL,
+                [Status]            INT        NULL,
+                [Note]              NTEXT      NULL,
+                */
+
+            //myData.ID = "SMN-TEST-0S6";
+            //String EventType = "HOURLY_STATUS";
+            myData.HourlyNote = "Just good news";
+
+            JSONObject ParamsToSend = new JSONObject();
+            java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(Calendar.getInstance().getTime().getTime());
+
+            ParamsToSend.put("WheelchairID", myConfig.WheelchairID); //puoi chiamarla più volte per mandare più param nello stesso evento
+            ParamsToSend.put("TimeInfo", currentTimestamp);
+            ParamsToSend.put("HourlyPowerOnTime", myData.HourlyPowerOnTime);
+            ParamsToSend.put("HourlyMotorOnTime", myData.HourlyMotorOnTime);
+            ParamsToSend.put("PhoneBatteryLevel", myData.myBatteryData.level);
+            ParamsToSend.put("SignalStrength", (float) myData.SignalStrength);
+            ParamsToSend.put("NumberOfPowerOn", myData.PowerONHourlyCounter);
+            ParamsToSend.put("NumberOfMotorOn", myData.MotorONHourlyCounter);
+
+            ParamsToSend.put("DistanceCovered", Latitude);
+            ParamsToSend.put("AngleCovered", Latitude);
+            ParamsToSend.put("MeanTemperature", myData.myTempData.GetMeanTemperature());
+            ParamsToSend.put("MaxTemperature", myData.myTempData.GetMaxTemperature());
+
+            ParamsToSend.put("Latitude", Latitude);
+            ParamsToSend.put("Longitude", Longitude);
+            ParamsToSend.put("Status", myData.Status);
+            ParamsToSend.put("Note", myData.HourlyNote); //puoi chiamarla più volte per mandare più param nello stesso evento
+
+            //String s = ParamsToSend.toString();
+            SendJsonEvent(ParamsToSend, myConfig.HourlyUpdate_EventHub_url, myConfig.HourlyUpdate_EventHub_connstring);
+
+            /*              Vecchio metodo (TODO: da verificare se tenere o canccellare
+
+                            myEventManager.SendHourlyEvent(myConfig.WheelchairID, EventType,
+                                    myData.HourlyUse, BatteryLevel, SignalStrength,
+                                    myData.PowerONHourlyCounter, myData.MotorONHourlyCounter,
+                                    0.0f, 0.0f,
+                                    myData.Status, myData.HourlyNote);
+            */
+
+        } catch (Exception e) {
+            //throw new RuntimeException(e);
+            Log.e("AzureEventManager", "SendHourlyStatusEvent", e);
+        }
+    }
+
+    public void SendDailyReport() {
+        //Preparo l'oggeto Json da spedire con i dati giornalieri
+        try {
+            //Aggiorno i valori
+            JSONObject ParamsToSend = new JSONObject();
+            Timestamp currentTimestamp = new Timestamp(Calendar.getInstance().getTime().getTime());
+
+                /*
+                [Time]          DATETIME   NULL,
+                [WheelchairID]       CHAR (30)  NULL,
+                [DailyPowerOnTime]   FLOAT (53) NULL,
+                [DailyMotorOnTime]   FLOAT (53) NULL,
+                [PhoneBatteryLevel]  FLOAT (53) NULL,
+                [NumberOfPowerOn]    INT        NULL,
+                [NumberOfPowerOff]   INT        NULL,
+                [NumberOfMotorOn]    INT        NULL,
+                [NumberOfMotorOff]   INT        NULL,
+                [DistanceCoveredFw]  FLOAT (53) NULL,
+                [DistanceCoveredBw]  FLOAT (53) NULL,
+                [AngleCoveredL]      FLOAT (53) NULL,
+                [AngleCoveredR]      FLOAT (53) NULL,
+                [Status]             INT        NULL,
+                [XMLFilesStoredName] CHAR (30)  NULL,
+                [Note]               NTEXT      NULL,
+                  */
+
+            ParamsToSend.put("WheelchairID", myConfig.WheelchairID); //puoi chiamarla più volte per mandare più param nello stesso evento
+            ParamsToSend.put("TimeInfo", currentTimestamp);
+            ParamsToSend.put("DailyPowerOnTime", myData.DailyUse);
+            ParamsToSend.put("DailyMotorOnTime", myData.DailyUse);
+            ParamsToSend.put("PhoneBatteryLevel", myData.myBatteryData.level);
+            ParamsToSend.put("NumberOfPowerOn", myData.PowerONDailyCounter);
+            ParamsToSend.put("NumberOfPowerOff", myData.PowerOFFDailyCounter);
+            ParamsToSend.put("NumberOfMotorOn", myData.MotorONDailyCounter);
+            ParamsToSend.put("NumberOfMotorOff", myData.MotorOFFDailyCounter);
+            ParamsToSend.put("DistanceCoveredFw", myData.FwMetersCovered);
+            ParamsToSend.put("DistanceCoveredBw", myData.BwMetersCovered);
+            ParamsToSend.put("AngleCoveredL", myData.DegreesCoveredTurningLeft);
+            ParamsToSend.put("AngleCoveredR", myData.DegreesCoveredTurningRight);
+            ParamsToSend.put("Status", 1);
+            //TODO: veirficare che sia corretta la seguente riga (per il nome del file XML contenente i nomi dei file di dati
+            ParamsToSend.put("XMLFilesStoredName", myConfig.get_UploadedFiles_XmlName());
+            ParamsToSend.put("Note", ""); //puoi chiamarla più volte per mandare più param nello stesso evento
+
+            SendJsonEvent(ParamsToSend, myConfig.DailyUpdate_EventHub_url, myConfig.DailyUpdate_EventHub_connstring);
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            Log.e("AzureEventManager", "SendDailyReport", ex);
+        }
+    }
+
+
+
     //==========================================================================
     protected short SendHourlyEvent(String WheelchairID, String EventType,
                                     float HourlyUse, float BatteryLevel, int SignalStrenght,
@@ -242,7 +381,7 @@ public class AzureEventManager {
             ParamsToSend.put("TimeInfo", currentTimestamp.toString());
             //ParamsToSend.put("Time", time_string);
             ParamsToSend.put("EventName", "EVENT_PROVA");
-            ParamsToSend.put("EventValue", (float)7f);
+            ParamsToSend.put("EventValue", 7f);
             ParamsToSend.put("Status", 1);
 
             ParamsToSend.put("Note", ""); //puoi chiamarla più volte per mandare più param nello stesso evento

@@ -66,9 +66,6 @@ public class NetworkInfo extends PhoneStateListener {
 
     //==========================================================================
     public int getSignalStrength() {
-
-
-
         return SignalStrength;
     }
     //==========================================================================

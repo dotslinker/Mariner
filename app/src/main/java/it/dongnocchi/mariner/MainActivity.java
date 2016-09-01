@@ -42,7 +42,6 @@ import com.yoctopuce.YoctoAPI.YAPI_Exception;
 import com.yoctopuce.YoctoAPI.YDigitalIO;
 import com.yoctopuce.YoctoAPI.YModule;
 
-
 import static com.yoctopuce.YoctoAPI.YDigitalIO.FindDigitalIO;
 
 
@@ -50,6 +49,18 @@ import static com.yoctopuce.YoctoAPI.YDigitalIO.FindDigitalIO;
 public class MainActivity extends Activity
         implements SensorEventListener, YDigitalIO.UpdateCallback {
     //==========================================================================
+
+    /* TODO LIST:
+
+    -) Inserire riga con titoli delle colonne dei dati
+    -) Mettere tutto in forma di Landscape
+    -) Rivedere la questione dello spegnimento della App e dei vari ReStart() etc.
+    -) rivedere l'abilitazione e disabilitazione dei pulsanti e l'"auto mode"
+    -) rivedere la questione della luminosità del display (per il momento tolta)
+    -) rivedere e verificare le allocazioni di memoria
+
+    */
+
 
     //TODO: da verificare tutta la politica di Logging
     public static final String TAG = MainActivity.class.getSimpleName();
@@ -69,7 +80,6 @@ public class MainActivity extends Activity
     private static final int GYRO_READING_PERDIOD = 20000; //20 ms
     boolean TemperatureAcquiring = false;
     private static final int TEMPERATURE_READING_PERDIOD = 10000000; //10s
-
 
     public static final int STATUS_INIT = 0;
     public static final int STATUS_SLEEP = 1;
@@ -149,7 +159,7 @@ public class MainActivity extends Activity
     TextView temperature_mean_val_tview;
 
     TextView signal_level_tview;
-    TextView temp_val_tview;
+    TextView memory_used_tview, memory_avail_tview;
 
     TextView app_uptime_tview, duty_uptime_tview;
 
@@ -157,6 +167,9 @@ public class MainActivity extends Activity
     Button btSendEvent, btSendDailyReport, btSendHourlyReport;
     Button btCalibrate, btToggleView, btToggleMode;
     Button btDoHourlyUpdate, btDoDailyUpdate;
+
+    boolean UpdateTextViews = true;
+
 
     private String CommonFilePreamble;
 
@@ -166,7 +179,7 @@ public class MainActivity extends Activity
     private int Status;
 
     //Array containing the information about the running time of the App
-    int [] RunningTime;
+    int[] RunningTime;
 
     // CLASSES FOR COMMUNICATIONS BETWEEN ACTIVITIES
     //User user;              //input to this class
@@ -181,13 +194,19 @@ public class MainActivity extends Activity
     Configuration myConfig;
     AzureEventManager myEventManager;
 
-    int actual_hour_measured;
-    BroadcastReceiver OnceAnHour_Receiver;
-    Calendar calendar;
+    //TODO: da sistemare per bene nella versione definitiva di produzione
+    final int UXUPDATE_PERIOD_IN_MILLIS = 200;
+    final int SLOW_INFO_UPDATE_PERIOD_IN_MILLIS = 1000 * 60 * 1; //Signal Strength, memory, etc.
+    final int SLOW_INFO_UPDATE_RATIO = SLOW_INFO_UPDATE_PERIOD_IN_MILLIS / UXUPDATE_PERIOD_IN_MILLIS;
+    int slow_info_update_counter;
+
+    int actual_hour_of_day;
+    //BroadcastReceiver OnceAnHour_Receiver;
+    Calendar MainCalendar;
     PendingIntent OnceAnHour_pintent;
     AlarmManager OnceAnHour_alarmMgr;
 
-    BroadcastReceiver ViewRefreshUpdate_Receiver;
+    //BroadcastReceiver ViewRefreshUpdate_Receiver;
     PendingIntent ViewRefreshUpdate_pintent;
     AlarmManager ViewRefreshUpdate_alarmMgr;
     //private int ViewRefreshUpdate_period_ms = 1000;
@@ -198,8 +217,15 @@ public class MainActivity extends Activity
 
     it.dongnocchi.mariner.WheelchairData myData;
 
-    FileLog myLogger;
+    //FileLog myLogger;
     static final int MAX_LOGFILE_SIZE = 20000000;
+
+    String logger_filename;
+
+    private long MemoryUsed, MemoryAvailable;
+    Runtime myRuntime;
+
+    //FileLog myFileLog;
 
     @Override
     //==========================================================================
@@ -207,25 +233,43 @@ public class MainActivity extends Activity
         //==========================================================================
 
         try {
+
+            //Initialize Time info and data structures
+
             AppStartTime = System.nanoTime();
             App_Start_Date = new Date();
+
+            SetDailyReferenceTimeAndDate();
 
             RunningTime = new int[5]; //0 = days, 1 = hours, 2 = mins, 3 = sec, 4 = ms
 
             super.onCreate(savedInstanceState);
             setContentView(R.layout.activity_main);
 
+            MainCalendar = Calendar.getInstance();
+            myRuntime = Runtime.getRuntime();
+
+            myConfig = new Configuration();
+
+            //Initialize UX
             InitUX();
+
+            CreateAndOpenNewFileLogger();
+            //myLogger = new FileLog();
+
+            //TODO: da rivedere l'intera politica di Logging
+            //FileLog.d("MARINER", "Started", null);
+            //FileLog.close();
+            //CreateAndOpenNewFileLogger();
 
             lastfiles = new it.dongnocchi.mariner.LastFiles();                              // SET OUTPUT TO INIT ACTIVITY
 
-            // INITIALISE SENSOR MANAGER
+            // INITIALISE SENSOR MANAGER and Sensors
             mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
 
             mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             mGyro = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
             mTemperature = mSensorManager.getDefaultSensor(Sensor.TYPE_AMBIENT_TEMPERATURE);
-
             myBatteryManager = new BatteryManager();
 
             // REGISTER BROADCAST RECEIVER FOR BATTERY EVENTS
@@ -235,8 +279,7 @@ public class MainActivity extends Activity
             //registerReceiver(mBatOkay, new IntentFilter(Intent.ACTION_BATTERY_OKAY));
             registerReceiver(mBatChanged, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 
-            myConfig = new Configuration();
-            myData = new it.dongnocchi.mariner.WheelchairData();
+            myData = new it.dongnocchi.mariner.WheelchairData(Daily_Reference_Time);
 
             acc_x_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
             acc_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
@@ -260,16 +303,20 @@ public class MainActivity extends Activity
             //Verifica se è presente l'alimentazione, ed in questo caso aggiunge
             //un evento fittizio di PowerON
             if (isSupplyPowerPresent()) {
-                NotifyPowerON();
+                myData.AddPowerONEvent(AppStartTime);
             }
 
-            StartCalibrateInertialSensors();
+            start_network_listener();
 
-            TemperatureStartAcquiring();
+            //CloseSaveAndRestartLogger(true);
+
+            //DailyResetData();
+
+            StartCalibration();
+
+            StartTemperatureAcquisition();
 
             StartPeriodicOperations();
-
-            start_network_listener();
 
             SetUXInteraction(false);
 
@@ -282,9 +329,6 @@ public class MainActivity extends Activity
 
             notSent = new it.dongnocchi.mariner.NotSentFileHandler(myConfig.get_Wheelchair_path());
 
-            myLogger = new FileLog();
-
-            DailyResetData();
 
             /*
             //TODO: da togliere. è servito per effettuare il test su TimestampedDataArray
@@ -313,11 +357,9 @@ public class MainActivity extends Activity
     }
 
 
-
     @Override
     protected void onRestart() {
         super.onRestart();
-
     }
 
     @Override
@@ -330,23 +372,27 @@ public class MainActivity extends Activity
         super.onResume();
     }
 
+    private void UpdateMemoryUsage() {
+        Runtime.getRuntime();
+        MemoryUsed = (myRuntime.totalMemory() - myRuntime.freeMemory()) / 1048576L;
+        MemoryAvailable = myRuntime.maxMemory() / 1048576L;
+    }
 
 
-    private void Sleep(int ms_to_sleep)
-    {
-        try{
+    //==========================================================================
+    private void Sleep(int ms_to_sleep) {
+        //==========================================================================
+        try {
             Thread.sleep(ms_to_sleep);
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             ex.printStackTrace();
             Log.e(TAG, "Sleep", ex);
         }
-
     }
 
-    public void UpdateRunningTime()
-    {
+    //==========================================================================
+    public void UpdateRunningTime() {
+        //==========================================================================
 
         LastMeasuredTime = System.nanoTime();//Calendar.getInstance().getTime().getTime();
 
@@ -354,7 +400,7 @@ public class MainActivity extends Activity
 
         int Hours = (int) (mills / (1000 * 60 * 60));
         int Mins = (int) (mills / (1000 * 60)) % 60;
-        int Secs = (int)( mills - (long)Hours * (1000 * 60 * 60) - (long)(Mins) * (1000 * 60))/1000;
+        int Secs = (int) (mills - (long) Hours * (1000 * 60 * 60) - (long) (Mins) * (1000 * 60)) / 1000;
         int ms = 0;
 
         RunningTime[0] = Hours / 24;
@@ -365,45 +411,41 @@ public class MainActivity extends Activity
         //AppUptimeString = String.format("%2d:%2d:%2d", Hours, Mins, Secs);
     }
 
-
-    private void DailyResetData()
-    {
+    //==========================================================================
+    private void DailyResetData() {
+        //==========================================================================
         //TODO: implementare il reset di tutte le strutture dati utilizzate
-        Daily_Reference_Time = System.nanoTime();
-        Daily_Reference_Date = new Date();
+        SetDailyReferenceTimeAndDate();
 
         myData.DailyReset(Daily_Reference_Time);
+    }
 
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-        CommonFilePreamble = formatter.format(Daily_Reference_Date);
+    private void SetDailyReferenceTimeAndDate() {
+        Daily_Reference_Time = System.nanoTime();
+        Daily_Reference_Date = new Date();
+    }
 
-        String new_logger_filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + ".log";
+    private void CloseSaveAndRestartLogger(boolean initializing) {
 
         //CLose the existing Logger (if any)
-        FileLog.close();
+        if (!initializing) {
+            FileLog.close();
 
-        //Step 8 - Save logfile
-        myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), myLogger.getFileName(), myConfig.get_Acquisition_Container());
+            //Save logfile
+            myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), logger_filename, myConfig.get_Acquisition_Container());
+        }
+
+        CreateAndOpenNewFileLogger();
+    }
+
+    private void CreateAndOpenNewFileLogger() {
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+        CommonFilePreamble = formatter.format(Daily_Reference_Date);
+        logger_filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + ".log";
 
         //Open the new one for the new day
-        FileLog.open(new_logger_filename, Log.ASSERT, MAX_LOGFILE_SIZE);
+        FileLog.open(logger_filename, Log.ASSERT, MAX_LOGFILE_SIZE);
     }
-
-    private void NotifyPowerON() {
-        myData.AddPowerONEvent(AppStartTime);
-
-
-    }
-
-    private void NotifyPowerOFF() {
-        myData.AddPowerOFFEvent(AppStartTime);
-
-
-    }
-
-
-
-
 
     private void InitUX() {
         acc_x_1_tview = (TextView) findViewById(R.id.acc_x_1_tview);
@@ -453,6 +495,9 @@ public class MainActivity extends Activity
         signal_level_tview = (TextView) findViewById(R.id.signal_level_val_tview);
         //temp_val_tview = (TextView) findViewById(R.id.temperature_val_tview);
 
+        memory_used_tview = (TextView) findViewById(R.id.memory_val_tview);
+        memory_avail_tview = (TextView) findViewById(R.id.memory_avail_val_tview);
+
         //temperature_tview = (TextView) findViewById(R.id.temperature_tview);
         temperature_mean_val_tview = (TextView) findViewById(R.id.temperature_mean_tview);
         temperature_min_val_tview = (TextView) findViewById(R.id.temperature_min_tview);
@@ -463,9 +508,9 @@ public class MainActivity extends Activity
         btMotorOn = (Button) findViewById(R.id.MotorONBtn);
         btMotorOff = (Button) findViewById(R.id.MotorOFFBtn);
 
-        btSendEvent= (Button) findViewById(R.id.send_event_button);
-        btSendHourlyReport= (Button) findViewById(R.id.send_hourly_data_button);
-        btSendDailyReport= (Button) findViewById(R.id.send_daily_data_button);
+        btSendEvent = (Button) findViewById(R.id.send_event_button);
+        btSendHourlyReport = (Button) findViewById(R.id.send_hourly_data_button);
+        btSendDailyReport = (Button) findViewById(R.id.send_daily_data_button);
 
         btCalibrate = (Button) findViewById(R.id.calibrate_button);
         btToggleView = (Button) findViewById(R.id.toggle_display_button);
@@ -481,15 +526,12 @@ public class MainActivity extends Activity
     //==============================================================================================
     //==============================================================================================
     public boolean isSupplyPowerPresent() {
-        boolean to_return = false;
-
         //Context context = getApplicationContext();
         Intent intent = this.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
 
-        to_return = (plugged == BatteryManager.BATTERY_PLUGGED_AC || plugged == BatteryManager.BATTERY_PLUGGED_USB);
+        return (plugged == BatteryManager.BATTERY_PLUGGED_AC || plugged == BatteryManager.BATTERY_PLUGGED_USB);
 
-        return to_return;
     }
 
     //==========================================================================
@@ -497,7 +539,7 @@ public class MainActivity extends Activity
         @Override
         //When Event is published, onReceive method is called
         public void onReceive(Context c, Intent i) {
-            SetPower_ON(null);           // START ALL
+            PowerIsON(null);           // START ALL
         }
     };
     //==========================================================================
@@ -505,9 +547,10 @@ public class MainActivity extends Activity
         @Override
         //When Event is published, onReceive method is called
         public void onReceive(Context c, Intent i) {
-            SetPower_OFF(null);
+            PowerIsOFF(null);
         }
     };
+
     //==========================================================================
     private BroadcastReceiver mBatChanged = new BroadcastReceiver() {
         @Override
@@ -519,6 +562,76 @@ public class MainActivity extends Activity
             //battery_textview.setText(myData.BatteryLevel + "%");
             // save data
             //Battery_AppendData(BatteryLevel, false);
+        }
+    };
+
+
+    //==========================================================================
+    private BroadcastReceiver OnceAnHour_Receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            //SimpleDateFormat formatter = new SimpleDateFormat("HH_mm_ss");
+            //Date now = new Date();
+            //stringafake = formatter.format(now);
+            //event_textview.setText(stringafake);
+
+            //SendEvent_SystemStatus();
+            //SendHourlyStatusEvent();
+
+            //NumOfSecWorking_LastHour = 0;
+
+            //Calendar rightNow = Calendar.getInstance();
+            //rightNow.get(Calendar.HOUR_OF_DAY); // gets hour in 24h format
+
+            actual_hour_of_day = GetActualHourOfDay();//
+
+            if (actual_hour_of_day == 2) { // do this only once a day at 2 in the night
+
+                //Step 1 - let's stop periodic operations and acquisitions (if any)
+                Stop_Periodic_Operations();
+
+                StopAllAcquisitions();
+
+                //Step 2 -
+
+                SaveData();
+
+                //CalibrateAccelerometer();
+
+                //UpdateListofFilesToUpload();
+
+                //Upload Blobs
+                myBlobManager.UploadBlobs(myData.myBatteryData.level);
+
+                //Check for App updates
+                myBlobManager.CheckNewUpdates(myData.myBatteryData.level);
+
+                //TODO: Verificare che vada bene rimuovere le linee commentate qui sotto
+                //CreateMyWheelchairFile();
+                //WhatToDoAt2InTheNight(null); // STOP INERTIAL ACQUISITION AND CALIBRATE SMARTPHONE POSITION
+
+//                    } else if(actual_hour == 3){
+//                        //spegni la rete wifi
+//                        myNetworkInfo.MyWiFiManager(getApplicationContext(), false);
+            }
+        }
+    };
+
+    //==========================================================================
+    private BroadcastReceiver ViewRefreshUpdate_Receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //Aggiorno i dati presenti sullo schermo
+
+            if (++slow_info_update_counter >= SLOW_INFO_UPDATE_RATIO) {
+                UpdateMemoryUsage();
+                myData.SignalStrength = myNetworkInfo.getSignalStrength();
+
+                slow_info_update_counter = 0;
+            }
+
+            UpdateUX();
         }
     };
 
@@ -555,6 +668,77 @@ public class MainActivity extends Activity
             Log.e(TAG, "start_network_listener()", ex);
         }
     }
+
+    //==============================================================================================
+    //  SENSOR OPERATIONS
+    //==============================================================================================
+
+    @Override
+    //==========================================================================
+    public void onSensorChanged(SensorEvent event) {
+        //==========================================================================
+
+        //TODO: il try-catch è da rimuovere quando si andrà in produzione
+        try {
+            switch (event.sensor.getType()) {
+                case Sensor.TYPE_ACCELEROMETER:
+                    if (CalibrationMode) {
+                        acc_x_calib.Add(event.values[0], event.timestamp);
+                        acc_y_calib.Add(event.values[1], event.timestamp);
+                        acc_z_calib.Add(event.values[2], event.timestamp);
+
+                        if (CheckIfCalibrationCompleted())
+                            StopCalibrateInertialSensors();
+
+                        //TODO: da togliere in produzione. opzione di Debug temporanea
+                        //UpdateUX();
+                    }                //Acc_AppendData(event, false);
+                    else {
+                        myData.myInertialData.UpdateAccData(event);
+                    }
+
+                    break;
+
+                case Sensor.TYPE_GYROSCOPE:
+                    //Gyro_AppendData(event, false);
+                    if (CalibrationMode) {
+                        gyro_x_calib.Add(event.values[0], event.timestamp);
+                        gyro_y_calib.Add(event.values[1], event.timestamp);
+                        gyro_z_calib.Add(event.values[2], event.timestamp);
+
+                        if (CheckIfCalibrationCompleted())
+                            StopCalibrateInertialSensors();
+
+                    }                //Acc_AppendData(event, false);
+                    else {
+                        myData.myInertialData.UpdateGyroData(event);
+                    }
+                    break;
+
+                case Sensor.TYPE_AMBIENT_TEMPERATURE:
+                    myData.myTempData.AppendData(event);
+
+                    //TODO: da sistemare una routine con un intervallo di un secondo...
+                    UpdateRunningTime();
+
+                    //Aggiorno la visualizzazione dei dati
+                    //UpdateUX();
+
+                    break;
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            Log.e(TAG, "onSensorChanged", ex);
+        }
+
+    }
+
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    }
+
+
     //==============================================================================================
     //==============================================================================================
     //  MOTOR AND POWER EVENTS HANDLING
@@ -562,7 +746,7 @@ public class MainActivity extends Activity
     //==============================================================================================
 
     //==========================================================================
-    public void SetPower_ON(View view) {
+    public void PowerIsON(View view) {
         //==========================================================================
         //invia evento su eventhub che segnala accensione carrozzina
 
@@ -571,7 +755,7 @@ public class MainActivity extends Activity
 
                 // TODO: verificare questa parte del WiFi
                 // accendi wifi
-                myNetworkInfo.MyWiFiManager(getApplicationContext(), true);
+                //myNetworkInfo.MyWiFiManager(getApplicationContext(), true);
 
                 //Send Event to Azure Back End
                 myEventManager.SendEventNew("POWER_ON", 0, "");
@@ -610,25 +794,25 @@ public class MainActivity extends Activity
                 //Wheelchair_AppendData(Motor_ON_ID, false);
 
                 //TODO: verificare che non sia il caso di invertire LowerScreenBrighteness e ResetScreenBrightness
-                LowerScreenBrightness();
+                //LowerScreenBrightness();
+                ResetScreenBrightness();
 
                 //NumOfWCActivation++;
                 //isWheelchair_ON = true;
             }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            Log.e(TAG, "PowerIsON", ex);
         }
-            catch(Exception ex)
-            {
-                ex.printStackTrace();
-                Log.e(TAG, "SetPower_ON", ex);
-            }
     }
 
     //==========================================================================
-    public void SetPower_OFF(View view) {
-        //==========================================================================
-        try{
+    public void PowerIsOFF(View view)
+    //==========================================================================
+    {
+        try {
             if (myData.PowerON) {
-                ResetScreenBrightness();
+                //ResetScreenBrightness();
                 //long T_off = SystemClock.elapsedRealtime() - App_Start_Time;
                 //myEventManager.SendEvent("WheelchairData OFF", (float) T_off);
 
@@ -648,16 +832,15 @@ public class MainActivity extends Activity
                 } else
                     MaxiIO_textview.setText("Yocto = not present");
 
+                LowerScreenBrightness();
+
                 //StopInertialAcquisition();
             }
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             ex.printStackTrace();
-            Log.e(TAG, "SetPower_OFF", ex);
+            Log.e(TAG, "PowerIsOFF", ex);
         }
     }
-
 
 
     //==========================================================================
@@ -670,9 +853,7 @@ public class MainActivity extends Activity
             myData.AddPowerOFFEvent(new_power_off_time);
             sys_stat_textview.setText("Power OFF");
             Status = STATUS_SLEEP;
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             ex.printStackTrace();
             Log.e(TAG, "Power_OFF_Click", ex);
 
@@ -696,102 +877,48 @@ public class MainActivity extends Activity
     }
 
 
-
     //TODO: verificare se sia da tenere o meno...
-
+/*
     //==========================================================================
     protected void SwitchOffEverything() {
         //==========================================================================
         // qui wheelchair off + alarm off
-        SetPower_OFF(null);
+        PowerIsOFF(null);
         CancelAlarm(OnceAnHour_alarmMgr, OnceAnHour_pintent);
     }
+*/
 
     //==========================================================================
-    public void SetMotor_ON(View view) {
+    public void Motor_ON_Click(View view) {
         //==========================================================================
         btMotorOn.setBackgroundColor(Color.GREEN);
+        btMotorOn.setEnabled(false);
         btMotorOff.setEnabled(true);
 
         StartInertialAcquisition();
     }
 
     //==========================================================================
-    public void SetMotor_OFF(View view) {
+    public void Motor_OFF_Click(View view) {
         //==========================================================================
         btMotorOn.setBackgroundColor(Color.GRAY);
         btMotorOff.setEnabled(false);
+        btMotorOn.setEnabled(true);
 
         StopInertialAcquisition();
+
+        myData.myInertialData.ResetIntegral();
     }
+
 
     //==========================================================================
     private void StartPeriodicOperations() {
         //==========================================================================
-        // this sets the system that calls WhatToDoAt2InTheNight at 2 in the night
-        // and sends an event for each hour
-        calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(System.currentTimeMillis());
-
-        OnceAnHour_Receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-
-                //SimpleDateFormat formatter = new SimpleDateFormat("HH_mm_ss");
-                //Date now = new Date();
-                //stringafake = formatter.format(now);
-                //event_textview.setText(stringafake);
-
-                //SendEvent_SystemStatus();
-                //SendHourlyStatusEvent();
-
-                //NumOfSecWorking_LastHour = 0;
-
-                Calendar rightNow = Calendar.getInstance();
-                actual_hour_measured = rightNow.get(Calendar.HOUR_OF_DAY); // gets hour in 24h format
-
-                if (actual_hour_measured == 2) { // do this only once a day at 2 in the night
-
-                    SaveData();
-
-                    //CalibrateAccelerometer();
-
-                    //UpdateListofFilesToUpload();
-
-                    upload_lastFiles();
-
-                    //TODO: Verificare che vada bene rimuovere le linee commentate qui sotto
-                    //CreateMyWheelchairFile();
-                    //WhatToDoAt2InTheNight(null); // STOP INERTIAL ACQUISITION AND CALIBRATE SMARTPHONE POSITION
-
-//                    } else if(actual_hour == 3){
-//                        //spegni la rete wifi
-//                        myNetworkInfo.MyWiFiManager(getApplicationContext(), false);
-                }
-            }
-        };
-
         StartHourlyTimer();
-
-        ViewRefreshUpdate_Receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                //Aggiorno i dati presenti sullo schermo
-
-                myData.SignalStrength = myNetworkInfo.getSignalStrength();
-
-                UpdateUX();
-
-
-            }
-        };
-
         StartUXUpdateTimer();
-
     }
 
-    private void Stop_Periodic_Operations()
-    {
+    private void Stop_Periodic_Operations() {
         CancelAlarm(OnceAnHour_alarmMgr, OnceAnHour_pintent);
         CancelAlarm(ViewRefreshUpdate_alarmMgr, ViewRefreshUpdate_pintent);
     }
@@ -803,131 +930,91 @@ public class MainActivity extends Activity
         this.registerReceiver(OnceAnHour_Receiver, new IntentFilter("new hour"));
         OnceAnHour_pintent = PendingIntent.getBroadcast(this, 0, new Intent("new hour"), 0);
         OnceAnHour_alarmMgr = (AlarmManager) (this.getSystemService(Context.ALARM_SERVICE));
-        //OnceAnHour_alarmMgr.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), (600*1000) , OnceAnHour_pintent); // AlarmManager.INTERVAL_HOUR
-        OnceAnHour_alarmMgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), AlarmManager.INTERVAL_FIFTEEN_MINUTES, OnceAnHour_pintent); // AlarmManager.INTERVAL_HOUR
+        //OnceAnHour_alarmMgr.setRepeating(AlarmManager.RTC_WAKEUP, MainCalendar.getTimeInMillis(), (600*1000) , OnceAnHour_pintent); // AlarmManager.INTERVAL_HOUR
+        OnceAnHour_alarmMgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, GetNextHourInMillis(), AlarmManager.INTERVAL_FIFTEEN_MINUTES, OnceAnHour_pintent); // AlarmManager.INTERVAL_HOUR
     }
 
     //==========================================================================
-    private void StartUXUpdateTimer() {
-        //==========================================================================
+    private void StartUXUpdateTimer()
+    //==========================================================================
+    {
+        //update the MainCalendar
+        MainCalendar.setTimeInMillis(System.currentTimeMillis());
+
         // sets the receiver for once an hour alarm
         this.registerReceiver(ViewRefreshUpdate_Receiver, new IntentFilter("new second"));
         ViewRefreshUpdate_pintent = PendingIntent.getBroadcast(this, 0, new Intent("new second"), 0);
         ViewRefreshUpdate_alarmMgr = (AlarmManager) (this.getSystemService(Context.ALARM_SERVICE));
-        //OnceAnHour_alarmMgr.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), (600*1000) , OnceAnHour_pintent); // AlarmManager.INTERVAL_HOUR
-        ViewRefreshUpdate_alarmMgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), 200, ViewRefreshUpdate_pintent); // AlarmManager.INTERVAL_HOUR
+        //OnceAnHour_alarmMgr.setRepeating(AlarmManager.RTC_WAKEUP, MainCalendar.getTimeInMillis(), (600*1000) , OnceAnHour_pintent); // AlarmManager.INTERVAL_HOUR
+        ViewRefreshUpdate_alarmMgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, GetActualTimeInMillis(), UXUPDATE_PERIOD_IN_MILLIS, ViewRefreshUpdate_pintent); // AlarmManager.INTERVAL_HOUR
     }
 
     //==========================================================================
-    private void CancelAlarm(AlarmManager Alarm_StopToFire, PendingIntent PendingIntentToStop) {
-        //==========================================================================
+    private void CancelAlarm(AlarmManager Alarm_StopToFire, PendingIntent PendingIntentToStop)
+    //==========================================================================
+    {
         if (Alarm_StopToFire != null) {
             Alarm_StopToFire.cancel(PendingIntentToStop);
         }
     }
 
-
-
-
-    @Override
     //==========================================================================
-    public void onSensorChanged(SensorEvent event) {
+    public long GetActualTimeInMillis()
+    //==========================================================================
+    {
+        MainCalendar.setTimeInMillis(System.currentTimeMillis());
+        return MainCalendar.getTimeInMillis();
+    }
+
+    //==========================================================================
+    public long GetNextHourInMillis() {
         //==========================================================================
-        // APPEND INERTIAL SENSORS DATA
+        MainCalendar.setTimeInMillis(System.currentTimeMillis());
+        MainCalendar.add(Calendar.HOUR, 1);
+        MainCalendar.set(Calendar.MINUTE, 0);
+        MainCalendar.set(Calendar.SECOND, 0);
+        MainCalendar.set(Calendar.MILLISECOND, 0);
 
-        //TODO: il try-catch è da rimuovere quando si andrà in produzione
-        try {
-            switch (event.sensor.getType()) {
-                case Sensor.TYPE_ACCELEROMETER:
-                    if (CalibrationMode) {
-                        acc_x_calib.Add(event.values[0], event.timestamp);
-                        acc_y_calib.Add(event.values[1], event.timestamp);
-                        acc_z_calib.Add(event.values[2], event.timestamp);
+        return MainCalendar.getTimeInMillis();
+    }
 
-                        if (CheckIfCalibrationCompleted())
-                            StopCalibrateInertialSensors();
-
-                        //TODO: da togliere in produzione. opzione di Debug temporanea
-                        //UpdateUX();
-                    }                //Acc_AppendData(event, false);
-else
-                    {
-                        myData.myInertialData.UpdateAccData(event);
-                    }
-
-                    break;
-
-                case Sensor.TYPE_GYROSCOPE:
-                    //Gyro_AppendData(event, false);
-                    if (CalibrationMode) {
-                        gyro_x_calib.Add(event.values[0], event.timestamp);
-                        gyro_y_calib.Add(event.values[1], event.timestamp);
-                        gyro_z_calib.Add(event.values[2], event.timestamp);
-
-                        if (CheckIfCalibrationCompleted())
-                            StopCalibrateInertialSensors();
-
-                    }                //Acc_AppendData(event, false);
-                    else{
-                        myData.myInertialData.UpdateGyroData(event);
-                    }
-                    break;
-
-                case Sensor.TYPE_AMBIENT_TEMPERATURE:
-                    myData.myTempData.AppendData(event);
-
-                    //TODO: da sistemare una routine con un intervallo di un secondo...
-                    UpdateRunningTime();
-
-                    //Aggiorno la visualizzazione dei dati
-                    //UpdateUX();
-
-                    break;
-            }
-        }
-        catch(Exception ex)
-        {
-            ex.printStackTrace();
-            Log.d(TAG, "onSensorChanged", ex);
-        }
-
+    //==========================================================================
+    public int GetActualHourOfDay() {
+        //==========================================================================
+        MainCalendar.setTimeInMillis(System.currentTimeMillis());
+        return MainCalendar.get(Calendar.HOUR_OF_DAY);
     }
 
 
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-    }
-
+    //==========================================================================
     private void StartInertialAcquisition() {
+        //==========================================================================
         //        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         //        mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         //        mGyro = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         try {
 
-            if(CalibrationMode)
-            {
+            if (CalibrationMode) {
                 AccAquiring = mSensorManager.registerListener(this, mAcc, ACC_READING_PERDIOD_CALIB, 10000);
                 GyroAcquiring = mSensorManager.registerListener(this, mGyro, GYRO_READING_PERDIOD_CALIB, 10000);// 20.000 us ----> FsAMPLE = 50Hz
-            }
-            else
-            {
+            } else {
                 //TODO: verificare che 500 us sia il limite superiore per il jitter
                 AccAquiring = mSensorManager.registerListener(this, mAcc, ACC_READING_PERDIOD, 5000);
                 GyroAcquiring = mSensorManager.registerListener(this, mGyro, GYRO_READING_PERDIOD, 5000);// 20.000 us ----> FsAMPLE = 50Hz
             }
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             ex.printStackTrace();
             //TODO: verificare cos'è sto saveerrorlog
             SaveErrorLog(ex.toString());
-            Log.d(TAG, "StartInertialAcquisition", ex);
+            Log.e(TAG, "StartInertialAcquisition", ex);
         }
         //AccStartAcquiring();
         //GyroStartAcquiring();
     }
 
+    //==========================================================================
     private void StopInertialAcquisition() {
+        //==========================================================================
 
         if (AccAquiring) {
             //super.onPause();
@@ -946,9 +1033,21 @@ else
         //GyroStopAcquiring();
     }
 
+    //==========================================================================
+    private void StopAllAcquisitions() {
+        //==========================================================================
+
+        StopInertialAcquisition();
+
+
+        StopTemperatureAcquisition();
+
+        //TODO: verificare che non si debba aspettare un poco...
+    }
+
 
     //==========================================================================
-    protected void TemperatureStartAcquiring() {
+    protected void StartTemperatureAcquisition() {
         //==========================================================================
         //super.onResume();
         TemperatureAcquiring = mSensorManager.registerListener(this, mTemperature, TEMPERATURE_READING_PERDIOD, 10000);// 20.000 us ----> FsAMPLE = 50Hz
@@ -956,7 +1055,7 @@ else
 
 
     //==========================================================================
-    protected void TemperatureStopAcquiring() {
+    protected void StopTemperatureAcquisition() {
         //==========================================================================
         if (TemperatureAcquiring) {
             //super.onPause();
@@ -965,79 +1064,93 @@ else
         }
     }
 
+
+
+    //TODO: da rivedere perchè causa una buona parte dei leakage che rendono necessario l'intervento del GC
     //==========================================================================
-    private void UpdateUX() {
-        //==========================================================================
+    private void UpdateUX()
+    //==========================================================================
+    {
         try {
-            if (CalibrationMode) {
+
+            if (UpdateTextViews) {
+                if (CalibrationMode) {
 //                acc_x_calib.UpdateStats();
 //                acc_y_calib.UpdateStats();
 //                acc_z_calib.UpdateStats();
 
-                acc_x_1_tview.setText(String.format("%.3f", acc_x_calib.mean));
-                acc_y_1_tview.setText(String.format("%.3f", acc_y_calib.mean));
-                acc_z_1_tview.setText(String.format("%.3f", acc_z_calib.mean));
+                    acc_x_1_tview.setText(String.format("%.3f", acc_x_calib.mean));
+                    acc_y_1_tview.setText(String.format("%.3f", acc_y_calib.mean));
+                    acc_z_1_tview.setText(String.format("%.3f", acc_z_calib.mean));
 
-                acc_x_2_tview.setText(String.format("%.4f", acc_x_calib.stdev));
-                acc_y_2_tview.setText(String.format("%.4f", acc_y_calib.stdev));
-                acc_z_2_tview.setText(String.format("%.4f", acc_z_calib.stdev));
+                    acc_x_2_tview.setText(String.format("%.4f", acc_x_calib.stdev));
+                    acc_y_2_tview.setText(String.format("%.4f", acc_y_calib.stdev));
+                    acc_z_2_tview.setText(String.format("%.4f", acc_z_calib.stdev));
 
-                gyro_x_1_tview.setText(String.format("%.3f", gyro_x_calib.mean));
-                gyro_y_1_tview.setText(String.format("%.3f", gyro_y_calib.mean));
-                gyro_z_1_tview.setText(String.format("%.3f", gyro_z_calib.mean));
+                    gyro_x_1_tview.setText(String.format("%.3f", gyro_x_calib.mean));
+                    gyro_y_1_tview.setText(String.format("%.3f", gyro_y_calib.mean));
+                    gyro_z_1_tview.setText(String.format("%.3f", gyro_z_calib.mean));
 
-                gyro_x_2_tview.setText(String.format("%.4f", gyro_x_calib.stdev));
-                gyro_y_2_tview.setText(String.format("%.4f", gyro_y_calib.stdev));
-                gyro_z_2_tview.setText(String.format("%.4f", gyro_z_calib.stdev));
+                    gyro_x_2_tview.setText(String.format("%.4f", gyro_x_calib.stdev));
+                    gyro_y_2_tview.setText(String.format("%.4f", gyro_y_calib.stdev));
+                    gyro_z_2_tview.setText(String.format("%.4f", gyro_z_calib.stdev));
 
-            } else {
+                } else {
 
-                acc_x_1_tview.setText(String.valueOf(myData.myInertialData.m_acc_x));
-                acc_y_1_tview.setText(String.valueOf(myData.myInertialData.m_acc_y));
-                acc_z_1_tview.setText(String.valueOf(myData.myInertialData.m_acc_z));
+                    acc_x_1_tview.setText(String.format("%.3f",myData.myInertialData.m_acc_x));
+                    acc_y_1_tview.setText(String.format("%.3f",myData.myInertialData.m_acc_y));
+                    acc_z_1_tview.setText(String.format("%.3f",myData.myInertialData.m_acc_z));
+
+                    gyro_x_1_tview.setText(String.format("%.3f", myData.myInertialData.last_gyro_x));
+                    gyro_y_1_tview.setText(String.format("%.3f", myData.myInertialData.last_gyro_y));
+                    gyro_z_1_tview.setText(String.format("%.3f", myData.myInertialData.last_gyro_z));
+
+                }
+
+                acc_x_3_tview.setText(String.format("%.3f", myData.myInertialData.acc_offset[0]));
+                acc_y_3_tview.setText(String.format("%.3f", myData.myInertialData.acc_offset[1]));
+                acc_z_3_tview.setText(String.format("%.3f", myData.myInertialData.acc_offset[2]));
+
+                gyro_x_3_tview.setText(String.format("%.3f", myData.myInertialData.gyro_offset[0]));
+                gyro_y_3_tview.setText(String.format("%.3f", myData.myInertialData.gyro_offset[1]));
+                gyro_z_3_tview.setText(String.format("%.3f", myData.myInertialData.gyro_offset[2]));
+
+                acc_vel_x_tview.setText(String.format("%.3f",myData.myInertialData.velocity_x));
+
+                acc_distance_x_tview.setText(String.format("%.3f",myData.myInertialData.HourlyDistanceCovered));
+
+                acc_period_mean_tview.setText(String.format("%.3f", acc_x_calib.mean_deltatime));
+                acc_period_stdev_tview.setText(String.format("%.3f", acc_x_calib.stdev_deltatime));
+
+                gyro_period_mean_tview.setText(String.format("%.3f", gyro_x_calib.mean_deltatime));
+                gyro_period_stdev_tview.setText(String.format("%.3f", gyro_x_calib.stdev_deltatime));
+
+                //String s = "Temp. (°C): " + String.format("%.2f", myData.myTempData.GetMeanTemperature()) + " [Max " + String.format("%.2f", myData.myTempData.GetMaxTemperature()) + "]";
+
+                temperature_mean_val_tview.setText(String.format("%.2f °C", myData.myTempData.GetMeanTemperature()));
+                temperature_min_val_tview.setText(String.format("%.2f °C", myData.myTempData.GetMinTemperature()));
+                temperature_max_val_tview.setText(String.format("%.2f °C", myData.myTempData.GetMaxTemperature()));
+
+                //temperature_tview.setText(s);
+
+                gyro_angle_tview.setText("-.-");
+                signal_level_tview.setText(String.valueOf(myData.SignalStrength) + " dBm");
+
+                battery_textview.setText(myData.myBatteryData.level + "%");
+
+                memory_used_tview.setText(MemoryUsed + " MB");
+                memory_avail_tview.setText(MemoryAvailable + " MB");
+
+                app_uptime_tview.setText(String.format("%02d:%02d:%02d", RunningTime[1], RunningTime[2], RunningTime[3]));
+                duty_uptime_tview.setText("00:00:00");
             }
 
-            acc_x_3_tview.setText(String.format("%.3f", myData.myInertialData.acc_offset[0]));
-            acc_y_3_tview.setText(String.format("%.3f", myData.myInertialData.acc_offset[1]));
-            acc_z_3_tview.setText(String.format("%.3f", myData.myInertialData.acc_offset[2]));
-
-            gyro_x_3_tview.setText(String.format("%.3f", myData.myInertialData.gyro_offset[0]));
-            gyro_y_3_tview.setText(String.format("%.3f", myData.myInertialData.gyro_offset[1]));
-            gyro_z_3_tview.setText(String.format("%.3f", myData.myInertialData.gyro_offset[2]));
-
-            acc_vel_x_tview.setText(String.valueOf(myData.myInertialData.velocity_x));
-
-            acc_distance_x_tview.setText(String.valueOf(myData.myInertialData.HourlyDistanceCovered));
-
-            acc_period_mean_tview.setText(String.format("%.3f",acc_x_calib.mean_deltatime));
-            acc_period_stdev_tview.setText(String.format("%.3f",acc_x_calib.stdev_deltatime));
-
-            gyro_period_mean_tview.setText(String.format("%.3f",gyro_x_calib.mean_deltatime));
-            gyro_period_stdev_tview.setText(String.format("%.3f",gyro_x_calib.stdev_deltatime));
-
-            //String s = "Temp. (°C): " + String.format("%.2f", myData.myTempData.GetMeanTemperature()) + " [Max " + String.format("%.2f", myData.myTempData.GetMaxTemperature()) + "]";
-
-            temperature_mean_val_tview.setText(String.format("%.2f °C", myData.myTempData.GetMeanTemperature()));
-            temperature_min_val_tview.setText(String.format("%.2f °C", myData.myTempData.GetMinTemperature()));
-            temperature_max_val_tview.setText(String.format("%.2f °C", myData.myTempData.GetMaxTemperature()));
-
-            //temperature_tview.setText(s);
-
-            gyro_angle_tview.setText("-.-");
-            signal_level_tview.setText(String.valueOf(myData.SignalStrength) + " dBm");
-
-            battery_textview.setText(myData.myBatteryData.level + "%");
-
-
-            app_uptime_tview.setText(String.format("%02d:%02d:%02d", RunningTime[1], RunningTime[2], RunningTime[3]));
-            duty_uptime_tview.setText("00:00:00");
-
-            if( myData.PowerON)
+            if (myData.PowerON)
                 btPowerOn.getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
             else
                 btPowerOn.getBackground().setColorFilter(Color.DKGRAY, PorterDuff.Mode.MULTIPLY);
 
-            if( myData.MotorON)
+            if (myData.MotorON)
                 btMotorOn.getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
             else
                 btMotorOn.getBackground().setColorFilter(Color.DKGRAY, PorterDuff.Mode.MULTIPLY);
@@ -1047,26 +1160,12 @@ else
             //signal_level_tview.setText(String.valueOf());
             //updatetview_counter = 0;
             //}
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             ex.printStackTrace();
-            Log.d(TAG, "UpdateUX", ex);
+            Log.e(TAG, "UpdateUX", ex);
         }
 
     }
-
-    //========== UPLOADS LAST FILES ACQUIRED ===================================
-    private void upload_lastFiles () {
-        //==========================================================================
-
-        myBlobManager.UploadBlobs(myData.myBatteryData.level);
-
-        // CHECK NEW APP UPDATES ==================================
-        myBlobManager.CheckNewUpdates(myData.myBatteryData.level);
-    }
-
-
 
 
     //TODO: da verificare se sia necessario tenere qui tutti i metodi Yocto, dato che ci sono le stesse funzioni anche in Yoctopuce
@@ -1100,23 +1199,23 @@ else
 
                     MaxiIO_SerialN = tmp.get_serialNumber();
                     MaxiIO = FindDigitalIO(MaxiIO_SerialN);
-                    if(MaxiIO.isOnline()) {
+                    if (MaxiIO.isOnline()) {
                         //call_toast("Maxi-IO connected");
                         Init_Yocto(MaxiIO);
                         MaxiIO.registerValueCallback(this);
                         YAPI.HandleEvents();
                     }
                 }
-                else {
-                    //call_toast("MAXI-IO NOT CONNECTED");
-                }
+                //else {
+                //call_toast("MAXI-IO NOT CONNECTED");
+                //}
                 tmp = tmp.nextModule();
             }
             r.run();
         } catch (YAPI_Exception ex) {
             ex.printStackTrace();
             SaveErrorLog("start_main\t" + ex.toString());
-            Log.d(TAG, "Start_Yocto", ex);
+            Log.e(TAG, "Start_Yocto", ex);
         }
 
         //Faccio partire tra un secondo il runnable di rilevamento del dato dal sensore
@@ -1124,7 +1223,7 @@ else
     }
 
     //==========================================================================
-    protected void Init_Yocto(YDigitalIO moduleName){
+    protected void Init_Yocto(YDigitalIO moduleName) {
         //==========================================================================
         // set the port as input
         try {
@@ -1132,11 +1231,10 @@ else
             moduleName.set_portPolarity(0);                 // polarity set to regular
             moduleName.set_portOpenDrain(0);                // No open drain
             //moduleName.set_portState(0x00);                 // imposta valori logici di uscita inizialmente tutti bassi
-        }
-        catch(YAPI_Exception e){
+        } catch (YAPI_Exception e) {
             e.printStackTrace();
             SaveErrorLog(e.toString());
-            Log.d(TAG, "Init_Yocto", e);
+            Log.e(TAG, "Init_Yocto", e);
         }
     }
 
@@ -1151,12 +1249,10 @@ else
     private Handler handler = new Handler();
     //==========================================================================
     //private int _outputdata;
-    final Runnable r = new Runnable()
-    {
-        public void run()
-        {
+    final Runnable r = new Runnable() {
+        public void run() {
             if (MaxiIO_SerialN != null) {
-                YDigitalIO io = YDigitalIO.FindDigitalIO(MaxiIO_SerialN);
+                //YDigitalIO io = YDigitalIO.FindDigitalIO(MaxiIO_SerialN);
                 try {
                     YAPI.HandleEvents();
                     // DO THIS EVERYTIME TO LET IT WORK PROPERLY
@@ -1170,7 +1266,7 @@ else
                     e.printStackTrace();
                     //SaveErrorLog("run_Y\t" + e.toString());
                     // tolto questo salvataggio perchè genera errori ma il runnable fa quello che deve fare
-                    Log.d(TAG, "final Runnable r", e);
+                    Log.e(TAG, "final Runnable r", e);
                 }
             }
             handler.postDelayed(this, 200);
@@ -1206,9 +1302,10 @@ else
         } catch (YAPI_Exception e) {
             e.printStackTrace();
             SaveErrorLog("yNewValue_main\t" + e.toString());
-            Log.d(TAG, "yNewValue", e);
+            Log.e(TAG, "yNewValue", e);
         }
     }
+
     //==========================================================================
     public boolean IsYoctoConnected() {
         //==========================================================================
@@ -1223,16 +1320,14 @@ else
                     MaxiIO_SerialN = tmp.get_serialNumber();
                     MaxiIO = FindDigitalIO(MaxiIO_SerialN);
 
-                    if(MaxiIO.isOnline()) {
+                    if (MaxiIO.isOnline()) {
                         YoctoInUse = true;
                         MaxiIO_textview.setText("MaxiIO connected: YES");
-                    }
-                    else{
+                    } else {
                         YoctoInUse = false;
                         MaxiIO_textview.setText("MaxiIO connected: NO");
                     }
-                }
-                else {
+                } else {
                     YoctoInUse = false;
                 }
                 tmp = tmp.nextModule();
@@ -1240,7 +1335,7 @@ else
         } catch (YAPI_Exception e) {
             e.printStackTrace();
             SaveErrorLog("isYoctoConnected_main\t" + e.toString());
-            Log.d(TAG, "IsYoctoConnected", e);
+            Log.e(TAG, "IsYoctoConnected", e);
         }
         lastfiles.isyoctoinuse = YoctoInUse;
         return YoctoInUse;
@@ -1255,22 +1350,18 @@ else
     //******************************************************************************
     //******************************************************************************
 
-    private boolean CheckIfCalibrationCompleted()
-    {
-        boolean ret_val = false;
-        long now =  System.nanoTime();//Calendar.getInstance().getTime().getTime();
+    //==========================================================================
+    private boolean CheckIfCalibrationCompleted() {
+        //==========================================================================
 
-        //TODO: controllare che non si possa usare una sola costante
-        long delta_time = (now - CalibrationStartTime) / 1000000000;
+        long delta_time = (System.nanoTime() - CalibrationStartTime) / 1000000000;
 
-        if( delta_time > NUM_OF_SECONDS_CALIBRATION)
-            ret_val = true;
-
-        return ret_val;
+        return (delta_time > NUM_OF_SECONDS_CALIBRATION);
     }
 
-    public void StartCalibrateInertialSensors()
-    {
+    //==========================================================================
+    public void StartCalibration() {
+        //==========================================================================
         //int CountDown =  NUM_OF_SECONDS_CALIBRATION * 5;
 
         CalibrationStartTime = System.nanoTime();//Calendar.getInstance().getTime().getTime();
@@ -1291,8 +1382,9 @@ else
 
     }
 
-    public void StopCalibrateInertialSensors()
-    {
+    //==========================================================================
+    public void StopCalibrateInertialSensors() {
+        //==========================================================================
         try {
 
             StopInertialAcquisition();
@@ -1310,12 +1402,10 @@ else
             gyro_z_calib.UpdateStats();
 
             myData.myInertialData.UpdateBias(acc_x_calib.mean, acc_y_calib.mean, acc_z_calib.mean,
-                    gyro_x_calib.mean, gyro_y_calib.mean, gyro_z_calib.mean );
-        }
-        catch(Exception ex)
-        {
+                    gyro_x_calib.mean, gyro_y_calib.mean, gyro_z_calib.mean);
+        } catch (Exception ex) {
             ex.printStackTrace();
-            Log.d(TAG, "StopCalibrateInertialSensors", ex);
+            Log.e(TAG, "StopCalibrateInertialSensors", ex);
         }
 
     }
@@ -1348,14 +1438,16 @@ else
         AccAquiring = mSensorManager.registerListener(this, mAcc, 50000);
     }
 
+    //==========================================================================
     private void ResetHourlyCounters() {
+        //==========================================================================
         myData.ResetHourlyCounters();
         myData.myTempData.ResetMinMax();
     }
 
 
     //==========================================================================
-    private void call_toast(CharSequence text){
+    private void call_toast(CharSequence text) {
         //==========================================================================
         // SETS A KIND OF POP-UP MESSAGE
         Context context = getApplicationContext();
@@ -1365,10 +1457,11 @@ else
         toast.show();
     }
 
+    //TODO: approfondire e verificare la quesitone degli errori e del Logging
     //==========================================================================
-    private void SaveErrorLog(String msg){
+    private void SaveErrorLog(String msg) {
         //==========================================================================
-        String StringToSend = "" + SystemClock.elapsedRealtime() + "\t" + msg +"\n";
+        String StringToSend = "" + SystemClock.elapsedRealtime() + "\t" + msg + "\n";
         it.dongnocchi.mariner.LogFile_Handler BkgSave_LogHandler = new it.dongnocchi.mariner.LogFile_Handler(StringToSend);
         BkgSave_LogHandler.execute();
     }
@@ -1385,25 +1478,29 @@ else
     public void CalibrateButton(View view)
     //==========================================================================
     {
+        StopInertialAcquisition();
 
-        StartCalibrateInertialSensors();
+        StartCalibration();
 
     }
 
 
-    public void ToggleManualModeButton(View view)
-    {
-        if( ManualMode )
-        {
+    public void ToggleViewButton(View view) {
+        UpdateTextViews = !UpdateTextViews;
+    }
+
+
+    //==========================================================================
+    public void ToggleManualModeButton(View view) {
+        //==========================================================================
+        if (ManualMode) {
             SetUXInteraction(false);
 
             btToggleMode.setText("Manual Mode");
             btToggleMode.getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
 
             ManualMode = false;
-        }
-        else
-        {
+        } else {
             SetUXInteraction(true);
 
             btToggleMode.setText("Auto Mode");
@@ -1414,7 +1511,9 @@ else
         }
     }
 
+    //==========================================================================
     private void SetUXInteraction(boolean enabled) {
+        //==========================================================================
         btCalibrate.setEnabled(enabled);
         btToggleView.setEnabled(enabled);
         btPowerOn.setEnabled(enabled);
@@ -1429,33 +1528,31 @@ else
         btDoDailyUpdate.setEnabled(enabled);
     }
 
-    //******************************************************************
+    //==========================================================================
     public void SendHourlyDataButton_Click(View view)
-    //******************************************************************
+    //==========================================================================
     {
         //myData.updateHourlyUse();
         myEventManager.SendHourlyStatusEvent();
         ResetHourlyCounters();
     }
 
-    //******************************************************************
+    //==========================================================================
     public void SendDailyDataButton_Click(View view)
-    //******************************************************************
+    //==========================================================================
     {
         myEventManager.SendDailyReport();
     }
 
     //==========================================================================
-    public void SendEventButton(View view){
+    public void SendEventButton(View view) {
         //==========================================================================
         try {
             //int i = 0;
             //i = i+1;
             //myEventManager.SendStringEvent(tag_view.getText().toString(), value_view.getText().toString());
             myEventManager.sendEventTestClick();
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             Log.e(TAG, "SendEventButton", ex);
         }
 
@@ -1489,9 +1586,7 @@ else
             data_out.close();
 
             myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             LogException(ex);
         }
 
@@ -1515,8 +1610,7 @@ else
 
                 myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
             }
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             LogException(ex);
         }
 
@@ -1539,8 +1633,7 @@ else
                 myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
 
             }
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             LogException(ex);
         }
         //Step 4 - Save Temperature data
@@ -1554,8 +1647,7 @@ else
 
             myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
 
-        }catch(Exception ex)
-        {
+        } catch (Exception ex) {
             LogException(ex);
         }
         //Step 5 - Save Event info
@@ -1569,11 +1661,9 @@ else
 
             myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
 
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             LogException(ex);
         }
-
 
 
         //Step 7 - Save Battery Data
@@ -1581,11 +1671,9 @@ else
             filename = CommonFilePreamble + "-bat.bin";
 
 
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             LogException(ex);
         }
-
 
 
         //TODO: verificare le seguenti linee tolte
@@ -1621,13 +1709,14 @@ else
 
     }
 
-    private void LogException(Exception ex){
+    //==========================================================================
+    private void LogException(Exception ex) {
+        //==========================================================================
         ex.printStackTrace();
         SaveErrorLog(ex.toString());
         Log.e(TAG, "SaveData", ex);
-        FileLog.e(TAG, "SaveData", ex );
+        FileLog.e(TAG, "SaveData", ex);
     }
-
 
 
     @NonNull
@@ -1639,14 +1728,16 @@ else
         return data_out;
     }
 
-    private int getDeltaTime()
-    {
-        return (int)((System.nanoTime() - Daily_Reference_Time)/100000);
+    //==========================================================================
+    private int getDeltaTime() {
+        //==========================================================================
+        return (int) ((System.nanoTime() - Daily_Reference_Time) / 100000);
 
     }
 
-    private void ChangeStatus(int new_status)
-    {
+    //==========================================================================
+    private void ChangeStatus(int new_status) {
+        //==========================================================================
         Status = new_status;
         sys_stat_textview.setText("System status = " + STATUS_STRING[new_status]);
 
@@ -1722,7 +1813,6 @@ else
 
     float ramp_acc = 0;
 */
-
 
 
 } // fine della MainActivity

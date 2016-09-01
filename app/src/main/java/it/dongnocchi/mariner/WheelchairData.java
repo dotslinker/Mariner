@@ -70,8 +70,9 @@ public class WheelchairData {
 
     //public int BatteryLevel;
 
-    public WheelchairData()
+    public WheelchairData(long referencetime)
     {
+        DailyReferenceTime = referencetime;
         myInertialData = new InertialData();
 //        myMotorData = new MotorData();
 //        myPowerData = new PowerData();

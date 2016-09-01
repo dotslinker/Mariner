@@ -25,6 +25,7 @@ public class InertialData {
 
     public float m_acc_x, m_acc_y, m_acc_z;
 
+
     final int NUM_OF_SMPLES = 720000; //= 4 ore * 50 Hz * 3600 secondi
 
     static final float NS2S = 1.0f / 1000000000.0f;
@@ -46,7 +47,7 @@ public class InertialData {
     float delta_x;
     long last_acc_timestamp;
 
-    float last_gyro_x;
+    float last_gyro_x,last_gyro_y, last_gyro_z;
     float delta_omega_x;
     long last_gyro_timestamp;
 
@@ -252,9 +253,19 @@ public class InertialData {
         HourlyAngleCovered += delta_omega_x;
 
         last_gyro_x = new_gyro_x;
+        last_gyro_y = new_gyro_z;
+        last_gyro_y = new_gyro_z;
+
         last_gyro_timestamp = event.timestamp;
 
     }
+
+    public void ResetIntegral()
+    {
+        velocity_x = 0;
+
+    }
+
 
     public void UpdateAccDataCalibration(SensorEvent event)
     {
@@ -281,21 +292,21 @@ public class InertialData {
         acc_data_counter = 0;
         gyro_data_counter = 0;
 
-        //TODO: verificare se sia necessario questo azzeramento
-        for (int i = 0; i <NUM_OF_SMPLES; i++ )
-        {
-            AccXDataArray[i] = 0;
-            AccYDataArray[i] = 0;
-            AccZDataArray[i] = 0;
+        //TODO: verificare se sia eventualmente necessario azzerare il tutto
+        if(false) {
+            for (int i = 0; i < NUM_OF_SMPLES; i++) {
+                AccXDataArray[i] = 0;
+                AccYDataArray[i] = 0;
+                AccZDataArray[i] = 0;
 
-            GyroXDataArray[i] = 0;
-            GyroYDataArray[i] = 0;
-            GyroZDataArray[i] = 0;
+                GyroXDataArray[i] = 0;
+                GyroYDataArray[i] = 0;
+                GyroZDataArray[i] = 0;
 
-            AccTimestampArray[i] = 0;
-            GyroTimestampArray[i] = 0;
+                AccTimestampArray[i] = 0;
+                GyroTimestampArray[i] = 0;
+            }
         }
-
     }
 
     public void ResetHourlyData()

@@ -17,11 +17,11 @@ public class EventData {
 
     public boolean EventArrayFull = false;
 
-        protected int Timestamps[];
-        protected int EventArray[];
+    public int Timestamps[];
+    public int EventArray[];
 
-        int data_counter;
-        int data_size;
+    int data_counter;
+    int data_size;
 
         final int NUM_OF_SAMPLES = 86400; // 2 Hz * 3600s * 12 ore
 

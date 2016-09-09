@@ -5,8 +5,8 @@ package it.dongnocchi.mariner;
  */
 public class BatteryData {
 
-    protected int Timestamps[];
-    protected int Values[];
+    public int Timestamps[];
+    public int Values[];
 
     public int level;
 

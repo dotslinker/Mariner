@@ -58,6 +58,10 @@ public class Configuration {
 
     private String Today;
 
+    private boolean UseGPSLocalization = false;
+
+    private int DailyUpdateHour;
+
     //private XML_handler Xml_handle;
     //private String ChildName;
     //private String ChildSurname;
@@ -157,10 +161,12 @@ public class Configuration {
 
         Azure_Acquisition_Container =     WheelchairID+ "-acquisitions";// nei nomi dei containers: NO maiuscole, NO _
 
-        WhereToSaveXML_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/WheelchairData/" + "XmlFiles/";
-        WhereToSaveAPK_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/WheelchairData/" + "APK/";
-        Wheelchair_path =           getExternalStorageDirectory().getAbsolutePath() + "/WheelchairData/";
-        AcquisitionFolderPath =        getExternalStorageDirectory().getAbsolutePath() + "/WheelchairData/" + "Data/";
+        WhereToSaveXML_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "XMLFiles/";
+        WhereToSaveAPK_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "APK/";
+        Wheelchair_path =           getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/";
+        AcquisitionFolderPath =     getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "Data/";
+
+
 
     }
 
@@ -184,6 +190,9 @@ public class Configuration {
     public String get_NotUploadedFiles_XmlName()   {return NotUploadedFiles_XmlName;}
 
     public String get_WheelchairID()                  {return WheelchairID;}
+
+    public boolean get_UseGPSLocalization()         {return UseGPSLocalization;}
+    public int get_DailyUpdateHour()                {return DailyUpdateHour;}
 
     //    public String tell_ChildName()                  {return ChildName;}
     //    public String tell_ChildSurame()                {return ChildSurname;}
@@ -215,122 +224,6 @@ public class Configuration {
 
     public String getAcquisitionsFolder() {return LocalAcquisitionFolder;}
 
-    public void LoadConfigOld()
-    {
-        String TagName;
-
-        File folder = new File(getExternalStorageDirectory().getAbsolutePath() + "/WheelchairData");
-
-            if (folder.exists()) {
-                FileInputStream MyXml = null;
-                String pathToUserMetadataXML = folder.getAbsolutePath() + "/config.xml";
-                File path = new File(pathToUserMetadataXML);
-
-                // search for the file
-                try {
-                    MyXml = new FileInputStream(path);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-
-                // initializes parser and sets MyXml as input file
-                XmlPullParser MyParser = Xml.newPullParser();
-                if (MyXml != null) {
-                    try {
-                        MyParser.setInput(MyXml, null);
-                    } catch (XmlPullParserException e) {
-                        e.printStackTrace();
-                    }
-
-                    try {
-                        MyParser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-                    } catch (XmlPullParserException e) {
-                        e.printStackTrace();
-                    }
-
-                    int eventType = 0;
-                    try {
-                        eventType = MyParser.getEventType();
-                    } catch (XmlPullParserException e) {
-                        e.printStackTrace();
-                    }
-
-                    while (eventType != XmlPullParser.END_DOCUMENT) {   //browse document
-                        switch (eventType) {
-                            case XmlPullParser.START_DOCUMENT:
-                                break;
-
-                            case XmlPullParser.START_TAG:                   // if there is a start tag
-
-                                TagName = MyParser.getName();               // read it
-                                String s = ReadNextText(MyParser);
-                                switch( TagName)
-                                {
-                                    case "device_id":
-                                        WheelchairID = s;
-                                        break;
-                                    case "acquisition_folder":
-                                        LocalAcquisitionFolder = s;
-                                        break;
-                                    case "azure_service_namespace":
-                                        serviceNamespace = s;
-                                        break;
-                                    case "blob_connectionstring":
-                                        storageConnectionString = s;
-                                        break;
-                                    case "eventhub_events_sas":
-                                        Events_SAS = s;
-                                        break;
-                                    case "eventhub_events_url":
-                                        Events_EventHub_url = s;
-                                        break;
-                                    case "eventhub_hourlyupdate_sas":
-                                        HourlyUpdate_SAS = s;
-                                        break;
-                                    case "eventhub_hourlyupdate_url":
-                                        HourlyUpdate_EventHub_url = s;
-                                        break;
-                                    case "eventhub_dailyupdate_sas":
-                                        DailyUpdate_SAS = s;
-                                        break;
-                                    case "eventhub_dailyupdate_url":
-                                        DailyUpdate_EventHub_url= s;
-                                        break;
-                                    case "apk_container":
-                                        APK_Container = s;
-                                        break;
-                                    case "apk_filename":
-                                        APK_FileName = s;
-                                        break;
-                                    case "xml_filename":
-                                        XML_FileName = s;
-                                        break;
-                                    case "uploadedfiles_xml_filename":
-                                        UploadedFiles_XmlName = s;
-                                        break;
-                                    case "notuploadedfiles_xml_filename":
-                                        NotUploadedFiles_XmlName = s;
-                                        break;
-                                }
-
-                                break;
-                        } // end switch
-
-                        try {
-                            eventType = MyParser.next();
-                        } catch (XmlPullParserException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }   // end while
-                }
-
-                //user = new User(Name_Xml, Surname_Xml, null);
-                //user.setcurrentSWVersion(ApkVersion_Xml);
-                //return user;
-            }
-        }
 
     public void LoadConfig()
     {
@@ -407,6 +300,12 @@ public class Configuration {
                                 break;
                             case "notuploadedfiles_xml_filename":
                                 NotUploadedFiles_XmlName = s;
+                                break;
+                            case "daily_update_hour":
+                                DailyUpdateHour = Integer.parseInt(s);
+                                break;
+                            case "use_gps_localization":
+                                UseGPSLocalization = Boolean.parseBoolean(s);
                                 break;
                         }
                     }

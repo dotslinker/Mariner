@@ -8,10 +8,12 @@ import android.hardware.SensorEvent;
 public class TemperatureData {
 
     public int data_size;
-    public long[] TimestampArray; // = new long[NUM_OF_TEMPERARURE_SAMPLES];
+    public int[] TimestampArray; // = new long[NUM_OF_TEMPERARURE_SAMPLES];
     public float [] DataArray; // = new float [NUM_OF_TEMPERARURE_SAMPLES];
     int data_counter;
     //public int TotalNumOfSamples;
+
+    long reference_time;
 
     MovingAverage TempMA;
     public float MaxTemperature;
@@ -20,7 +22,7 @@ public class TemperatureData {
     public TemperatureData(int num_of_samples, int sampling_period_ms, int num_of_seconds_for_mean)
     {
         data_size = num_of_samples;
-        TimestampArray = new long[num_of_samples];
+        TimestampArray = new int[num_of_samples];
         DataArray = new float [num_of_samples];
         int ma_size;
 
@@ -41,7 +43,7 @@ public class TemperatureData {
         DataArray[data_counter] = act_temp;
         TempMA.UpdateValue(act_temp);
 
-        TimestampArray[data_counter] = data.timestamp;
+        TimestampArray[data_counter] = (int)(data.timestamp - reference_time)/100000;
 
         //Se sforo il
         if(++data_counter >= data_size)
@@ -63,7 +65,7 @@ public class TemperatureData {
         MinTemperature = 100.0f;
     }
 
-    public void Reset()
+    public void Reset(long _new_ref_time)
     {
         for(int i= 0; i<data_size;i++)
         {
@@ -75,6 +77,8 @@ public class TemperatureData {
         ResetMinMax();
 
         TempMA.ResetData();
+
+        reference_time = _new_ref_time;
     }
 
     public float GetMaxTemperature()

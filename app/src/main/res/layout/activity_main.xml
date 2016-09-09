@@ -148,7 +148,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:onClick="SendEventButton"
+                        android:onClick="SendEventButton_Click"
                         android:text="Send Event" />
 
                     <Button
@@ -157,7 +157,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
-                        android:onClick="SendHourlyDataButton"
+                        android:onClick="SendHourlyDataButton_Click"
                         android:text="Send Hourly" />
 
                     <Button
@@ -166,7 +166,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
-                        android:onClick="SendDailyDataButton"
+                        android:onClick="SendDailyDataButton_Click"
                         android:text="Send Daily" />
 
                 </TableRow>
@@ -196,18 +196,12 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
-                        android:onClick="ToggleViewButton"
+                        android:onClick="ToggleViewButton_Click"
                         android:text="Toggle View"/>
-
-
 
                 </TableRow>
                 <TableRow>
-
-
-
                 </TableRow>
-
             </TableLayout>
         </TableRow>
 

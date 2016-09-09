@@ -26,14 +26,14 @@ import static android.os.Environment.getExternalStorageDirectory;
 
 public class LogFile_Handler extends AsyncTask<Void, Boolean, Boolean> {
 
-    String Content = "";
+    String StringToLog = "";
 
     // costruttore
     //==========================================================================
-    public LogFile_Handler( String in_error_msg ) {
+    public LogFile_Handler( String msg_to_log ) {
         //==========================================================================
 
-        Content = in_error_msg;
+        StringToLog = msg_to_log;
     }
 
     @Override
@@ -57,7 +57,8 @@ public class LogFile_Handler extends AsyncTask<Void, Boolean, Boolean> {
 
         try {
             outputStream = new FileOutputStream(LogFilePath, true);//true=append
-            outputStream.write(Content.getBytes());
+            outputStream.write(StringToLog.getBytes());
+            outputStream.flush();
             outputStream.close();
         } catch (Exception e) {
             e.printStackTrace();

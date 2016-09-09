@@ -232,8 +232,8 @@ public class AzureEventManager {
 
             ParamsToSend.put("WheelchairID", myConfig.WheelchairID); //puoi chiamarla più volte per mandare più param nello stesso evento
             ParamsToSend.put("TimeInfo", currentTimestamp);
-            ParamsToSend.put("HourlyPowerOnTime", myData.HourlyPowerOnTime);
-            ParamsToSend.put("HourlyMotorOnTime", myData.HourlyMotorOnTime);
+            ParamsToSend.put("HourlyPowerOnTime", myData.HourlyPowerOnTimePerc);
+            ParamsToSend.put("HourlyMotorOnTime", myData.HourlyMotorOnTimePerc);
             ParamsToSend.put("PhoneBatteryLevel", myData.myBatteryData.level);
             ParamsToSend.put("SignalStrength", (float) myData.SignalStrength);
             ParamsToSend.put("NumberOfPowerOn", myData.PowerONHourlyCounter);

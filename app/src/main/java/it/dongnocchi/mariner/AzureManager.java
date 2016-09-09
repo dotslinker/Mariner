@@ -486,6 +486,7 @@ public class AzureManager {
             //TODO: rivedere il nome dle file da cui parte l'aggiornamento del software in (es.) "version.xml"
             xml_path = myConfig.get_Wheelchair_path() + "load_config.xml";
         }
+
         path = new File(xml_path);
 
         // search for the file
@@ -494,6 +495,7 @@ public class AzureManager {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+
         // initializes parser and sets ApkXml as input file
         XmlPullParser MyParser = Xml.newPullParser();
         if (ApkXml != null) {
@@ -569,7 +571,7 @@ public class AzureManager {
 
             serializer.startTag("", "LastAPKRelease");
 
-                serializer.startTag("", "Release");
+            serializer.startTag("", "Release");
             serializer.text("1.0");
             serializer.endTag("", "Release");
 

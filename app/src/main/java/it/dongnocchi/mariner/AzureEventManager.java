@@ -56,10 +56,6 @@ public class AzureEventManager {
 
     public AsyncResponse delegate = null;//Call back interface
 
-    // Aggiunte da PM
-//    private int PowerOnOffCounter = 0;
-//    private int MotorOnOffCounter = 10;
-
     private String HubEndpoint = null;
     private String HubSasKeyName = null;
     private String HubSasKeyValue = null;
@@ -67,8 +63,9 @@ public class AzureEventManager {
 
     // costruttore
     //==========================================================================
-    public AzureEventManager(Context in_context, AsyncResponse asyncResponse, Configuration mc, WheelchairData wd) {
-        //==========================================================================
+    public AzureEventManager(Context in_context, AsyncResponse asyncResponse, Configuration mc, WheelchairData wd)
+    //==========================================================================
+    {
         myConfig = mc;
         myData = wd;
         context = in_context;
@@ -149,7 +146,7 @@ public class AzureEventManager {
             DataToSend.put("EventName", EventName);
             DataToSend.put("EventValue", EventValue);
             DataToSend.put("Status", 1);
-            DataToSend.put("Note", Note); //puoi chiamarla più volte per mandare più param nello stesso evento
+            DataToSend.put("Note", Note);
 
             //String s = DataToSend.toString();
             SendJsonEvent(DataToSend,myConfig.Events_EventHub_url, myConfig.Events_EventHub_connstring );
@@ -159,7 +156,6 @@ public class AzureEventManager {
         }
         return Status;
     }
-
 
     public void SendJsonEvent(JSONObject jso, String url, String connstring)
     {
@@ -184,7 +180,6 @@ public class AzureEventManager {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-
     }
 
     /// Versione nuova del SendEvent_SystemStatus() modificata il 2016-0126 da pm
@@ -200,7 +195,6 @@ public class AzureEventManager {
 
         try {
             //SignalStrength = myNetworkInfo.getSignalStrength();
-
             //myData.SetHourlyUse();
 
                 /*
@@ -318,8 +312,6 @@ public class AzureEventManager {
             Log.e("AzureEventManager", "SendDailyReport", ex);
         }
     }
-
-
 
     //==========================================================================
     protected short SendHourlyEvent(String WheelchairID, String EventType,

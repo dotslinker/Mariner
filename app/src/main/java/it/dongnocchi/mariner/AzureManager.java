@@ -263,7 +263,8 @@ public class AzureManager {
         String BlobName_local = "";
         int Size_FilesToDownload = 0;
 
-        public DownloadBlob_Async(String BlobContainer, String WhereToSaveIt, String BlobName, int IN_Size_FilesToDownload ){
+        public DownloadBlob_Async(String BlobContainer, String WhereToSaveIt, String BlobName, int IN_Size_FilesToDownload )
+        {
             Size_FilesToDownload = IN_Size_FilesToDownload;
             BlobContainer_local = BlobContainer;
             WhereToSaveIt_local = WhereToSaveIt;
@@ -604,6 +605,7 @@ public class AzureManager {
     StringWriter writer;
     private short NumberOfFiles = 0;
     private short NumberOfCorrectlyUploadedFiles = 0;
+
     //==========================================================================
     public void AppendNew_UploadedFileName(String text){
     //==========================================================================
@@ -668,12 +670,21 @@ public class AzureManager {
     } // end of AppendNew_UploadedFileName
 
     //==========================================================================
-    public void AddFileToList(String WhereIsIt, String ItsName, String WhereDoesItGo){
+    public void AddFileToSaveList(String WhereIsIt, String ItsName, String WhereDoesItGo){
     //==========================================================================
         FilesToSend.add(FilesToSend.size(), WhereIsIt);
         FilesToSend.add(FilesToSend.size(), ItsName);
         FilesToSend.add(FilesToSend.size(), WhereDoesItGo);
     }
+
+    //==========================================================================
+    public void AddFileToSaveList(String _FileName){
+        //==========================================================================
+        FilesToSend.add(FilesToSend.size(), _FileName);
+    }
+
+
+
 
     //==========================================================================
     public void AppendNew_NotUploadedFileName(String text){

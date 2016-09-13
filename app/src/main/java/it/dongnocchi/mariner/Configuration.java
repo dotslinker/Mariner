@@ -234,8 +234,8 @@ public class Configuration {
         String pathToUserMetadataXML = folder.getAbsolutePath() + "/config.xml";
         File path = new File(pathToUserMetadataXML);
 
-        File XMLConfigFile = new File(getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/config.xml");
-        String Filename = getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/config.xml";
+        //File XMLConfigFile = new File(getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/config.xml");
+        //String Filename = getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/config.xml";
 
             try {
                 DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();

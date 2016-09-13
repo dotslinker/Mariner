@@ -281,7 +281,7 @@ public class WheelchairData {
                 LastMotorOnTime = now;
             }
 
-            HourlyMotorOnTimePerc = Math.round(HourlyMotorOnTime / delta_time * 100.0f);
+            HourlyMotorOnTimePerc = HourlyMotorOnTime / delta_time * 100.0f;
 
         } finally
         {
@@ -289,8 +289,6 @@ public class WheelchairData {
         }
 
         DailyMotorOnTime += HourlyMotorOnTime;
-
-
 
         PowerStatusLocker.lock();
         try {
@@ -301,7 +299,7 @@ public class WheelchairData {
                 LastPowerOnTime = now;
             }
 
-            HourlyPowerOnTimePerc = Math.round(HourlyPowerOnTime / delta_time * 100.0f);
+            HourlyPowerOnTimePerc = HourlyPowerOnTime / delta_time * 100.0f;
 
         }
         finally

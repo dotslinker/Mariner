@@ -52,16 +52,20 @@ public class MainActivity extends Activity
 
     /* TODO LIST:
 
+    -) rivedere la politica di logging
     -) Inserire riga con titoli delle colonne dei dati
     -) Mettere tutto in forma di Landscape
     -) Rivedere la questione dello spegnimento della App e dei vari ReStart() etc.
     -) rivedere l'abilitazione e disabilitazione dei pulsanti e l'"auto mode"
     -) rivedere la questione della luminosità del display (per il momento tolta)
     -) rivedere e verificare le allocazioni di memoria
-
     */
 
     //TODO: da verificare tutta la politica di Logging
+
+    //xxyyy xx = major release, yyy = minor release
+    public static  final int CURRENT_BUILD = 1002;
+
     public static final String TAG = MainActivity.class.getSimpleName();
     public static final int STATUS_INIT = 0;
     public static final int STATUS_SLEEP = 1;
@@ -70,10 +74,9 @@ public class MainActivity extends Activity
     public static final int STATUS_DAILY_UPDATE = 4;
     public static final int STATUS_OFFLINE = 5;
     public static final String[] STATUS_STRING = {"INIT", "SLEEP", "IDLE", "ACTIVE", "DAILY_UPDATE", "OFFLINE"};
-    //int Wheelchair_OldInputData;
-    //int Wheelchair_NewInputData;
+
     public static final short MaxiIO_MotorPin = 7;
-    //FileLog myLogger;
+
     static final int MAX_LOGFILE_SIZE = 20000000;
     private static final int ACC_READING_PERDIOD = 20000; // 20 ms
     private static final int GYRO_READING_PERDIOD = 20000; //20 ms
@@ -143,7 +146,7 @@ public class MainActivity extends Activity
     int[] RunningTime;
     // CLASSES FOR COMMUNICATIONS BETWEEN ACTIVITIES
     //User user;              //input to this class
-    it.dongnocchi.mariner.LastFiles lastfiles;    //output
+    //LastFiles lastfiles;    //output
     // phone network variables
     TelephonyManager TelephonManager;
     it.dongnocchi.mariner.NetworkInfo myNetworkInfo;
@@ -199,14 +202,12 @@ public class MainActivity extends Activity
     private int Status;
     private long MemoryUsed, MemoryAvailable;
 
-
     @Override
     //==========================================================================
     protected void onCreate(Bundle savedInstanceState)
     //==========================================================================
     {
         try {
-
             //Initialize Time info and data structures
 
             AppStartTime = System.nanoTime();
@@ -237,7 +238,7 @@ public class MainActivity extends Activity
             //FileLog.close();
             //CreateAndOpenNewFileLogger();
 
-            lastfiles = new it.dongnocchi.mariner.LastFiles();                              // SET OUTPUT TO INIT ACTIVITY
+            //lastfiles = new it.dongnocchi.mariner.LastFiles();                              // SET OUTPUT TO INIT ACTIVITY
 
             // INITIALISE SENSOR MANAGER and Sensors
             mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -250,7 +251,7 @@ public class MainActivity extends Activity
             // REGISTER BROADCAST RECEIVER FOR BATTERY EVENTS
             registerReceiver(mBatChargeOff, new IntentFilter(Intent.ACTION_POWER_DISCONNECTED));
             registerReceiver(mBatChargeOn, new IntentFilter(Intent.ACTION_POWER_CONNECTED));
-            //registerReceiver(mBatLow, new IntentFilter(Intent.ACTION_BATTERY_LOW));
+            registerReceiver(mBatLow, new IntentFilter(Intent.ACTION_BATTERY_LOW));
             //registerReceiver(mBatOkay, new IntentFilter(Intent.ACTION_BATTERY_OKAY));
             registerReceiver(mBatChanged, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 
@@ -322,7 +323,9 @@ public class MainActivity extends Activity
 
             //CreateMyWheelchairFile();
             //call_toast(ByteOrder.nativeOrder().toString()); system is little endian
-            Log.d(TAG, "onCreate completed");
+            //FileLog.d(TAG, "onCreate completed");
+            myEventManager.SendEventNew("APP_ON_CREATE", myData.myBatteryData.level, "");
+
 
         } catch (Exception ex) {
             LogException(TAG, "onCreate", ex);
@@ -331,17 +334,23 @@ public class MainActivity extends Activity
 
     @Override
     protected void onRestart() {
+
         super.onRestart();
+        myEventManager.SendEventNew("APP_ON_RESTART", myData.myBatteryData.level, "");
     }
 
     @Override
     protected void onPause() {
+
         super.onPause();
+        myEventManager.SendEventNew("APP_ON_PAUSE", myData.myBatteryData.level, "");
     }
 
     @Override
     protected void onResume() {
+
         super.onResume();
+        myEventManager.SendEventNew("APP_ON_RESUME", myData.myBatteryData.level, "");
     }
 
     //==========================================================================
@@ -353,6 +362,23 @@ public class MainActivity extends Activity
 
             // GET BATTERY LEVEL
             long eventtime = System.nanoTime();
+            myData.AddBatteryValChangeEvent(eventtime, battery_intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1));
+            //battery_textview.setText(myData.BatteryLevel + "%");
+            // save data
+            //Battery_AppendData(BatteryLevel, false);
+        }
+    };
+
+    //==========================================================================
+    private BroadcastReceiver mBatLow = new BroadcastReceiver()
+            //==========================================================================
+    {
+        @Override
+        public void onReceive(Context cont, Intent battery_intent) {
+
+            // GET BATTERY LEVEL
+            long eventtime = System.nanoTime();
+            myEventManager.SendEventNew("BATTERY_LOW", myData.myBatteryData.level, "");
             myData.AddBatteryValChangeEvent(eventtime, battery_intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1));
             //battery_textview.setText(myData.BatteryLevel + "%");
             // save data
@@ -410,6 +436,8 @@ public class MainActivity extends Activity
 
                 myData.DailyReset(Daily_Reference_Time);//DailyResetData();
 
+                ResetHourlyCounters();
+
                 StartCalibration();
 
                 StartTemperatureAcquisition();
@@ -425,7 +453,7 @@ public class MainActivity extends Activity
 //                        myNetworkInfo.MyWiFiManager(getApplicationContext(), false);
             } else {
 
-                myData.updateHourlyUse(Hourly_Reference_Time, actual_time);
+                //myData.updateHourlyUse(Hourly_Reference_Time, actual_time);
                 myEventManager.SendHourlyStatusEvent();
                 ResetHourlyCounters();
             }
@@ -452,9 +480,7 @@ public class MainActivity extends Activity
                 myData.SignalStrength = myNetworkInfo.getSignalStrength();
 
                 slow_info_update_counter = 0;
-
             }
-
 
             UpdateUX();
         }
@@ -525,12 +551,6 @@ public class MainActivity extends Activity
         SetDailyReferenceTimeAndDate();
         myData.DailyReset(Daily_Reference_Time);
     }
-
-    private void UpdateHourlyUsage()
-    {
-
-    }
-
 
     //==============================================================================================
     //  SENSOR OPERATIONS
@@ -1245,7 +1265,8 @@ public class MainActivity extends Activity
         } catch (YAPI_Exception e) {
             LogException(TAG, "IsYoctoConnected", e);
         }
-        lastfiles.isyoctoinuse = YoctoInUse;
+
+        //lastfiles.isyoctoinuse = YoctoInUse;
         return YoctoInUse;
     }
 
@@ -1498,10 +1519,9 @@ public class MainActivity extends Activity
     //==========================================================================
     {
 
-//        FileOutputStream outputStream;
-//        FileOutputStream BinaryOutputStream;
         DataOutputStream data_out;
         String filename;
+        //String XMLFileList
 
         //Step 1 - Save Calibration file data
         try {
@@ -1520,7 +1540,7 @@ public class MainActivity extends Activity
             data_out.flush();
             data_out.close();
 
-            myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+            myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
 
 
             //Step 2 - Save Accelerometer data if available
@@ -1539,7 +1559,7 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
             }
 
             //Step 3 - Save Gyro data if available
@@ -1557,7 +1577,7 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
 
             }
             //Step 4 - Save Temperature data
@@ -1574,7 +1594,7 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
             }
             //Step 5 - Save Event info
             if (myData.myEventData.data_counter > 0) {
@@ -1589,7 +1609,7 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
             }
 
 
@@ -1690,7 +1710,7 @@ public class MainActivity extends Activity
             FileLog.close();
 
             //Save logfile
-            myBlobManager.AddFileToList(myConfig.getAcquisitionsFolder(), logger_filename, myConfig.get_Acquisition_Container());
+            myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), logger_filename, myConfig.get_Acquisition_Container());
         }
 
         CreateAndOpenNewFileLogger();
@@ -1710,8 +1730,10 @@ public class MainActivity extends Activity
 
 
     //==========================================================================
-    private void LogException(String tag, String msg, Exception ex) {
-        //==========================================================================
+    private void LogException(String tag, String msg, Exception ex)
+    //==========================================================================
+    {
+
         //ex.printStackTrace();
         //SaveErrorLog(ex.toString());
         Log.e(tag, msg, ex);
@@ -1729,15 +1751,17 @@ public class MainActivity extends Activity
     }
 
     //==========================================================================
-    private int getDeltaTime() {
-        //==========================================================================
-        return (int) ((System.nanoTime() - Daily_Reference_Time) / 100000);
+    private int getDeltaTime()
+    //==========================================================================
+    {
 
+        return (int) ((System.nanoTime() - Daily_Reference_Time) / 100000);
     }
 
     //==========================================================================
-    private void ChangeStatus(int new_status) {
-        //==========================================================================
+    private void ChangeStatus(int new_status)
+    //==========================================================================
+    {
         Status = new_status;
         sys_stat_textview.setText("System status = " + STATUS_STRING[new_status]);
 

@@ -171,7 +171,6 @@ public class MainActivity extends Activity
     WindowManager.LayoutParams NewLayoutParams = null;
     it.dongnocchi.mariner.WheelchairData myData;
     String logger_filename;
-    Runtime myRuntime;
 
     //==============================================================================================
     // YOCTOPUCE - MAXI-IO
@@ -200,7 +199,7 @@ public class MainActivity extends Activity
     // INDICATE WHEN YOCTO IS IN USE (AVAILABLE)
     private boolean YoctoInUse = false;
     private int Status;
-    private long MemoryUsed, MemoryAvailable;
+
 
     @Override
     //==========================================================================
@@ -223,7 +222,6 @@ public class MainActivity extends Activity
             setContentView(R.layout.activity_main);
 
             MainCalendar = Calendar.getInstance();
-            myRuntime = Runtime.getRuntime();
 
             myConfig = new Configuration();
 
@@ -337,13 +335,15 @@ public class MainActivity extends Activity
 
         super.onRestart();
         myEventManager.SendEventNew("APP_ON_RESTART", myData.myBatteryData.level, "");
+        FileLog.d("MARINER", "App RESTART", null);
+
     }
 
     @Override
     protected void onPause() {
-
-        super.onPause();
         myEventManager.SendEventNew("APP_ON_PAUSE", myData.myBatteryData.level, "");
+        FileLog.d("MARINER", "App Pause", null);
+        super.onPause();
     }
 
     @Override
@@ -351,6 +351,8 @@ public class MainActivity extends Activity
 
         super.onResume();
         myEventManager.SendEventNew("APP_ON_RESUME", myData.myBatteryData.level, "");
+        FileLog.d("MARINER", "App RESUME", null);
+
     }
 
     //==========================================================================
@@ -476,7 +478,7 @@ public class MainActivity extends Activity
                 time_from_lat_ux_update_millis += UXUPDATE_PERIOD_IN_MILLIS_SLOW;
 
             if (time_from_lat_ux_update_millis >= SLOW_INFO_UPDATE_PERIOD_IN_MILLIS) {
-                UpdateMemoryUsage();
+
                 myData.SignalStrength = myNetworkInfo.getSignalStrength();
 
                 slow_info_update_counter = 0;
@@ -534,14 +536,6 @@ public class MainActivity extends Activity
     };
 
 
-    //==========================================================================
-    private void UpdateMemoryUsage()
-    //==========================================================================
-    {
-        Runtime.getRuntime();
-        MemoryUsed = (myRuntime.totalMemory() - myRuntime.freeMemory()) / 1048576L;
-        MemoryAvailable = myRuntime.maxMemory() / 1048576L;
-    }
 
 
     //==========================================================================
@@ -550,6 +544,7 @@ public class MainActivity extends Activity
     {        //TODO: implementare il reset di tutte le strutture dati utilizzate
         SetDailyReferenceTimeAndDate();
         myData.DailyReset(Daily_Reference_Time);
+
     }
 
     //==============================================================================================
@@ -812,7 +807,7 @@ public class MainActivity extends Activity
 
                 //TODO: verificare che non sia il caso di invertire LowerScreenBrighteness e ResetScreenBrightness
                 //LowerScreenBrightness();
-                ResetScreenBrightness();
+                //ResetScreenBrightness();
 
                 //NumOfWCActivation++;
                 //isWheelchair_ON = true;
@@ -848,9 +843,9 @@ public class MainActivity extends Activity
                 } else
                     MaxiIO_textview.setText("Yocto = not present");
 
-                LowerScreenBrightness();
+                //LowerScreenBrightness();
 
-                //StopInertialAcquisition();
+                StopInertialAcquisition();
             }
         } catch (Exception ex) {
             LogException(TAG, "PowerIsOFF", ex);
@@ -1113,8 +1108,8 @@ public class MainActivity extends Activity
 
                 battery_textview.setText(myData.myBatteryData.level + "%");
 
-                memory_used_tview.setText(MemoryUsed + " MB");
-                memory_avail_tview.setText(MemoryAvailable + " MB");
+                memory_used_tview.setText(myData.MemoryUsed + " MB");
+                memory_avail_tview.setText(myData.MemoryAvailable + " MB");
 
                 app_uptime_tview.setText(String.format("%02d:%02d:%02d", RunningTime[1], RunningTime[2], RunningTime[3]));
                 duty_uptime_tview.setText("00:00:00");
@@ -1540,8 +1535,8 @@ public class MainActivity extends Activity
             data_out.flush();
             data_out.close();
 
-            myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-
+            //myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+            myBlobManager.AddFileToSaveList(filename);
 
             //Step 2 - Save Accelerometer data if available
             if (myData.myInertialData.acc_data_counter > 0) {
@@ -1559,7 +1554,8 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                //myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myBlobManager.AddFileToSaveList(filename);
             }
 
             //Step 3 - Save Gyro data if available
@@ -1577,11 +1573,11 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-
+                //myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myBlobManager.AddFileToSaveList(filename);
             }
-            //Step 4 - Save Temperature data
 
+            //Step 4 - Save Temperature data
             if (myData.myTempData.data_counter > 0) {
                 filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + "-temp.bin";
                 data_out = getDataOutputStream(filename);
@@ -1594,7 +1590,8 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                //myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myBlobManager.AddFileToSaveList(filename);
             }
             //Step 5 - Save Event info
             if (myData.myEventData.data_counter > 0) {
@@ -1609,7 +1606,8 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                //myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myBlobManager.AddFileToSaveList(filename);
             }
 
 
@@ -1626,7 +1624,27 @@ public class MainActivity extends Activity
 
                 data_out.flush();
                 data_out.close();
+
+                myBlobManager.AddFileToSaveList(filename);
             }
+
+            //Step 8 - Save the list of files saved
+            if (myBlobManager.FilesToSend.size() > 0 )
+            {
+                filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + "-filelist.txt";
+                data_out = getDataOutputStream(filename);
+
+                for (int i = 0; i < myBlobManager.FilesToSend.size(); i++ )
+                {
+                    data_out.writeBytes(myBlobManager.FilesToSend.get(i) + System.getProperty("line.separator"));
+                }
+
+                myBlobManager.AddFileToSaveList(filename);
+
+                data_out.flush();
+                data_out.close();
+            }
+
         } catch (Exception ex) {
             LogException(TAG, "SaveData", ex);
         }
@@ -1720,8 +1738,8 @@ public class MainActivity extends Activity
     private void CreateAndOpenNewFileLogger()
     //==========================================================================
     {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-        CommonFilePreamble = formatter.format(Daily_Reference_Date);
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        CommonFilePreamble = myConfig.WheelchairID + "-" + formatter.format(Daily_Reference_Date);
         logger_filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + ".log";
 
         //Open the new one for the new day

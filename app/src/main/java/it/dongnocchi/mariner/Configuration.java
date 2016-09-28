@@ -159,7 +159,7 @@ public class Configuration {
 
         //Impostiamo le ultime variabili
 
-        Azure_Acquisition_Container =     WheelchairID+ "-acquisitions";// nei nomi dei containers: NO maiuscole, NO _
+        Azure_Acquisition_Container =     WheelchairID + "-acquisitions";// nei nomi dei containers: NO maiuscole, NO _
 
         WhereToSaveXML_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "XMLFiles/";
         WhereToSaveAPK_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "APK/";

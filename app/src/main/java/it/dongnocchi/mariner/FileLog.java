@@ -45,6 +45,7 @@ public class FileLog
     private static BufferedWriter sBufferedWriter;
     private static int sCurrentPriority;
     private static int sFileSizeLimit;                  // bytes
+    //public String
 
     public static void open( String logFilePath, int currentPriority, int fileSizeLimit )
     {

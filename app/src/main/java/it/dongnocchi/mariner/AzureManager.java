@@ -173,6 +173,7 @@ public class AzureManager {
         UploadSingleBlob_Async UploadOneBlob = new UploadSingleBlob_Async(folder, name, container);
         UploadOneBlob.execute();
     }
+
     //==========================================================================
     private class UploadSingleBlob_Async extends AsyncTask<Void, Boolean, String> {
         //==========================================================================

@@ -75,6 +75,13 @@ public class WheelchairData {
 
     private static final int NUM_OF_TEMPERARURE_SAMPLES = 8650; //8640 sarebbe il numero corretto
 
+    public long MemoryUsed, MemoryAvailable;
+    public float MemoryUsedFloat_KB, MaxMemoryUsedFloat_KB;
+    public int MemoryUsedFloatSumCounter;
+
+    //Runtime myRuntime;
+
+
     //public int BatteryLevel;
 
     public WheelchairData(long referencetime)
@@ -86,7 +93,28 @@ public class WheelchairData {
         myTempData = new TemperatureData(NUM_OF_TEMPERARURE_SAMPLES, 10000, 3600);
         myBatteryData = new BatteryData();
         myEventData = new EventData();
+        //myRuntime = Runtime.getRuntime();
     }
+
+
+    //==========================================================================
+    private void UpdateMemoryUsage()
+    //==========================================================================
+    {
+        Runtime myRuntime = Runtime.getRuntime();
+        float memused_KB = ((float)(myRuntime.totalMemory() - myRuntime.freeMemory())) / 1048576.0F;
+
+        if( MaxMemoryUsedFloat_KB < memused_KB)
+            MaxMemoryUsedFloat_KB = memused_KB;
+
+        MemoryUsedFloat_KB += memused_KB;
+        MemoryUsedFloatSumCounter++;
+
+        MemoryUsed = (myRuntime.totalMemory() - myRuntime.freeMemory()) / 1048576L;
+        MemoryAvailable = myRuntime.maxMemory() / 1048576L;
+    }
+
+
 
     //Metodo da chiamare quando si fa partire il programma, in modo che
     //verifichi se l'alimentazione è già presente, ed in questo caso non aspetta
@@ -221,6 +249,15 @@ public class WheelchairData {
         myBatteryData.AddData(deltatime, new_val);
     }
 
+    public void AddEveBatteryLowEvent(Long EventTime)
+    {
+        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000);
+
+
+
+    }
+
+
     public void ResetHourlyCounters()
     {
         PowerONHourlyCounter = 0;
@@ -259,6 +296,11 @@ public class WheelchairData {
         //myMotorData.Reset();
         //myPowerData.Reset();
         myBatteryData.Reset();
+
+        //Reset Memory Usage indexes
+        MaxMemoryUsedFloat_KB = 0;
+        MemoryUsedFloat_KB = 0;
+        MemoryUsedFloatSumCounter = 0;
 
         ResetDailyCounters();
     }
@@ -308,6 +350,8 @@ public class WheelchairData {
         }
 
         DailyPowerOnTime += HourlyPowerOnTime;
+
+        UpdateMemoryUsage();
     }
 
 

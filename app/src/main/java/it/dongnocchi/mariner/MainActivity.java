@@ -1420,7 +1420,6 @@ public class MainActivity extends Activity
         myAzureManager.CheckAndUpdateAPK();
     }
 
-
     //==========================================================================
     public void ToggleViewButton_Click(View view)
     //==========================================================================

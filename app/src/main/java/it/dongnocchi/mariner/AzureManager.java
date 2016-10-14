@@ -17,7 +17,6 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlSerializer;
 
-
 /**
  * Created by DianaM on 27/08/2015.
  */
@@ -33,6 +32,9 @@ public class AzureManager {
     private boolean isBusy = false;
 
     Configuration myConfig;
+
+    String ApkFileToUpdate = "";
+
 
     protected final int COMMAND_UPDATE_APK = -1;
     protected final int COMMAND_SIMPLE_TRANSFER = 0;
@@ -256,6 +258,7 @@ public class AzureManager {
         dwl.execute();
         return null;
     }
+
     //==========================================================================
     private class DownloadBlob_Async extends AsyncTask<Void, Boolean, Boolean> {
     //==========================================================================
@@ -330,7 +333,7 @@ public class AzureManager {
                     FilesToDownload.remove(Size_FilesToDownload-3);
 
                 } else if (Size_FilesToDownload == COMMAND_UPDATE_APK) {
-                    UpdateApp new_update = new UpdateApp(myConfig.get_WhereToSaveAPK_LocalPath() + myConfig.get_APK_FileName());
+                    UpdateApp new_update = new UpdateApp(myConfig.get_WhereToSaveAPK_LocalPath() + BlobName_local);
                     new_update.setContext(mcontext);
                     new_update.execute();
                 }
@@ -349,10 +352,11 @@ public class AzureManager {
     }
 
     //==========================================================================
-    public boolean isNetworkOnline() {
+    public boolean isNetworkOnline_DianaVersion() {
     //==========================================================================
         boolean status=false;
-        if(BatLev >= BATTERY_LOW_THRESHOLD) {
+        if(BatLev >= BATTERY_LOW_THRESHOLD)
+        {
             try {
                 ConnectivityManager cm = (ConnectivityManager) mcontext.getSystemService(Context.CONNECTIVITY_SERVICE);
                 NetworkInfo netInfo = cm.getNetworkInfo(0); // mobile
@@ -374,11 +378,125 @@ public class AzureManager {
     }
 
     //==========================================================================
+    public boolean isNetworkOnline() {
+        //==========================================================================
+        boolean online_status = false;
+
+            try {
+                ConnectivityManager cm = (ConnectivityManager) mcontext.getSystemService(Context.CONNECTIVITY_SERVICE);
+                NetworkInfo netInfo = cm.getNetworkInfo(0); // mobile
+                if (netInfo != null && netInfo.getState() == NetworkInfo.State.CONNECTED) {
+                    online_status = true;
+                } else {
+                    netInfo = cm.getNetworkInfo(1); // wi-fi
+                    if (netInfo != null && netInfo.getState() == NetworkInfo.State.CONNECTED)
+                        online_status = true;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+            return online_status;
+    }
+
+    //==========================================================================
+    //==========================================================================
+    public void CheckAndUpdateAPK()
+    //==========================================================================
+    //==========================================================================
+    {
+        VersionCheckerAndUpdater new_version_checker_and_updater = new VersionCheckerAndUpdater();
+        new_version_checker_and_updater.execute();
+
+/*
+
+        //String BlobContainer_local = "";
+        String WhereToSaveIt_local = "";
+        //String BlobName_local = "";
+
+        String ApkFileToUpdate = "";
+        int NewRelease = 0;
+
+        CloudBlob blobToDownload = null;
+
+        if(!isBusy)
+        {
+            if (isNetworkOnline())
+            {
+                try
+                {
+                    isBusy = true;
+                    // Retrieve storage account from connection-string.
+                    CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
+
+                    // Create the blob client.
+                    CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
+
+                    // Retrieve reference to a previously created container.
+                    CloudBlobContainer container = blobClient.getContainerReference( myConfig.get_APK_Container());
+
+                    // Loop through each blob item in the container.
+                    for (ListBlobItem blobItem : container.listBlobs())
+                    {
+                        // If the item is a blob, not a virtual directory.
+                        if (blobItem instanceof CloudBlob) {
+                            // Download the item and save it to a file with the same name.
+                            //CloudBlob blob = (CloudBlob) blobItem;
+
+                            String BlobName = ((CloudBlob)blobItem).getName();//.replaceFirst("[.][^.]+$", "");
+
+                            if( BlobName.contains("mariner"))
+                            {
+                                String[] parts = BlobName.split("[-\\.]");
+                                int tempNewRelease = Integer.parseInt(parts[1]);
+
+                                if( tempNewRelease > myConfig.currentBuild && tempNewRelease > NewRelease )
+                                {
+                                    NewRelease = tempNewRelease;
+                                    ApkFileToUpdate = ((CloudBlob)blobItem).getName();
+                                    blobToDownload = (CloudBlob)blobItem;
+                                }
+
+                            }
+
+                            //if (blob.getName().equals(BlobName_local))
+                            //  blob.download(new FileOutputStream(WhereToSaveIt_local + blob.getName()) );
+                        }
+                    }
+
+                    if (ApkFileToUpdate != "" && blobToDownload != null) {
+                        blobToDownload.download(new FileOutputStream(WhereToSaveIt_local + ApkFileToUpdate));
+
+                        UpdateApp new_update = new UpdateApp(WhereToSaveIt_local + ApkFileToUpdate);
+                        new_update.setContext(mcontext);
+                        new_update.execute();
+                    }
+                }
+                catch (Exception e) {
+                    // Output the stack trace.
+                    e.printStackTrace();
+                }
+                isBusy = false;
+            } else
+            { // non online
+            }
+        }
+        else{
+            //is busy
+        }
+
+
+
+*/
+
+    }
+
+    //==========================================================================
     //==========================================================================
     public void CheckNewUpdates(int battery){
     //==========================================================================
     //==========================================================================
-        BatLev = battery;
+        //BatLev = battery;
         // set local folder to save xml file
         //String storageConnectionString = myConfig.get_storageConnectionString();
         File WhereToSaveXml = new File(myConfig.get_WhereToSaveXML_LocalPath());
@@ -387,23 +505,30 @@ public class AzureManager {
         }
 
         // download xml file from cloud
-        CheckVersion new_check = new CheckVersion();
-        new_check.execute();
+        VersionChecker new_version_checker = new VersionChecker();
+        new_version_checker.execute();
    }
 
+
     //==========================================================================
-    private class CheckVersion extends AsyncTask<Void, Boolean, Boolean> {
-    //==========================================================================
-        String BlobContainer_local = "";
+    private class VersionCheckerAndUpdater extends AsyncTask<Void, Boolean, Boolean> {
+        //==========================================================================
+        //String BlobContainer_local = "";
         String WhereToSaveIt_local = "";
-        String BlobName_local = "";
+        //String BlobName_local = "";
+
+        int NewRelease;
+
+        CloudBlob blobToDownload;
+
+        String ApkFileToUpdate = "";
 
         //TODO: verificare la procedura per l'aggiornamento
-        public CheckVersion(){
+        public VersionCheckerAndUpdater(){
             //myConfig = new Configuration();
-            BlobContainer_local = myConfig.get_APK_Container();
+            //BlobContainer_local = myConfig.get_APK_Container();
             WhereToSaveIt_local = myConfig.get_WhereToSaveXML_LocalPath();
-            BlobName_local = myConfig.get_XML_FileName();
+            //BlobName_local = myConfig.get_XML_FileName();
         }
 
         @Override
@@ -419,7 +544,7 @@ public class AzureManager {
                         CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
 
                         // Retrieve reference to a previously created container.
-                        CloudBlobContainer container = blobClient.getContainerReference(BlobContainer_local);
+                        CloudBlobContainer container = blobClient.getContainerReference( myConfig.get_APK_Container());
 
                         // Loop through each blob item in the container.
                         for (ListBlobItem blobItem : container.listBlobs()) {
@@ -427,10 +552,146 @@ public class AzureManager {
                             if (blobItem instanceof CloudBlob) {
                                 // Download the item and save it to a file with the same name.
                                 CloudBlob blob = (CloudBlob) blobItem;
-                                if (blob.getName().equals(BlobName_local))
-                                    blob.download(new FileOutputStream(WhereToSaveIt_local + blob.getName()) );
+
+                                String BlobName = blob.getName();//.replaceFirst("[.][^.]+$", "");
+
+                                if( BlobName.contains("mariner"))
+                                {
+                                    String[] parts = BlobName.split("[-\\.]");
+                                    int tempNewRelease = Integer.parseInt(parts[1]);
+
+                                    if( tempNewRelease > myConfig.currentBuild && tempNewRelease > NewRelease )
+                                    {
+                                        NewRelease = tempNewRelease;
+                                        ApkFileToUpdate = blob.getName();
+                                        blobToDownload = blob;
+                                    }
+                                }
+
+                                //if (blob.getName().equals(BlobName_local))
+                                //  blob.download(new FileOutputStream(WhereToSaveIt_local + blob.getName()) );
                             }
                         }
+
+                        return true;
+                    }
+                    catch (Exception e) {
+                        // Output the stack trace.
+                        e.printStackTrace();
+                        return false;
+                    }
+                } else { // non online
+                    return false;
+                }
+            }
+            else{
+                return false;
+            }
+        }
+        @Override
+        //==========================================================================
+        protected void onPostExecute(Boolean res){ // post execute of CHECK VERSION
+            //==========================================================================
+            isBusy = false;
+            if (!res){
+                // qualcosa è andato storto
+            } else{
+                if (ApkFileToUpdate != "")
+                {
+                    // aggiorna apk
+                    DownloadBlob_Async apk_dwl= new DownloadBlob_Async(myConfig.get_APK_Container(), myConfig.get_WhereToSaveAPK_LocalPath(),ApkFileToUpdate, COMMAND_UPDATE_APK);
+                    apk_dwl.execute();
+                }
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //==========================================================================
+    private class VersionChecker extends AsyncTask<Void, Boolean, Boolean> {
+    //==========================================================================
+        //String BlobContainer_local = "";
+        String WhereToSaveIt_local = "";
+        //String BlobName_local = "";
+
+        String ApkFileToUpdate = "";
+        int NewRelease;
+
+        CloudBlob blobToDownload;
+
+        //TODO: verificare la procedura per l'aggiornamento
+        public VersionChecker(){
+            //myConfig = new Configuration();
+            //BlobContainer_local = myConfig.get_APK_Container();
+            WhereToSaveIt_local = myConfig.get_WhereToSaveXML_LocalPath();
+            //BlobName_local = myConfig.get_XML_FileName();
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            if(!isBusy) {
+                if (isNetworkOnline()) {
+                    try {
+                        isBusy = true;
+                        // Retrieve storage account from connection-string.
+                        CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
+
+                        // Create the blob client.
+                        CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
+
+                        // Retrieve reference to a previously created container.
+                        CloudBlobContainer container = blobClient.getContainerReference( myConfig.get_APK_Container());
+
+                        // Loop through each blob item in the container.
+                        for (ListBlobItem blobItem : container.listBlobs()) {
+                            // If the item is a blob, not a virtual directory.
+                            if (blobItem instanceof CloudBlob) {
+                                // Download the item and save it to a file with the same name.
+                                CloudBlob blob = (CloudBlob) blobItem;
+
+                                String BlobName = blob.getName();//.replaceFirst("[.][^.]+$", "");
+
+                                if( BlobName.contains("mariner"))
+                                {
+                                    String[] parts = BlobName.split("[-\\.]");
+                                    int tempNewRelease = Integer.parseInt(parts[1]);
+
+                                    if( tempNewRelease > myConfig.currentBuild && tempNewRelease > NewRelease )
+                                    {
+                                        NewRelease = tempNewRelease;
+                                        ApkFileToUpdate = blob.getName();
+                                        blobToDownload = blob;
+                                    }
+
+                                }
+
+                                //if (blob.getName().equals(BlobName_local))
+                                //  blob.download(new FileOutputStream(WhereToSaveIt_local + blob.getName()) );
+                            }
+                        }
+
+                        if (ApkFileToUpdate != "")
+                            blobToDownload.download(new FileOutputStream(WhereToSaveIt_local + ApkFileToUpdate) );
+
+
                         return true;
                     }
                     catch (Exception e) {
@@ -468,6 +729,10 @@ public class AzureManager {
             }
         }
     }
+
+
+
+
 
     //==========================================================================
     private String get_ApkRelease(boolean checkNewFile) {
@@ -683,9 +948,6 @@ public class AzureManager {
         //==========================================================================
         FilesToSend.add(FilesToSend.size(), _FileName);
     }
-
-
-
 
     //==========================================================================
     public void AppendNew_NotUploadedFileName(String text){

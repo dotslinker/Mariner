@@ -64,7 +64,7 @@ public class MainActivity extends Activity
     //TODO: da verificare tutta la politica di Logging
 
     //xxyyy xx = major release, yyy = minor release
-    public static  final int CURRENT_BUILD = 1002;
+    public static final int CURRENT_BUILD = 1003;
 
     public static final String TAG = MainActivity.class.getSimpleName();
     public static final int STATUS_INIT = 0;
@@ -131,6 +131,7 @@ public class MainActivity extends Activity
     TextView battery_textview;
     TextView event_textview;
     TextView sys_stat_textview;
+    TextView build_tview;
     TextView temperature_min_val_tview;
     TextView temperature_max_val_tview;
     TextView temperature_mean_val_tview;
@@ -150,7 +151,7 @@ public class MainActivity extends Activity
     // phone network variables
     TelephonyManager TelephonManager;
     it.dongnocchi.mariner.NetworkInfo myNetworkInfo;
-    AzureManager myBlobManager;
+    AzureManager myAzureManager;
     Configuration myConfig;
     AzureEventManager myEventManager;
     int slow_info_update_counter;
@@ -224,9 +225,13 @@ public class MainActivity extends Activity
             MainCalendar = Calendar.getInstance();
 
             myConfig = new Configuration();
+            myConfig.currentBuild = CURRENT_BUILD;
+
 
             //Initialize UX
             InitUX();
+
+            build_tview.setText("Build: " + CURRENT_BUILD);
 
             CreateAndOpenNewFileLogger();
             //myLogger = new FileLog();
@@ -263,13 +268,13 @@ public class MainActivity extends Activity
             gyro_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
             gyro_z_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
 
-            myBlobManager = new AzureManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
+            myAzureManager = new AzureManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
                 @Override
                 public void processFinish(String last_uploaded_file) {
                     // se ho caricato il file xml coi nomi dei file caricati, non scriverlo sul nuovo file xml
                     String xml_name = myConfig.get_UploadedFiles_XmlName();
                     if (last_uploaded_file != xml_name) { // l'ultimo file caricato è un file di dati
-                        myBlobManager.AppendNew_UploadedFileName(last_uploaded_file);//lo aggiungo al file contenente i nomi dei file caricati
+                        myAzureManager.AppendNew_UploadedFileName(last_uploaded_file);//lo aggiungo al file contenente i nomi dei file caricati
                     }
                 }
             }, myConfig);
@@ -430,11 +435,11 @@ public class MainActivity extends Activity
                 //UpdateListofFilesToUpload();
 
                 //Upload Blobs
-                myBlobManager.UploadBlobs(myData.myBatteryData.level);
+                myAzureManager.UploadBlobs(myData.myBatteryData.level);
 
                 //TODO: sarà da ripristinare
                 //Check for App updates
-                //myBlobManager.CheckNewUpdates(myData.myBatteryData.level);
+                //myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
 
                 myData.DailyReset(Daily_Reference_Time);//DailyResetData();
 
@@ -660,6 +665,7 @@ public class MainActivity extends Activity
         MaxiIO_textview = (TextView) findViewById(R.id.MaxiIO_view);
         event_textview = (TextView) findViewById(R.id.event_view);
         sys_stat_textview = (TextView) findViewById(R.id.system_status_view);
+        build_tview = (TextView) findViewById(R.id.system_build_view);
 
         app_uptime_tview = (TextView) findViewById(R.id.app_uptime_tview);
         duty_uptime_tview = (TextView) findViewById(R.id.current_duty_uptime_tview);
@@ -1342,9 +1348,9 @@ public class MainActivity extends Activity
         //TODO: Verificare che questa sequenza di operazioni sia esaustiva rispetto a quello che ci interessa
 
         //upload_lastFiles();
-        myBlobManager.UploadBlobs(myData.myBatteryData.level);
+        myAzureManager.UploadBlobs(myData.myBatteryData.level);
         // CHECK NEW APP UPDATES ==================================
-        myBlobManager.CheckNewUpdates(myData.myBatteryData.level);
+        myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
 
         myData.updateDailyUse();
         myEventManager.SendDailyReport();
@@ -1405,6 +1411,13 @@ public class MainActivity extends Activity
 
         StartCalibration();
 
+    }
+
+    //==========================================================================
+    public void UpdateAppButton(View view)
+    //==========================================================================
+    {
+        myAzureManager.CheckAndUpdateAPK();
     }
 
 
@@ -1480,10 +1493,10 @@ public class MainActivity extends Activity
         //UpdateListofFilesToUpload();
 
         //Upload Blobs
-        myBlobManager.UploadBlobs(myData.myBatteryData.level);
+        myAzureManager.UploadBlobs(myData.myBatteryData.level);
 
         //Check for App updates
-        myBlobManager.CheckNewUpdates(myData.myBatteryData.level);
+        myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
 
         DailyResetData();
 
@@ -1535,8 +1548,8 @@ public class MainActivity extends Activity
             data_out.flush();
             data_out.close();
 
-            //myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-            myBlobManager.AddFileToSaveList(filename);
+            //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+            myAzureManager.AddFileToSaveList(filename);
 
             //Step 2 - Save Accelerometer data if available
             if (myData.myInertialData.acc_data_counter > 0) {
@@ -1554,8 +1567,8 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                //myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-                myBlobManager.AddFileToSaveList(filename);
+                //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myAzureManager.AddFileToSaveList(filename);
             }
 
             //Step 3 - Save Gyro data if available
@@ -1573,8 +1586,8 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                //myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-                myBlobManager.AddFileToSaveList(filename);
+                //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myAzureManager.AddFileToSaveList(filename);
             }
 
             //Step 4 - Save Temperature data
@@ -1590,8 +1603,8 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                //myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-                myBlobManager.AddFileToSaveList(filename);
+                //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myAzureManager.AddFileToSaveList(filename);
             }
             //Step 5 - Save Event info
             if (myData.myEventData.data_counter > 0) {
@@ -1606,8 +1619,8 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                //myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-                myBlobManager.AddFileToSaveList(filename);
+                //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myAzureManager.AddFileToSaveList(filename);
             }
 
 
@@ -1625,21 +1638,21 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                myBlobManager.AddFileToSaveList(filename);
+                myAzureManager.AddFileToSaveList(filename);
             }
 
             //Step 8 - Save the list of files saved
-            if (myBlobManager.FilesToSend.size() > 0 )
+            if (myAzureManager.FilesToSend.size() > 0 )
             {
                 filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + "-filelist.txt";
                 data_out = getDataOutputStream(filename);
 
-                for (int i = 0; i < myBlobManager.FilesToSend.size(); i++ )
+                for (int i = 0; i < myAzureManager.FilesToSend.size(); i++ )
                 {
-                    data_out.writeBytes(myBlobManager.FilesToSend.get(i) + System.getProperty("line.separator"));
+                    data_out.writeBytes(myAzureManager.FilesToSend.get(i) + System.getProperty("line.separator"));
                 }
 
-                myBlobManager.AddFileToSaveList(filename);
+                myAzureManager.AddFileToSaveList(filename);
 
                 data_out.flush();
                 data_out.close();
@@ -1728,7 +1741,7 @@ public class MainActivity extends Activity
             FileLog.close();
 
             //Save logfile
-            myBlobManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), logger_filename, myConfig.get_Acquisition_Container());
+            myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), logger_filename, myConfig.get_Acquisition_Container());
         }
 
         CreateAndOpenNewFileLogger();

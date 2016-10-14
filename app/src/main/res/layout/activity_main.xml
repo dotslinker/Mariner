@@ -103,11 +103,19 @@
                 </TableRow>
                 <TableRow>
                     <TextView
+                        android:id="@+id/system_build_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:hint="Build: "
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
                         android:id="@+id/system_status_view"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_span="3"
-                        android:layout_column="0"
+                        android:layout_span="2"
+                        android:layout_column="1"
                         android:hint="SYSTEM STATUS = "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
                 </TableRow>
@@ -187,8 +195,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
-                        android:onClick="DailyUpdateButton"
-                        android:text="Daily Update" />
+                        android:onClick="UpdateAppButton"
+                        android:text="Update App" />
 
                     <Button
                         android:id="@+id/toggle_display_button"

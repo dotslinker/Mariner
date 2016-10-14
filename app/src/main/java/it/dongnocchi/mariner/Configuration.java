@@ -25,6 +25,8 @@ import static android.os.Environment.getExternalStorageDirectory;
  */
 public class Configuration {
 
+    public int currentBuild;
+
     private String storageConnectionString;
     private String SAS;
     private String EventHub_url;

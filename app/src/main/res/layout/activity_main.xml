@@ -27,6 +27,26 @@
                 android:layout_centerHorizontal="true">
 
                 <TableRow>
+                    <TextView
+                        android:id="@+id/system_id_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:layout_span="2"
+                        android:hint="Wheelchair ID: "
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                    <TextView
+                        android:id="@+id/system_build_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="2"
+                        android:hint="Build:"
+                        android:textAppearance="?android:attr/textAppearanceSmall" />
+                </TableRow>
+
+
+                <TableRow>
 
 
                     <Button
@@ -104,20 +124,13 @@
 
                 </TableRow>
                 <TableRow>
-                    <TextView
-                        android:id="@+id/system_build_view"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_column="0"
-                        android:hint="Build: "
-                        android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
                         android:id="@+id/system_status_view"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_span="2"
-                        android:layout_column="1"
+                        android:layout_column="0"
                         android:hint="SYSTEM STATUS = "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
                 </TableRow>
@@ -635,7 +648,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:layout_span="3"
+                        android:layout_span="4"
                         android:hint="Maxi-IO: data"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
@@ -651,7 +664,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:layout_span="3"
+                        android:layout_span="4"
                         android:hint="Maxi-IO: events"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
                 </TableRow>
@@ -704,7 +717,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:hint="Battery level"
+                        android:hint="Battery Level: "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
@@ -720,7 +733,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
-                        android:hint="Signal "
+                        android:hint="Signal Level: "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
@@ -741,7 +754,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:hint="Memory used"
+                        android:hint="Memory Used: "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
@@ -757,7 +770,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
-                        android:hint="Memory Avail."
+                        android:hint="Memory Avail.: "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
@@ -767,8 +780,6 @@
                         android:layout_column="3"
                         android:text="0 MB"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
-
-
 
                 </TableRow>
 
@@ -781,8 +792,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
-                        android:hint="Light Sensor"
-                        android:text="Light: "
+                        android:text="Light Level: "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                     <TextView
@@ -797,8 +807,7 @@
                         android:id="@+id/touch_view"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_column="0"
-                        android:hint="Number of touch event"
+                        android:layout_column="2"
                         android:text="N° touch: "
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
@@ -806,7 +815,7 @@
                         android:id="@+id/num_of_touch_val_tview"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_column="1"
+                        android:layout_column="3"
                         android:text="0"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 

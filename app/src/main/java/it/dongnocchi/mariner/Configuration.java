@@ -79,7 +79,7 @@ public class Configuration {
 
     //==========================================================================
     public Configuration(){
-    //==========================================================================
+        //==========================================================================
         //Xml_handle = new XML_handler();
         //User ThisChild = Xml_handle.read();
         //ChildName = ThisChild.getName().toLowerCase();
@@ -219,7 +219,7 @@ public class Configuration {
     {
         String s;
         s = "https://" + serviceNamespace +
-            ".servicebus.windows.net/" + hubName +
+                ".servicebus.windows.net/" + hubName +
                 "/publishers/" + device + "/messages";
         return s;
     }
@@ -239,84 +239,83 @@ public class Configuration {
         //File XMLConfigFile = new File(getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/config.xml");
         //String Filename = getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/config.xml";
 
-            try {
-                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                factory.setNamespaceAware(false);
-                factory.setValidating(false);
-                DocumentBuilder builder = factory.newDocumentBuilder();
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(false);
+            factory.setValidating(false);
+            DocumentBuilder builder = factory.newDocumentBuilder();
 
-                Document doc = builder.parse(path);
+            Document doc = builder.parse(path);
 
-                NodeList myNL = doc.getFirstChild().getChildNodes();
+            NodeList myNL = doc.getFirstChild().getChildNodes();
 
-                for (int i = 0; i < myNL.getLength(); ++i) {
-                    Node myNode = myNL.item(i);
-                    if( myNode.getNodeType()== Node.ELEMENT_NODE) {
-                        String NodeType = myNode.getNodeName();
-                        String s = myNode.getTextContent();
-                        //NodeList children = myNL.item(i).getChildNodes();
-                        //String s = children.item(0).getNodeValue();
+            for (int i = 0; i < myNL.getLength(); ++i) {
+                Node myNode = myNL.item(i);
+                if( myNode.getNodeType()== Node.ELEMENT_NODE) {
+                    String NodeType = myNode.getNodeName();
+                    String s = myNode.getTextContent();
+                    //NodeList children = myNL.item(i).getChildNodes();
+                    //String s = children.item(0).getNodeValue();
 
-                        switch (NodeType) {
-                            case "device_id":
-                                WheelchairID = s;
-                                break;
-                            case "acquisition_folder":
-                                LocalAcquisitionFolder = s;
-                                break;
-                            case "azure_service_namespace":
-                                serviceNamespace = s;
-                                break;
-                            case "blob_connectionstring":
-                                storageConnectionString = s;
-                                break;
-                            case "eventhub_events_url":
-                                Events_EventHub_url = s;
-                                break;
-                            case "eventhub_events_connstring":
-                                Events_EventHub_connstring = s;
-                                break;
-                            case "eventhub_hourlyupdate_url":
-                                HourlyUpdate_EventHub_url = s;
-                                break;
-                            case "eventhub_hourlyupdate_connstring":
-                                HourlyUpdate_EventHub_connstring = s;
-                                break;
-                            case "eventhub_dailyupdate_url":
-                                DailyUpdate_EventHub_url = s;
-                                break;
-                            case "eventhub_dailyupdate_connstring":
-                                DailyUpdate_EventHub_connstring = s;
-                                break;
-                            case "apk_container":
-                                APK_Container = s;
-                                break;
-                            case "apk_filename":
-                                APK_FileName = s;
-                                break;
-                            case "xml_filename":
-                                XML_FileName = s;
-                                break;
-                            case "uploadedfiles_xml_filename":
-                                UploadedFiles_XmlName = s;
-                                break;
-                            case "notuploadedfiles_xml_filename":
-                                NotUploadedFiles_XmlName = s;
-                                break;
-                            case "daily_update_hour":
-                                DailyUpdateHour = Integer.parseInt(s);
-                                break;
-                            case "use_gps_localization":
-                                UseGPSLocalization = Boolean.parseBoolean(s);
-                                break;
-                        }
+                    switch (NodeType) {
+                        case "device_id":
+                            WheelchairID = s;
+                            break;
+                        case "acquisition_folder":
+                            LocalAcquisitionFolder = s;
+                            break;
+                        case "azure_service_namespace":
+                            serviceNamespace = s;
+                            break;
+                        case "blob_connectionstring":
+                            storageConnectionString = s;
+                            break;
+                        case "eventhub_events_url":
+                            Events_EventHub_url = s;
+                            break;
+                        case "eventhub_events_connstring":
+                            Events_EventHub_connstring = s;
+                            break;
+                        case "eventhub_hourlyupdate_url":
+                            HourlyUpdate_EventHub_url = s;
+                            break;
+                        case "eventhub_hourlyupdate_connstring":
+                            HourlyUpdate_EventHub_connstring = s;
+                            break;
+                        case "eventhub_dailyupdate_url":
+                            DailyUpdate_EventHub_url = s;
+                            break;
+                        case "eventhub_dailyupdate_connstring":
+                            DailyUpdate_EventHub_connstring = s;
+                            break;
+                        case "apk_container":
+                            APK_Container = s;
+                            break;
+                        case "apk_filename":
+                            APK_FileName = s;
+                            break;
+                        case "xml_filename":
+                            XML_FileName = s;
+                            break;
+                        case "uploadedfiles_xml_filename":
+                            UploadedFiles_XmlName = s;
+                            break;
+                        case "notuploadedfiles_xml_filename":
+                            NotUploadedFiles_XmlName = s;
+                            break;
+                        case "daily_update_hour":
+                            DailyUpdateHour = Integer.parseInt(s);
+                            break;
+                        case "use_gps_localization":
+                            UseGPSLocalization = Boolean.parseBoolean(s);
+                            break;
                     }
                 }
             }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
-
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 

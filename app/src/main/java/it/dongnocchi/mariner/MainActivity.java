@@ -136,6 +136,7 @@ public class MainActivity extends Activity
     TextView battery_textview;
     TextView event_textview;
     TextView sys_stat_textview;
+    TextView WheelchairID_tview;
     TextView build_tview;
     TextView temperature_min_val_tview;
     TextView temperature_max_val_tview;
@@ -244,7 +245,7 @@ public class MainActivity extends Activity
             InitUX();
 
             build_tview.setText("Build: " + CURRENT_BUILD);
-
+            WheelchairID_tview.setText("Wheelchair ID: " + myConfig.get_WheelchairID());
             CreateAndOpenNewFileLogger();
             //myLogger = new FileLog();
 
@@ -694,6 +695,7 @@ public class MainActivity extends Activity
         event_textview = (TextView) findViewById(R.id.event_view);
         sys_stat_textview = (TextView) findViewById(R.id.system_status_view);
         build_tview = (TextView) findViewById(R.id.system_build_view);
+        WheelchairID_tview = (TextView) findViewById(R.id.system_id_view);
 
         app_uptime_tview = (TextView) findViewById(R.id.app_uptime_tview);
         duty_uptime_tview = (TextView) findViewById(R.id.current_duty_uptime_tview);
@@ -1062,7 +1064,7 @@ public class MainActivity extends Activity
     protected void StopLightAcquisition()
     //==========================================================================
     {
-            mSensorManager.unregisterListener(this, myLight);
+        mSensorManager.unregisterListener(this, myLight);
     }
 
 

@@ -1,5 +1,7 @@
 package it.dongnocchi.mariner;
 
+import android.database.CursorIndexOutOfBoundsException;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.locks.Lock;
@@ -52,10 +54,34 @@ public class WheelchairData {
 
     //public float HourlyUse;
 
+    public float MinDailyTemperature;
+    public float MeanDailyTemperature;
+    public float MaxDailyTemperature;
+
+    public long MinHourlyMemory;
+    public long MeanHourlyMemory;
+    public long MaxHourlyMemory;
+
+    public long MinDailyMemory;
+    public long MeanDailyMemory;
+    public long MaxDailyMemory;
+
     public float DailyUse;
     public int Status;
     public String HourlyNote;
-    public String GPSPosition;
+    //public String GPSPosition;
+
+    public float CurrentLightValue;
+    public float MinLightValue;
+    public float MaxLightValue;
+
+    public float MaxDailyLightValue;
+
+    public int NumberOfTouch;
+    public int NumberOfDailyTouch;
+
+    public String DailyLogFileName;
+    public String UploadedFileListString;
 
     private Lock MotorStatusLocker = new ReentrantLock();
     private Lock PowerStatusLocker = new ReentrantLock();
@@ -96,6 +122,29 @@ public class WheelchairData {
         //myRuntime = Runtime.getRuntime();
     }
 
+    public String GetDailyLog()
+    {
+        return DailyLogFileName;
+    }
+
+    public String GetUploadedFileList() {
+        return UploadedFileListString;
+    }
+
+    public void UpdateLightValue(float new_val)
+    {
+        CurrentLightValue = new_val;
+
+        if (MinLightValue > new_val)
+            MinLightValue = new_val;
+
+        if (MaxLightValue < new_val)
+            MaxLightValue = new_val;
+
+        if (MaxDailyLightValue < MaxLightValue)
+            MaxDailyLightValue = MaxLightValue;
+
+    }
 
     //==========================================================================
     private void UpdateMemoryUsage()
@@ -112,7 +161,23 @@ public class WheelchairData {
 
         MemoryUsed = (myRuntime.totalMemory() - myRuntime.freeMemory()) / 1048576L;
         MemoryAvailable = myRuntime.maxMemory() / 1048576L;
+
+        if (MinHourlyMemory > MemoryUsed)
+            MinHourlyMemory = MemoryUsed;
+
+        if (MinDailyMemory > MemoryUsed)
+            MinDailyMemory = MemoryUsed;
+
+        if (MaxHourlyMemory < MemoryUsed)
+            MaxHourlyMemory = MemoryUsed;
+
+        if (MaxDailyMemory < MemoryUsed)
+            MaxDailyMemory = MemoryUsed;
     }
+
+
+
+
 
 
 
@@ -268,7 +333,18 @@ public class WheelchairData {
 
         HourlyMotorOnTimePerc = 0;
         HourlyPowerOnTimePerc = 0;
+
+        MemoryDataHourlyReset();
+
+        LightDataHourlyReset();
     }
+
+    public void LightDataHourlyReset()
+    {
+        MinLightValue = 100;
+        MaxLightValue = 0;
+    }
+
 
     public void ResetDailyCounters()
     {
@@ -285,7 +361,17 @@ public class WheelchairData {
         DegreesCoveredTurningRight = 0;
 
         DailyUse = 0;
+
+        MemoryDataDailyReset();
+
+        LightDataDailyReset();
     }
+
+    public void LightDataDailyReset()
+    {
+        MaxDailyLightValue = 0;
+    }
+
 
     public void DailyReset(long _dailyReferenceTime)
     {
@@ -297,13 +383,29 @@ public class WheelchairData {
         //myPowerData.Reset();
         myBatteryData.Reset();
 
+        ResetDailyCounters();
+
+        UploadedFileListString = "";
+    }
+
+    private void MemoryDataDailyReset()
+    {
         //Reset Memory Usage indexes
         MaxMemoryUsedFloat_KB = 0;
         MemoryUsedFloat_KB = 0;
         MemoryUsedFloatSumCounter = 0;
 
-        ResetDailyCounters();
+        MinDailyMemory = 100000000L;
+        MaxDailyMemory = 0;
     }
+
+    private void MemoryDataHourlyReset()
+    {
+        MinHourlyMemory = 100000000L;
+        MaxHourlyMemory = 0;
+    }
+
+
 
     public void updateHourlyUse(long hourly_ref_time, long now)
     {

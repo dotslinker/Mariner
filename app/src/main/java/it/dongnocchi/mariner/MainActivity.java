@@ -64,9 +64,12 @@ public class MainActivity extends Activity
     //TODO: da verificare tutta la politica di Logging
 
     //xxyyy xx = major release, yyy = minor release
-    public static final int CURRENT_BUILD = 1003;
+    public static final int CURRENT_BUILD = 1004;
 
     public static final String TAG = MainActivity.class.getSimpleName();
+
+    //TODO: da verificare la gestione dello status
+
     public static final int STATUS_INIT = 0;
     public static final int STATUS_SLEEP = 1;
     public static final int STATUS_IDLE = 2;
@@ -80,7 +83,9 @@ public class MainActivity extends Activity
     static final int MAX_LOGFILE_SIZE = 20000000;
     private static final int ACC_READING_PERDIOD = 20000; // 20 ms
     private static final int GYRO_READING_PERDIOD = 20000; //20 ms
-    private static final int TEMPERATURE_READING_PERDIOD = 10000000; //10s
+    private static final int TEMPERATURE_READING_PERDIOD = 10000000; //1s
+    private static final int LIGHT_READING_PERDIOD = 10000000; //1s
+
     //During the Calibration, we require a less frequent sampling period
     private static final int ACC_READING_PERDIOD_CALIB = 50000;
     private static final int GYRO_READING_PERDIOD_CALIB = 50000;
@@ -138,11 +143,16 @@ public class MainActivity extends Activity
     TextView signal_level_tview;
     TextView memory_used_tview, memory_avail_tview;
     TextView app_uptime_tview, duty_uptime_tview;
+
+    TextView ligth_val_tview, number_of_touch_tview;
+
     Button btPowerOn, btPowerOff, btMotorOn, btMotorOff;
     Button btSendEvent, btSendDailyReport, btSendHourlyReport;
     Button btCalibrate, btToggleView, btToggleMode;
     Button btDoHourlyUpdate, btDoDailyUpdate;
     boolean UpdateTextViewsEnabled = false;
+
+
     //Array containing the information about the running time of the App
     int[] RunningTime;
     // CLASSES FOR COMMUNICATIONS BETWEEN ACTIVITIES
@@ -189,6 +199,8 @@ public class MainActivity extends Activity
     //private int ViewRefreshUpdate_period_ms = 1000;
     private Sensor mGyro;
     private Sensor mTemperature;
+    private Sensor myLight;
+
     private BatteryManager myBatteryManager;
     private boolean ManualMode = false;
 
@@ -249,6 +261,8 @@ public class MainActivity extends Activity
             mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             mGyro = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
             mTemperature = mSensorManager.getDefaultSensor(Sensor.TYPE_AMBIENT_TEMPERATURE);
+            myLight = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+
             myBatteryManager = new BatteryManager();
 
             // REGISTER BROADCAST RECEIVER FOR BATTERY EVENTS
@@ -259,6 +273,9 @@ public class MainActivity extends Activity
             registerReceiver(mBatChanged, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 
             myData = new it.dongnocchi.mariner.WheelchairData(Daily_Reference_Time);
+
+            //set the log filename to the DailyLogFileName varabile
+            myData.DailyLogFileName = logger_filename;
 
             acc_x_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
             acc_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
@@ -294,6 +311,8 @@ public class MainActivity extends Activity
             StartCalibration();
 
             StartTemperatureAcquisition();
+
+            StartLightAcquisition();
 
             StartPeriodicOperations();
 
@@ -422,6 +441,7 @@ public class MainActivity extends Activity
 
                 StopAllAcquisitions();
 
+                Sleep(2000);
                 //Step 2 -
 
                 SaveData();
@@ -448,6 +468,8 @@ public class MainActivity extends Activity
                 StartCalibration();
 
                 StartTemperatureAcquisition();
+
+                StartLightAcquisition();
 
                 StartPeriodicOperations();
 
@@ -608,6 +630,12 @@ public class MainActivity extends Activity
                     //UpdateUX();
 
                     break;
+
+                case Sensor.TYPE_LIGHT:
+
+                    myData.UpdateLightValue(event.values[0]);
+
+                    break;
             }
         } catch (Exception ex) {
             LogException(TAG, "onSensorChanged", ex);
@@ -669,6 +697,9 @@ public class MainActivity extends Activity
 
         app_uptime_tview = (TextView) findViewById(R.id.app_uptime_tview);
         duty_uptime_tview = (TextView) findViewById(R.id.current_duty_uptime_tview);
+
+        ligth_val_tview= (TextView) findViewById(R.id.light_val_tview);
+        number_of_touch_tview= (TextView) findViewById(R.id.num_of_touch_val_tview);
 
         signal_level_tview = (TextView) findViewById(R.id.signal_level_val_tview);
         //temp_val_tview = (TextView) findViewById(R.id.temperature_val_tview);
@@ -1014,8 +1045,26 @@ public class MainActivity extends Activity
 
         StopTemperatureAcquisition();
 
+        StopLightAcquisition();
         //TODO: verificare che non si debba aspettare un poco...
     }
+
+
+    //==========================================================================
+    protected void StartLightAcquisition()
+    //==========================================================================
+    {    //super.onResume();
+        mSensorManager.registerListener(this, myLight, LIGHT_READING_PERDIOD, 1000000);// 20.000 us ----> FsAMPLE = 50Hz
+    }
+    //public static final short MaxiIO_WheelcPin = 6;
+
+    //==========================================================================
+    protected void StopLightAcquisition()
+    //==========================================================================
+    {
+            mSensorManager.unregisterListener(this, myLight);
+    }
+
 
     //==========================================================================
     protected void StartTemperatureAcquisition()
@@ -1119,6 +1168,10 @@ public class MainActivity extends Activity
 
                 app_uptime_tview.setText(String.format("%02d:%02d:%02d", RunningTime[1], RunningTime[2], RunningTime[3]));
                 duty_uptime_tview.setText("00:00:00");
+
+                ligth_val_tview.setText(String.valueOf(myData.CurrentLightValue));
+                number_of_touch_tview.setText(String.valueOf(myData.NumberOfTouch));
+
             }
 
             if (myData.PowerON)
@@ -1336,7 +1389,6 @@ public class MainActivity extends Activity
         } catch (Exception ex) {
             LogException(TAG, "StopCalibrateInertialSensors", ex);
         }
-
     }
 
     //TODO: da cancellare ed eventualmente spostare il codice altrove
@@ -1371,6 +1423,7 @@ public class MainActivity extends Activity
     private void ResetHourlyCounters() {
         //==========================================================================
         myData.ResetHourlyCounters();
+
         myData.myTempData.ResetMinMax();
     }
 
@@ -1479,6 +1532,7 @@ public class MainActivity extends Activity
 
         StopAllAcquisitions();
 
+        Sleep(2000);
         //Step 2 -
 
         SaveData();
@@ -1521,6 +1575,7 @@ public class MainActivity extends Activity
 
     }
 
+
     //==========================================================================
     private void SaveData()
     //==========================================================================
@@ -1549,6 +1604,14 @@ public class MainActivity extends Activity
 
             //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
             myAzureManager.AddFileToSaveList(filename);
+            myData.UploadedFileListString += filename + "\r\n";
+
+        } catch (Exception ex) {
+            LogException(TAG, "SaveData", ex);
+        }
+
+        try
+        {
 
             //Step 2 - Save Accelerometer data if available
             if (myData.myInertialData.acc_data_counter > 0) {
@@ -1568,7 +1631,15 @@ public class MainActivity extends Activity
 
                 //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
                 myAzureManager.AddFileToSaveList(filename);
+                myData.UploadedFileListString += filename + "\r\n";
+
             }
+        } catch (Exception ex) {
+            LogException(TAG, "SaveData", ex);
+        }
+
+        try
+        {
 
             //Step 3 - Save Gyro data if available
             if (myData.myInertialData.gyro_data_counter > 0) {
@@ -1587,7 +1658,14 @@ public class MainActivity extends Activity
 
                 //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
                 myAzureManager.AddFileToSaveList(filename);
+                myData.UploadedFileListString += filename + "\r\n";
             }
+        } catch (Exception ex) {
+            LogException(TAG, "SaveData", ex);
+        }
+
+        try
+        {
 
             //Step 4 - Save Temperature data
             if (myData.myTempData.data_counter > 0) {
@@ -1604,7 +1682,15 @@ public class MainActivity extends Activity
 
                 //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
                 myAzureManager.AddFileToSaveList(filename);
+                myData.UploadedFileListString += filename + "\r\n";
             }
+        } catch (Exception ex) {
+            LogException(TAG, "SaveData", ex);
+        }
+
+        try
+        {
+
             //Step 5 - Save Event info
             if (myData.myEventData.data_counter > 0) {
                 filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + "-event.bin";
@@ -1620,8 +1706,14 @@ public class MainActivity extends Activity
 
                 //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
                 myAzureManager.AddFileToSaveList(filename);
+                myData.UploadedFileListString += filename + "\r\n";
             }
+        } catch (Exception ex) {
+            LogException(TAG, "SaveData", ex);
+        }
 
+        try
+        {
 
             //Step 7 - Save Battery Data
             filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + "-bat.bin";
@@ -1638,7 +1730,15 @@ public class MainActivity extends Activity
                 data_out.close();
 
                 myAzureManager.AddFileToSaveList(filename);
+                myData.UploadedFileListString += filename + "\r\n";
             }
+        } catch (Exception ex) {
+            LogException(TAG, "SaveData", ex);
+        }
+/*
+        try
+        {
+
 
             //Step 8 - Save the list of files saved
             if (myAzureManager.FilesToSend.size() > 0 )
@@ -1656,10 +1756,11 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
             }
-
         } catch (Exception ex) {
             LogException(TAG, "SaveData", ex);
         }
+*/
+
     }
 
     //==========================================================================
@@ -1730,7 +1831,7 @@ public class MainActivity extends Activity
         Daily_Reference_Date = new Date();
     }
 
-    //TODO: da verificare se serva ancora
+    //TODO: da completare l'implementazione della chiusura e riapertura del file .log
     //==========================================================================
     private void CloseSaveAndRestartLogger(boolean initializing)
     //==========================================================================
@@ -1741,6 +1842,7 @@ public class MainActivity extends Activity
 
             //Save logfile
             myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), logger_filename, myConfig.get_Acquisition_Container());
+            myData.DailyLogFileName = logger_filename;
         }
 
         CreateAndOpenNewFileLogger();
@@ -1756,6 +1858,7 @@ public class MainActivity extends Activity
 
         //Open the new one for the new day
         FileLog.open(logger_filename, Log.VERBOSE, MAX_LOGFILE_SIZE);
+
     }
 
 

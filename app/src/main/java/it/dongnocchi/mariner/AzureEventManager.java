@@ -235,8 +235,15 @@ public class AzureEventManager {
 
             ParamsToSend.put("DistanceCovered", Latitude);
             ParamsToSend.put("AngleCovered", Latitude);
+            ParamsToSend.put("MinTemperature", myData.myTempData.GetMinTemperature());
             ParamsToSend.put("MeanTemperature", myData.myTempData.GetMeanTemperature());
             ParamsToSend.put("MaxTemperature", myData.myTempData.GetMaxTemperature());
+            ParamsToSend.put("MinMemory", myData.MinHourlyMemory);
+            ParamsToSend.put("MeanMemory", myData.MeanHourlyMemory);
+            ParamsToSend.put("MaxMemory", myData.MaxHourlyMemory);
+
+            ParamsToSend.put("MaxLight", myData.MaxLightValue);
+            ParamsToSend.put("NumOfTouch", myData.NumberOfTouch);
 
             ParamsToSend.put("Latitude", Latitude);
             ParamsToSend.put("Longitude", Longitude);
@@ -300,9 +307,22 @@ public class AzureEventManager {
             ParamsToSend.put("DistanceCoveredBw", myData.BwMetersCovered);
             ParamsToSend.put("AngleCoveredL", myData.DegreesCoveredTurningLeft);
             ParamsToSend.put("AngleCoveredR", myData.DegreesCoveredTurningRight);
+
+            ParamsToSend.put("MinTemperature", myData.MinDailyTemperature);
+            ParamsToSend.put("MeanTemperature", myData.MeanDailyTemperature);
+            ParamsToSend.put("MaxTemperature", myData.MaxDailyTemperature);
+            ParamsToSend.put("MinMemory", myData.MinDailyMemory);
+            ParamsToSend.put("MeanMemory", myData.MeanDailyMemory);
+            ParamsToSend.put("MaxMemory", myData.MaxDailyMemory);
+
+            ParamsToSend.put("MaxLight", myData.MaxDailyLightValue);
+            ParamsToSend.put("NumOfTouch", myData.NumberOfDailyTouch);
+
+            //TODO: aggiornare il valore dello status
             ParamsToSend.put("Status", 1);
-            //TODO: veirficare che sia corretta la seguente riga (per il nome del file XML contenente i nomi dei file di dati
-            ParamsToSend.put("XMLFilesStoredName", myConfig.get_UploadedFiles_XmlName());
+
+            ParamsToSend.put("UploadedFileList", myData.GetUploadedFileList());
+            ParamsToSend.put("DailyLog", myData.GetDailyLog());
             ParamsToSend.put("Note", ""); //puoi chiamarla più volte per mandare più param nello stesso evento
 
             SendJsonEvent(ParamsToSend, myConfig.DailyUpdate_EventHub_url, myConfig.DailyUpdate_EventHub_connstring);

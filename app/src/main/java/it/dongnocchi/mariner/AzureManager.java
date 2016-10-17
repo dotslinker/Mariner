@@ -53,7 +53,6 @@ public class AzureManager {
         notSent = new NotSentFileHandler(myConfig.get_Wheelchair_path());
     }
 
-
     //==========================================================================
     protected void UploadBlobs(int battery){//String FileInternalPath, String FileName, String BlobContainer, int battery){
     //==========================================================================
@@ -716,6 +715,9 @@ public class AzureManager {
                 // qualcosa è andato storto
             } else{
                 // check version
+                //TODO: da verificare se e cosa mettere qui dentro
+
+                /*
                 String NewRelease = get_ApkRelease(true);
                 String OldRelease = get_ApkRelease(false);
                 int NewRelease_int =  Integer.parseInt(NewRelease);
@@ -726,6 +728,7 @@ public class AzureManager {
                     apk_dwl.execute();
                     set_new_ApkRelease(NewRelease);
                 }
+                */
             }
         }
     }

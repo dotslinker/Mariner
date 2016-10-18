@@ -74,6 +74,8 @@ public class WheelchairData {
     public float CurrentLightValue;
     public float MinLightValue;
     public float MaxLightValue;
+    public int NumOfHourlyLightTransitions;
+    public int NumOfDailyLightTransitions;
 
     public float MaxDailyLightValue;
 
@@ -133,7 +135,12 @@ public class WheelchairData {
 
     public void UpdateLightValue(float new_val)
     {
-        CurrentLightValue = new_val;
+
+        if(CurrentLightValue < 0.1 && new_val > 0.1)
+        {
+            NumOfDailyLightTransitions++;
+            NumOfHourlyLightTransitions++;
+        }
 
         if (MinLightValue > new_val)
             MinLightValue = new_val;
@@ -143,6 +150,8 @@ public class WheelchairData {
 
         if (MaxDailyLightValue < MaxLightValue)
             MaxDailyLightValue = MaxLightValue;
+
+        CurrentLightValue = new_val;
 
     }
 
@@ -174,11 +183,6 @@ public class WheelchairData {
         if (MaxDailyMemory < MemoryUsed)
             MaxDailyMemory = MemoryUsed;
     }
-
-
-
-
-
 
 
     //Metodo da chiamare quando si fa partire il programma, in modo che
@@ -343,6 +347,8 @@ public class WheelchairData {
     {
         MinLightValue = 100;
         MaxLightValue = 0;
+
+        NumOfHourlyLightTransitions = 0;
     }
 
 
@@ -370,6 +376,7 @@ public class WheelchairData {
     public void LightDataDailyReset()
     {
         MaxDailyLightValue = 0;
+        NumOfDailyLightTransitions = 0;
     }
 
 

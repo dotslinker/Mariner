@@ -456,11 +456,13 @@ public class MainActivity extends Activity
                 //UpdateListofFilesToUpload();
 
                 //Upload Blobs
-                myAzureManager.UploadBlobs(myData.myBatteryData.level);
+                //myAzureManager.UploadBlobs(myData.myBatteryData.level);
+                myAzureManager.UploadBlobs();
 
                 //TODO: sarà da ripristinare
                 //Check for App updates
                 //myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
+                myAzureManager.CheckAndUpdateAPK();
 
                 myData.DailyReset(Daily_Reference_Time);//DailyResetData();
 
@@ -1402,7 +1404,8 @@ public class MainActivity extends Activity
         //TODO: Verificare che questa sequenza di operazioni sia esaustiva rispetto a quello che ci interessa
 
         //upload_lastFiles();
-        myAzureManager.UploadBlobs(myData.myBatteryData.level);
+        //myAzureManager.UploadBlobs(myData.myBatteryData.level);
+        myAzureManager.UploadBlobs();
         // CHECK NEW APP UPDATES ==================================
         myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
 
@@ -1548,7 +1551,8 @@ public class MainActivity extends Activity
         //UpdateListofFilesToUpload();
 
         //Upload Blobs
-        myAzureManager.UploadBlobs(myData.myBatteryData.level);
+        //myAzureManager.UploadBlobs(myData.myBatteryData.level);
+        myAzureManager.UploadBlobs();
 
         //Check for App updates
         myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
@@ -1926,7 +1930,7 @@ public class MainActivity extends Activity
         int i;
         List<String> records; //2016-0114 cancellato da pm = new ArrayList<>();
         List<String> records_toBeDeleted = new ArrayList<>();
-        records = notSent.ReadTheWholeFile();
+        records = notSentFileHandler.ReadTheWholeFile();
 
         String LastLine = records.get(records.size() - 1);
         String LastLine_time = LastLine.substring(48, 67); // qualcosa del tipo "2015_10_28_14_30_17"
@@ -1947,7 +1951,7 @@ public class MainActivity extends Activity
 
         // dopo che ho visto tutti gli elementi di records ri scrivo il file e cancello i file di dati
         for (i = 0; i < records_toBeDeleted.size(); i++) {
-            notSent.DeleteLine(records_toBeDeleted.get(i));
+            notSentFileHandler.DeleteLine(records_toBeDeleted.get(i));
             File FileToBeDeleted = new File(records_toBeDeleted.get(i));
             FileToBeDeleted.delete();
         }

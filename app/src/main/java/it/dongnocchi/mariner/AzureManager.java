@@ -13,13 +13,12 @@ import java.util.List;
 import com.microsoft.azure.storage.*;
 import com.microsoft.azure.storage.blob.*;
 
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlSerializer;
 
 /**
  * Created by DianaM on 27/08/2015.
  */
+
 public class AzureManager {
 
     public static String storageConnectionString;
@@ -35,13 +34,12 @@ public class AzureManager {
 
     String ApkFileToUpdate = "";
 
-
     protected final int COMMAND_UPDATE_APK = -1;
     protected final int COMMAND_SIMPLE_TRANSFER = 0;
 
     public AsyncResponse upload_delegate;
 
-    NotSentFileHandler notSent;
+    NotSentFileHandler notSentFileHandler;
 
     // costruttore*/
     public AzureManager(Context AppContext, AsyncResponse in_upload_delegate, Configuration mc) {
@@ -50,17 +48,18 @@ public class AzureManager {
         myConfig = mc;
         storageConnectionString = myConfig.get_storageConnectionString();
         mcontext = AppContext;
-        notSent = new NotSentFileHandler(myConfig.get_Wheelchair_path());
+        notSentFileHandler = new NotSentFileHandler(myConfig.get_Wheelchair_path());
     }
 
     //==========================================================================
-    protected void UploadBlobs(int battery){//String FileInternalPath, String FileName, String BlobContainer, int battery){
-    //==========================================================================
+    //protected void UploadBlobs(int battery){//String FileInternalPath, String FileName, String BlobContainer, int battery){
+    protected void UploadBlobs(){//String FileInternalPath, String FileName, String BlobContainer, int battery){
+    // ==========================================================================
         // FileInternalPath = local folder where the file is located
         // FileName: name of the file, like "foto.png"
-        BatLev = battery;
+        //BatLev = battery;
 
-        String LastLine = notSent.LoadLastLine();
+        String LastLine = notSentFileHandler.LoadLastLine();
         if (!LastLine.equals("")) {
             String container = myConfig.get_Acquisition_Container();
             String folder = myConfig.get_Acquisition_Folder();
@@ -118,8 +117,10 @@ public class AzureManager {
                         return null;
 
                     } catch (Exception e) {
-                        System.out.print("Exception encountered: ");
-                        System.out.println(e.getMessage());
+                        //System.out.print("Exception encountered: ");
+                        //System.out.println(e.getMessage());
+
+                        FileLog.e("", "UploadBlobs_Async", e);
                         return File_FullPath;
                     }
                 } else { // non online
@@ -159,8 +160,9 @@ public class AzureManager {
 
             }
             if (isAllOK){
-                notSent.DeleteLine(File_FullPath);
-                UploadBlobs(BatLev);
+                notSentFileHandler.DeleteLine(File_FullPath);
+                //UploadBlobs(BatLev);
+                UploadBlobs();
             }
         }
     }
@@ -218,8 +220,9 @@ public class AzureManager {
                         return null;
 
                     } catch (Exception e) {
-                        System.out.print("Exception encountered: ");
-                        System.out.println(e.getMessage());
+                        //System.out.print("Exception encountered: ");
+                        //System.out.println(e.getMessage());
+                        FileLog.e("", "UploadSingleBlob_Async", e);
                         return File_FullPath;
                     }
                 } else { // non online
@@ -303,6 +306,7 @@ public class AzureManager {
                     }
             catch (Exception e) {
                 // Output the stack trace.
+                FileLog.e("", "DownloadBlob_Async", e);
                 e.printStackTrace();
                 return false;
             }
@@ -351,32 +355,6 @@ public class AzureManager {
     }
 
     //==========================================================================
-    public boolean isNetworkOnline_DianaVersion() {
-    //==========================================================================
-        boolean status=false;
-        if(BatLev >= BATTERY_LOW_THRESHOLD)
-        {
-            try {
-                ConnectivityManager cm = (ConnectivityManager) mcontext.getSystemService(Context.CONNECTIVITY_SERVICE);
-                NetworkInfo netInfo = cm.getNetworkInfo(0); // mobile
-                if (netInfo != null && netInfo.getState() == NetworkInfo.State.CONNECTED) {
-                    status = true;
-                } else {
-                    netInfo = cm.getNetworkInfo(1); // wi-fi
-                    if (netInfo != null && netInfo.getState() == NetworkInfo.State.CONNECTED)
-                        status = true;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                return false;
-            }
-            return status;
-        }
-        else
-            return false;
-    }
-
-    //==========================================================================
     public boolean isNetworkOnline() {
         //==========================================================================
         boolean online_status = false;
@@ -392,6 +370,7 @@ public class AzureManager {
                         online_status = true;
                 }
             } catch (Exception e) {
+                FileLog.e("", "isNetworkOnline", e);
                 e.printStackTrace();
                 return false;
             }
@@ -406,87 +385,6 @@ public class AzureManager {
     {
         VersionCheckerAndUpdater new_version_checker_and_updater = new VersionCheckerAndUpdater();
         new_version_checker_and_updater.execute();
-
-/*
-
-        //String BlobContainer_local = "";
-        String WhereToSaveIt_local = "";
-        //String BlobName_local = "";
-
-        String ApkFileToUpdate = "";
-        int NewRelease = 0;
-
-        CloudBlob blobToDownload = null;
-
-        if(!isBusy)
-        {
-            if (isNetworkOnline())
-            {
-                try
-                {
-                    isBusy = true;
-                    // Retrieve storage account from connection-string.
-                    CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
-
-                    // Create the blob client.
-                    CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
-
-                    // Retrieve reference to a previously created container.
-                    CloudBlobContainer container = blobClient.getContainerReference( myConfig.get_APK_Container());
-
-                    // Loop through each blob item in the container.
-                    for (ListBlobItem blobItem : container.listBlobs())
-                    {
-                        // If the item is a blob, not a virtual directory.
-                        if (blobItem instanceof CloudBlob) {
-                            // Download the item and save it to a file with the same name.
-                            //CloudBlob blob = (CloudBlob) blobItem;
-
-                            String BlobName = ((CloudBlob)blobItem).getName();//.replaceFirst("[.][^.]+$", "");
-
-                            if( BlobName.contains("mariner"))
-                            {
-                                String[] parts = BlobName.split("[-\\.]");
-                                int tempNewRelease = Integer.parseInt(parts[1]);
-
-                                if( tempNewRelease > myConfig.currentBuild && tempNewRelease > NewRelease )
-                                {
-                                    NewRelease = tempNewRelease;
-                                    ApkFileToUpdate = ((CloudBlob)blobItem).getName();
-                                    blobToDownload = (CloudBlob)blobItem;
-                                }
-
-                            }
-
-                            //if (blob.getName().equals(BlobName_local))
-                            //  blob.download(new FileOutputStream(WhereToSaveIt_local + blob.getName()) );
-                        }
-                    }
-
-                    if (ApkFileToUpdate != "" && blobToDownload != null) {
-                        blobToDownload.download(new FileOutputStream(WhereToSaveIt_local + ApkFileToUpdate));
-
-                        UpdateApp new_update = new UpdateApp(WhereToSaveIt_local + ApkFileToUpdate);
-                        new_update.setContext(mcontext);
-                        new_update.execute();
-                    }
-                }
-                catch (Exception e) {
-                    // Output the stack trace.
-                    e.printStackTrace();
-                }
-                isBusy = false;
-            } else
-            { // non online
-            }
-        }
-        else{
-            //is busy
-        }
-
-
-
-*/
 
     }
 
@@ -575,6 +473,7 @@ public class AzureManager {
                         return true;
                     }
                     catch (Exception e) {
+                        FileLog.e("", "VersionCheckerAndUpdater", e);
                         // Output the stack trace.
                         e.printStackTrace();
                         return false;
@@ -695,6 +594,7 @@ public class AzureManager {
                     }
                     catch (Exception e) {
                         // Output the stack trace.
+                        FileLog.e("", "VersionChecker", e);
                         e.printStackTrace();
                         return false;
                     }
@@ -733,138 +633,6 @@ public class AzureManager {
         }
     }
 
-
-
-
-
-    //==========================================================================
-    private String get_ApkRelease(boolean checkNewFile) {
-    //==========================================================================
-        // check newfile = true ---> legge da xml scaricato
-        // check newfile = false ---> legge da xml salvato in precedenza
-        String TagName;
-        String ApkVersion_Xml="";
-        //read xml blob
-        FileInputStream ApkXml = null;
-        File path;
-        String xml_path;
-
-        //TODO: verificare questa cosa qui sotto...
-        if(checkNewFile) {
-            xml_path = myConfig.get_WhereToSaveXML_LocalPath() + myConfig.get_XML_FileName();
-        }else{
-            //TODO: rivedere il nome dle file da cui parte l'aggiornamento del software in (es.) "version.xml"
-            xml_path = myConfig.get_Wheelchair_path() + "load_config.xml";
-        }
-
-        path = new File(xml_path);
-
-        // search for the file
-        try {
-            ApkXml = new FileInputStream(path);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        // initializes parser and sets ApkXml as input file
-        XmlPullParser MyParser = Xml.newPullParser();
-        if (ApkXml != null) {
-            try {
-                MyParser.setInput(ApkXml, null);
-            } catch (XmlPullParserException e) {
-                e.printStackTrace();
-            }
-            try {
-                MyParser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-            } catch (XmlPullParserException e) {
-                e.printStackTrace();
-            }
-            int eventType = 0;
-            try {
-                eventType = MyParser.getEventType();
-            } catch (XmlPullParserException e) {
-                e.printStackTrace();
-            }
-
-            while (eventType != XmlPullParser.END_DOCUMENT) {   //browse document
-                switch (eventType) {
-                    case XmlPullParser.START_DOCUMENT:
-                        break;
-                    case XmlPullParser.START_TAG:                   // if there is a start tag
-                        TagName = MyParser.getName();               // read it
-                        if (TagName.equals("Build")) {
-                            try {
-                                //============================================================
-                                ApkVersion_Xml = MyParser.nextText();
-                                //============================================================
-                            } catch (XmlPullParserException e) {
-                                e.printStackTrace();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        break;
-                } // end switch
-                try {
-                    eventType = MyParser.next();
-                } catch (XmlPullParserException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }   // end while
-        }
-        String stringaMia;//new String();
-        //remove all tabulation characters
-        stringaMia = ApkVersion_Xml.replaceAll("\t","");
-        ApkVersion_Xml = stringaMia.replaceAll("\n","");
-        return ApkVersion_Xml;
-    }
-
-    //==========================================================================
-    public void set_new_ApkRelease(String new_release) {
-    //==========================================================================
-        // OVERWRITES FILE WITH NEW APK RELEASE CODE
-        String XmlString;
-        FileOutputStream outputStream;
-        String pathToUserMetadataXML = myConfig.get_WhereToSaveXML_LocalPath() + myConfig.get_XML_FileName();
-
-        // create file
-        File MyXml = new File(pathToUserMetadataXML);
-
-        // over write file with new data
-        XmlSerializer serializer = Xml.newSerializer();
-        StringWriter writer = new StringWriter();
-        try {
-            serializer.setOutput(writer);
-            serializer.startDocument("UTF-8", true);
-
-            serializer.startTag("", "LastAPKRelease");
-
-            serializer.startTag("", "Release");
-            serializer.text("1.0");
-            serializer.endTag("", "Release");
-
-            serializer.startTag("", "Build");
-            serializer.text(new_release);
-                serializer.endTag("", "Build");
-
-            serializer.endTag("", "LastAPKRelease");
-            serializer.endDocument();
-
-            XmlString = writer.toString();
-
-            try {
-                outputStream = new FileOutputStream(MyXml);
-                outputStream.write(XmlString.getBytes());
-                outputStream.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private static final short MAX_NUM_OF_FILES_TO_BE_SENT = 5; // FILES: ACC, GYRO, MOTOR, BATTERY, WHEELCH
     String XmlString = "";
@@ -905,6 +673,7 @@ public class AzureManager {
                 serializer.endTag("", TagName);
 
             } catch (Exception e) {
+                FileLog.e("", "AppendNew_UploadedFileName", e);
                 throw new RuntimeException(e);
             }
         }else { // upload failed
@@ -930,6 +699,7 @@ public class AzureManager {
                     outputStream.write(XmlString.getBytes());
                     outputStream.close();
                 } catch (Exception e) {
+                    FileLog.e("", "AppendNew_UploadedFileName", e);
                     e.printStackTrace();
                 }
                 UploadBlobs_Async UploadNewXml = new UploadBlobs_Async(myConfig.get_WhereToSaveXML_LocalPath(), myConfig.get_UploadedFiles_XmlName(), myConfig.get_APK_Container(), 0);

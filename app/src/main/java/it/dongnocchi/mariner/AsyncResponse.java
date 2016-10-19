@@ -1,7 +1,5 @@
 package it.dongnocchi.mariner;
 
-//import com.dropbox.client2.DropboxAPI;
-
 /**
  * Created by Giovanni on 29/06/2015.
  * questa interfaccia e utile come "connettore" tra le async task e i thread principale. se si implementa il metodo

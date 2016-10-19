@@ -25,6 +25,9 @@ import static android.os.Environment.getExternalStorageDirectory;
  */
 public class Configuration {
 
+
+    public final int DEFAULT_TEMPERATURE_THRESH_ALERT = 50;
+
     public int currentBuild;
 
     private String storageConnectionString;
@@ -44,11 +47,12 @@ public class Configuration {
     public String DailyUpdate_EventHub_connstring;
     public String HourlyUpdate_EventHub_connstring;
 
-    private String APK_FileName;
-    private String XML_FileName;
+    //private String APK_FileName;
+    //private String XML_FileName;
 
-    private String Azure_Acquisition_Container;
+    //private String Azure_Acquisition_Container;
     private String APK_Container;
+    private String Data_Container;
 
     private String AcquisitionFolderPath;
     private String WhereToSaveAPK_LocalPath;
@@ -57,6 +61,10 @@ public class Configuration {
 
     private String UploadedFiles_XmlName;
     private String NotUploadedFiles_XmlName;
+
+    public int TemperatureThresholdAlert;
+
+    private String AlertSMSPhoneNumber;
 
     private String Today;
 
@@ -144,8 +152,9 @@ public class Configuration {
                     //serviceNamespace = "mariner";
 
                     APK_Container = "apk-container";
-                    APK_FileName = "WheelchairUpdate.apk";
-                    XML_FileName = "LastRelease.xml";
+                    Data_Container = "data-container";
+                    //APK_FileName = "WheelchairUpdate.apk";
+                    //XML_FileName = "LastRelease.xml";
                     //Azure_Acquisition_Container =     ChildName + ChildSurname + "-acquisitions";
 
                     //TODO: Perchè il file XML è sempre lo stesso e non cambia ?
@@ -161,14 +170,12 @@ public class Configuration {
 
         //Impostiamo le ultime variabili
 
-        Azure_Acquisition_Container =     WheelchairID + "-acquisitions";// nei nomi dei containers: NO maiuscole, NO _
+        //Azure_Acquisition_Container =     WheelchairID + "-acquisitions";// nei nomi dei containers: NO maiuscole, NO _
 
         WhereToSaveXML_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "XMLFiles/";
         WhereToSaveAPK_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "APK/";
         Wheelchair_path =           getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/";
         AcquisitionFolderPath =     getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "Data/";
-
-
 
     }
 
@@ -183,11 +190,11 @@ public class Configuration {
     public String get_Acquisition_Folder()         {return AcquisitionFolderPath;}
 
     public String get_APK_Container()              {return APK_Container;}
-    public String get_Acquisition_Container()      {return Azure_Acquisition_Container;}
+    public String get_Acquisition_Container()      {return Data_Container + "/" + WheelchairID + "/";}
 
-    public String get_APK_FileName()               {return APK_FileName;}
+    //public String get_APK_FileName()               {return APK_FileName;}
     //TODO: verificare a cosa serve questo file qui XML_FileName
-    public String get_XML_FileName()               {return XML_FileName;}
+    //public String get_XML_FileName()               {return XML_FileName;}
     public String get_UploadedFiles_XmlName()      {return UploadedFiles_XmlName;}
     public String get_NotUploadedFiles_XmlName()   {return NotUploadedFiles_XmlName;}
 
@@ -291,11 +298,8 @@ public class Configuration {
                         case "apk_container":
                             APK_Container = s;
                             break;
-                        case "apk_filename":
-                            APK_FileName = s;
-                            break;
-                        case "xml_filename":
-                            XML_FileName = s;
+                        case "data_container":
+                            Data_Container= s;
                             break;
                         case "uploadedfiles_xml_filename":
                             UploadedFiles_XmlName = s;
@@ -305,9 +309,19 @@ public class Configuration {
                             break;
                         case "daily_update_hour":
                             DailyUpdateHour = Integer.parseInt(s);
+                            if(DailyUpdateHour < 0 || DailyUpdateHour > 23)
+                                DailyUpdateHour = 2;
                             break;
                         case "use_gps_localization":
                             UseGPSLocalization = Boolean.parseBoolean(s);
+                            break;
+                        case "alert_sms_phone_number":
+                            AlertSMSPhoneNumber = s;
+                            break;
+                        case "temperature_thresh_alert":
+                            TemperatureThresholdAlert = Integer.parseInt(s);
+                            if (TemperatureThresholdAlert == 0)
+                                TemperatureThresholdAlert = DEFAULT_TEMPERATURE_THRESH_ALERT;
                             break;
                     }
                 }

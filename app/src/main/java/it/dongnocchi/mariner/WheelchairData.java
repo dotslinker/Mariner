@@ -184,7 +184,6 @@ public class WheelchairData {
             MaxDailyMemory = MemoryUsed;
     }
 
-
     //Metodo da chiamare quando si fa partire il programma, in modo che
     //verifichi se l'alimentazione è già presente, ed in questo caso non aspetta
     //l'evento PowerON

@@ -16,16 +16,15 @@ package="it.dongnocchi.mariner" >
 
 <uses-feature    android:name="android.hardware.usb.host" />
 <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-<uses-permission android:name="android.permission.WAKE_LOCK">
+<uses-permission android:name="android.permission.WAKE_LOCK"/>
+<uses-permission android:name="android.permission.SEND_SMS"/>
 
-    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+<uses-permission android:name="android.permission.GET_ACCOUNTS"/>
+<uses-permission android:name="android.permission.WAKE_LOCK"/>
+<uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
 
-    <permission android:name="dianagio.wheelchair.permission.C2D_MESSAGE" android:protectionLevel="signature" />
-    <uses-permission android:name="dianagio.wheelchair.permission.C2D_MESSAGE"/>
-
-</uses-permission>
+<permission android:name="it.dongnocchi.mariner.permission.C2D_MESSAGE" android:protectionLevel="signature" />
+<uses-permission android:name="it.dongnocchi.mariner.permission.C2D_MESSAGE"/>
 
 <receiver android:name=".BatteryLevelReceiver" >
     <intent-filter>

@@ -64,7 +64,7 @@ public class MainActivity extends Activity
     //TODO: da verificare tutta la politica di Logging
 
     //xxyyy xx = major release, yyy = minor release
-    public static final int CURRENT_BUILD = 1004;
+    public static final int CURRENT_BUILD = 1006;
 
     public static final String TAG = MainActivity.class.getSimpleName();
 
@@ -183,6 +183,7 @@ public class MainActivity extends Activity
     WindowManager.LayoutParams NewLayoutParams = null;
     it.dongnocchi.mariner.WheelchairData myData;
     String logger_filename;
+    String logger_filename_complete;
 
     //==============================================================================================
     // YOCTOPUCE - MAXI-IO
@@ -286,9 +287,11 @@ public class MainActivity extends Activity
             gyro_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
             gyro_z_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
 
+            /*
             myAzureManager = new AzureManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
                 @Override
                 public void processFinish(String last_uploaded_file) {
+
                     // se ho caricato il file xml coi nomi dei file caricati, non scriverlo sul nuovo file xml
                     String xml_name = myConfig.get_UploadedFiles_XmlName();
                     if (last_uploaded_file != xml_name) { // l'ultimo file caricato è un file di dati
@@ -296,6 +299,17 @@ public class MainActivity extends Activity
                     }
                 }
             }, myConfig);
+            */
+
+
+            //TODO: semplificare il codice del AzureManager
+            myAzureManager = new AzureManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
+                @Override
+                public void processFinish(String last_uploaded_file) {
+                }
+            }, myConfig);
+
+
 
             //Verifica se è presente l'alimentazione, ed in questo caso aggiunge
             //un evento fittizio di PowerON
@@ -449,6 +463,8 @@ public class MainActivity extends Activity
 
                 myData.updateDailyUse();
 
+                CloseSaveAndRestartLogger();
+
                 myEventManager.SendDailyReport();
 
                 //CalibrateAccelerometer();
@@ -464,7 +480,8 @@ public class MainActivity extends Activity
                 //myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
                 myAzureManager.CheckAndUpdateAPK();
 
-                myData.DailyReset(Daily_Reference_Time);//DailyResetData();
+                DailyResetData();
+                //myData.DailyReset(Daily_Reference_Time);//DailyResetData();
 
                 ResetHourlyCounters();
 
@@ -574,7 +591,6 @@ public class MainActivity extends Activity
     {        //TODO: implementare il reset di tutte le strutture dati utilizzate
         SetDailyReferenceTimeAndDate();
         myData.DailyReset(Daily_Reference_Time);
-
     }
 
     //==============================================================================================
@@ -1397,6 +1413,7 @@ public class MainActivity extends Activity
 
     //TODO: da cancellare ed eventualmente spostare il codice altrove
 
+    /*
     //==========================================================================
     public void DoDailyReport(View view) {
         //==========================================================================
@@ -1423,6 +1440,7 @@ public class MainActivity extends Activity
         mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         AccAquiring = mSensorManager.registerListener(this, mAcc, 50000);
     }
+*/
 
     //==========================================================================
     private void ResetHourlyCounters() {
@@ -1533,6 +1551,7 @@ public class MainActivity extends Activity
     public void SendDailyDataButton_Click(View view)
     //==========================================================================
     {
+        //Step 1 - let's stop periodic operations and acquisitions (if any)
         Stop_Periodic_Operations();
 
         StopAllAcquisitions();
@@ -1544,6 +1563,8 @@ public class MainActivity extends Activity
 
         myData.updateDailyUse();
 
+        CloseSaveAndRestartLogger();
+
         myEventManager.SendDailyReport();
 
         //CalibrateAccelerometer();
@@ -1554,14 +1575,17 @@ public class MainActivity extends Activity
         //myAzureManager.UploadBlobs(myData.myBatteryData.level);
         myAzureManager.UploadBlobs();
 
-        //Check for App updates
-        myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
+        myAzureManager.CheckAndUpdateAPK();
 
-        DailyResetData();
+        myData.DailyReset(Daily_Reference_Time);//DailyResetData();
+
+        ResetHourlyCounters();
 
         StartCalibration();
 
         StartTemperatureAcquisition();
+
+        StartLightAcquisition();
 
         StartPeriodicOperations();
     }
@@ -1589,13 +1613,15 @@ public class MainActivity extends Activity
 
         DataOutputStream data_out;
         String filename;
+        String filename_complete;
         //String XMLFileList
 
         //Step 1 - Save Calibration file data
         try {
-            filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + "-calib.bin";
+            filename = CommonFilePreamble + "-calib.bin";
+            filename_complete = myConfig.get_Acquisition_Folder() + filename;
 
-            data_out = getDataOutputStream(filename);
+            data_out = getDataOutputStream(filename_complete);
 
             data_out.writeFloat(myData.myInertialData.acc_offset[0]);
             data_out.writeFloat(myData.myInertialData.acc_offset[1]);
@@ -1622,8 +1648,10 @@ public class MainActivity extends Activity
             //Step 2 - Save Accelerometer data if available
             if (myData.myInertialData.acc_data_counter > 0) {
 
-                filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + "-acc.bin";
-                data_out = getDataOutputStream(filename);
+                filename = CommonFilePreamble + "-acc.bin";
+                filename_complete = myConfig.get_Acquisition_Folder() + filename;
+
+                data_out = getDataOutputStream(filename_complete);
 
                 for (int i = 0; i < myData.myInertialData.acc_data_counter; i++) {
                     data_out.write(myData.myInertialData.AccTimestampArray[i]);
@@ -1646,11 +1674,12 @@ public class MainActivity extends Activity
 
         try
         {
-
             //Step 3 - Save Gyro data if available
             if (myData.myInertialData.gyro_data_counter > 0) {
-                filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + "-gyro.bin";
-                data_out = getDataOutputStream(filename);
+                filename = CommonFilePreamble + "-gyro.bin";
+                filename_complete = myConfig.get_Acquisition_Folder() + filename;
+
+                data_out = getDataOutputStream(filename_complete);
 
                 for (int i = 0; i < myData.myInertialData.gyro_data_counter; i++) {
                     data_out.write(myData.myInertialData.GyroTimestampArray[i]);
@@ -1675,8 +1704,10 @@ public class MainActivity extends Activity
 
             //Step 4 - Save Temperature data
             if (myData.myTempData.data_counter > 0) {
-                filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + "-temp.bin";
-                data_out = getDataOutputStream(filename);
+                filename = CommonFilePreamble + "-temp.bin";
+                filename_complete = myConfig.get_Acquisition_Folder() + filename;
+
+                data_out = getDataOutputStream(filename_complete);
 
                 for (int i = 0; i < myData.myTempData.data_counter; i++) {
                     data_out.write(myData.myTempData.TimestampArray[i]);
@@ -1699,8 +1730,10 @@ public class MainActivity extends Activity
 
             //Step 5 - Save Event info
             if (myData.myEventData.data_counter > 0) {
-                filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + "-event.bin";
-                data_out = getDataOutputStream(filename);
+                filename = CommonFilePreamble + "-event.bin";
+                filename_complete = myConfig.get_Acquisition_Folder() + filename;
+
+                data_out = getDataOutputStream(filename_complete);
 
                 for (int i = 0; i < myData.myEventData.data_counter; i++) {
                     data_out.write(myData.myEventData.Timestamps[i]);
@@ -1722,8 +1755,10 @@ public class MainActivity extends Activity
         {
 
             //Step 7 - Save Battery Data
-            filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + "-bat.bin";
-            data_out = getDataOutputStream(filename);
+            filename = CommonFilePreamble + "-bat.bin";
+            filename_complete = myConfig.get_Acquisition_Folder() + filename;
+
+            data_out = getDataOutputStream(filename_complete);
 
             if (myData.myBatteryData.data_counter > 0) {
 
@@ -1741,7 +1776,8 @@ public class MainActivity extends Activity
         } catch (Exception ex) {
             LogException(TAG, "SaveData", ex);
         }
-/*
+
+        /*
         try
         {
 
@@ -1839,17 +1875,18 @@ public class MainActivity extends Activity
 
     //TODO: da completare l'implementazione della chiusura e riapertura del file .log
     //==========================================================================
-    private void CloseSaveAndRestartLogger(boolean initializing)
+    private void CloseSaveAndRestartLogger()//boolean initializing)
     //==========================================================================
     {
         //CLose the existing Logger (if any)
-        if (!initializing) {
-            FileLog.close();
+        //if (!initializing) {
+        FileLog.close();
 
             //Save logfile
-            myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), logger_filename, myConfig.get_Acquisition_Container());
-            myData.DailyLogFileName = logger_filename;
-        }
+        myAzureManager.AddFileToSaveList(logger_filename);
+            //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), logger_filename, myConfig.get_Acquisition_Container());
+        myData.DailyLogFileName = logger_filename;
+        //}
 
         CreateAndOpenNewFileLogger();
     }
@@ -1858,13 +1895,12 @@ public class MainActivity extends Activity
     private void CreateAndOpenNewFileLogger()
     //==========================================================================
     {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MMdd-HHmm");
         CommonFilePreamble = myConfig.WheelchairID + "-" + formatter.format(Daily_Reference_Date);
-        logger_filename = myConfig.get_Acquisition_Folder() + CommonFilePreamble + ".log";
-
+        logger_filename = CommonFilePreamble + ".log";
+        logger_filename_complete = myConfig.get_Acquisition_Folder() + logger_filename;
         //Open the new one for the new day
-        FileLog.open(logger_filename, Log.VERBOSE, MAX_LOGFILE_SIZE);
-
+        FileLog.open(logger_filename_complete, Log.VERBOSE, MAX_LOGFILE_SIZE);
     }
 
 
@@ -1872,7 +1908,6 @@ public class MainActivity extends Activity
     private void LogException(String tag, String msg, Exception ex)
     //==========================================================================
     {
-
         //ex.printStackTrace();
         //SaveErrorLog(ex.toString());
         Log.e(tag, msg, ex);

@@ -56,11 +56,11 @@ public class Configuration {
 
     private String AcquisitionFolderPath;
     private String WhereToSaveAPK_LocalPath;
-    private String WhereToSaveXML_LocalPath;
+    //private String WhereToSaveXML_LocalPath;
     private String Wheelchair_path;
 
-    private String UploadedFiles_XmlName;
-    private String NotUploadedFiles_XmlName;
+//    private String UploadedFiles_XmlName;
+//    private String NotUploadedFiles_XmlName;
 
     public int TemperatureThresholdAlert;
 
@@ -157,9 +157,8 @@ public class Configuration {
                     //XML_FileName = "LastRelease.xml";
                     //Azure_Acquisition_Container =     ChildName + ChildSurname + "-acquisitions";
 
-                    //TODO: Perchè il file XML è sempre lo stesso e non cambia ?
-                    UploadedFiles_XmlName = "Azure_UploadedFiles.xml";
-                    NotUploadedFiles_XmlName = "Azure_NotUploadedFiles.xml";
+                    //UploadedFiles_XmlName = "Azure_UploadedFiles.xml";
+                    //NotUploadedFiles_XmlName = "Azure_NotUploadedFiles.xml";
                 }
             } else {
                 LoadConfig();
@@ -172,7 +171,7 @@ public class Configuration {
 
         //Azure_Acquisition_Container =     WheelchairID + "-acquisitions";// nei nomi dei containers: NO maiuscole, NO _
 
-        WhereToSaveXML_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "XMLFiles/";
+        //WhereToSaveXML_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "XMLFiles/";
         WhereToSaveAPK_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "APK/";
         Wheelchair_path =           getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/";
         AcquisitionFolderPath =     getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "Data/";
@@ -186,17 +185,17 @@ public class Configuration {
 
     public String get_Wheelchair_path()            {return Wheelchair_path;}
     public String get_WhereToSaveAPK_LocalPath()   {return WhereToSaveAPK_LocalPath;}
-    public String get_WhereToSaveXML_LocalPath()   {return WhereToSaveXML_LocalPath;}
+    //public String get_WhereToSaveXML_LocalPath()   {return WhereToSaveXML_LocalPath;}
     public String get_Acquisition_Folder()         {return AcquisitionFolderPath;}
 
     public String get_APK_Container()              {return APK_Container;}
-    public String get_Acquisition_Container()      {return Data_Container + "/" + WheelchairID + "/";}
+    public String get_Acquisition_Container()      {return Data_Container + "-" + WheelchairID;}
 
     //public String get_APK_FileName()               {return APK_FileName;}
     //TODO: verificare a cosa serve questo file qui XML_FileName
     //public String get_XML_FileName()               {return XML_FileName;}
-    public String get_UploadedFiles_XmlName()      {return UploadedFiles_XmlName;}
-    public String get_NotUploadedFiles_XmlName()   {return NotUploadedFiles_XmlName;}
+    //public String get_UploadedFiles_XmlName()      {return UploadedFiles_XmlName;}
+    //public String get_NotUploadedFiles_XmlName()   {return NotUploadedFiles_XmlName;}
 
     public String get_WheelchairID()                  {return WheelchairID;}
 
@@ -301,12 +300,14 @@ public class Configuration {
                         case "data_container":
                             Data_Container= s;
                             break;
+                        /*
                         case "uploadedfiles_xml_filename":
                             UploadedFiles_XmlName = s;
                             break;
                         case "notuploadedfiles_xml_filename":
                             NotUploadedFiles_XmlName = s;
                             break;
+                        */
                         case "daily_update_hour":
                             DailyUpdateHour = Integer.parseInt(s);
                             if(DailyUpdateHour < 0 || DailyUpdateHour > 23)

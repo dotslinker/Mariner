@@ -6,6 +6,9 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.util.Xml;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +25,7 @@ import org.xmlpull.v1.XmlSerializer;
 public class AzureManager {
 
     public static String storageConnectionString;
-    public List<String> FilesToSend = new ArrayList<>(); //not sent files memory
+    public Queue<String> FilesToSend = new LinkedList<>(); //List of files not yet sent to the repository
     public List<String> FilesToDownload = new ArrayList<>();
     Context mcontext;
     //TODO: verificare l'utilizzo del livello di batteria
@@ -51,9 +54,12 @@ public class AzureManager {
         notSentFileHandler = new NotSentFileHandler(myConfig.get_Wheelchair_path());
     }
 
+
+
+
     //==========================================================================
     //protected void UploadBlobs(int battery){//String FileInternalPath, String FileName, String BlobContainer, int battery){
-    protected void UploadBlobs(){//String FileInternalPath, String FileName, String BlobContainer, int battery){
+    protected void UploadBlobs_old(){//String FileInternalPath, String FileName, String BlobContainer, int battery){
     // ==========================================================================
         // FileInternalPath = local folder where the file is located
         // FileName: name of the file, like "foto.png"
@@ -75,7 +81,7 @@ public class AzureManager {
 
     //==========================================================================
     private class UploadBlobs_Async extends AsyncTask<Void, Boolean, String> {
-    //==========================================================================
+        //==========================================================================
         String FileInternalPath_local = "";
         String FileName_local = "";
         String BlobContainer = "";
@@ -131,6 +137,7 @@ public class AzureManager {
                 return File_FullPath;
             }
         }
+
         @Override
         protected void onPostExecute(String res){ // post execute del UPLOAD BLOB
             isBusy = false;
@@ -156,8 +163,6 @@ public class AzureManager {
                 isAllOK = true;
                 upload_delegate.processFinish(FileName_local);
                 //Upload_NotSentFiles();
-
-
             }
             if (isAllOK){
                 notSentFileHandler.DeleteLine(File_FullPath);
@@ -167,6 +172,112 @@ public class AzureManager {
         }
     }
 
+    //==========================================================================
+    protected void UploadBlobs(){//String FileInternalPath, String FileName, String BlobContainer, int battery){
+    // ==========================================================================
+
+        UploadBlobs_AsyncNew UploadBlobs = new UploadBlobs_AsyncNew();
+        UploadBlobs.execute();
+    }
+
+    //==========================================================================
+    private class UploadBlobs_AsyncNew extends AsyncTask<Void, Boolean, String> {
+        //==========================================================================
+        String LocalAcquisitionFolder = "";
+        String FileName_local = "";
+        String BlobContainer = "";
+        String File_FullPath="";
+
+        // Size_FilesToSend = 0 se stiamo caricando un nuovo file
+        //                  = FilesToSend.size se stiamo caricando vecchi file dalla lista
+        public UploadBlobs_AsyncNew(){
+            LocalAcquisitionFolder = myConfig.get_Acquisition_Folder();
+            BlobContainer = myConfig.get_Acquisition_Container();
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            if (FilesToSend.size() > 0) {
+                FileName_local = FilesToSend.peek();
+                File_FullPath = LocalAcquisitionFolder + FileName_local;
+
+                if (!isBusy) {
+                    if (isNetworkOnline()) {
+                        try {
+                            isBusy = true;
+
+                            // Retrieve storage account from connection-string.
+                            CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
+                            // Create the blob client.
+                            CloudBlobClient serviceClient = storageAccount.createCloudBlobClient();// get the reference to the container to be used
+
+                            // Get a reference to the container where you want the blob to be saved
+                            // Container name must be lower case. ( or it will turn BAD ERROR, error code 400)
+                            CloudBlobContainer container = serviceClient.getContainerReference(BlobContainer);
+                            //container.createIfNotExists(null, null);
+
+                            // Upload a file.
+                            CloudBlockBlob blob = container.getBlockBlobReference(FileName_local);// i.e. "foto.png"
+                            File sourceFile = new File(File_FullPath);// "C:\\Users\\Desktop\\foto.png");
+                            blob.upload(new FileInputStream(sourceFile), sourceFile.length());
+                            return null;
+
+                        } catch (Exception e) {
+                            //System.out.print("Exception encountered: ");
+                            //System.out.println(e.getMessage());
+
+                            FileLog.e("", "UploadBlobs_Async", e);
+                            return File_FullPath;
+                        }
+                    } else { // non online
+                        return File_FullPath;
+                    }
+                } else {
+                    return File_FullPath;
+                }
+            }
+            else
+            {
+                return null;
+            }
+        }
+        @Override
+        protected void onPostExecute(String res){ // post execute del UPLOAD BLOB
+            isBusy = false;
+            boolean isAllOK = false;
+
+            if (res!=null){
+                isAllOK = false;
+                upload_delegate.processFinish(null);
+               /* // qualcosa è andato storto, accoda file non inviati nella lista
+
+                FilesToSend.add(FilesToSend.size(), FileInternalPath_local);
+                FilesToSend.add(FilesToSend.size(), FileName_local);               //this will add string at the next index
+                FilesToSend.add(FilesToSend.size(), BlobContainer);*/
+            } else{
+                /*if (Size_FilesToSend > 0) {
+                    // qui si entra quando sono stati caricati correttamente vecchi file in attesa
+                    FilesToSend.remove(Size_FilesToSend-1);
+                    FilesToSend.remove(Size_FilesToSend-2);
+                    FilesToSend.remove(Size_FilesToSend-3);
+                }*/
+
+                // operazioni da fare se caricamento avvenuto con successo
+                isAllOK = true;
+                upload_delegate.processFinish(FileName_local);
+                //Upload_NotSentFiles();
+            }
+
+            if (isAllOK){
+                FilesToSend.remove();
+                //notSentFileHandler.DeleteLine(File_FullPath);
+                //UploadBlobs(BatLev);
+
+                if (FilesToSend.size() > 0)
+                    UploadBlobs();
+            }
+        }
+    }
 
 
     //==========================================================================
@@ -182,7 +293,7 @@ public class AzureManager {
         //==========================================================================
         String FileInternalPath_local = "";
         String FileName_local = "";
-        String BlobContainer = "";
+        String BlobContainerName = "";
         String File_FullPath = "";
         //int Size_FilesToSend = 0;
 
@@ -191,7 +302,7 @@ public class AzureManager {
         public UploadSingleBlob_Async(String FileInternalPath, String FileName, String in_BlobContainer) {
             FileInternalPath_local = FileInternalPath;
             FileName_local = FileName;
-            BlobContainer = in_BlobContainer;
+            BlobContainerName = in_BlobContainer;
         }
 
         @Override
@@ -206,15 +317,15 @@ public class AzureManager {
                         // Retrieve storage account from connection-string.
                         CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
                         // Create the blob client.
-                        CloudBlobClient serviceClient = storageAccount.createCloudBlobClient();// get the reference to the container to be used
+                        CloudBlobClient blobClient = storageAccount.createCloudBlobClient();// get the reference to the container to be used
 
                         // Get a reference to the container where you want the blob to be saved
                         // Container name must be lower case. ( or it will turn BAD ERROR, error code 400)
-                        CloudBlobContainer container = serviceClient.getContainerReference(BlobContainer);
-                        container.createIfNotExists();
+                        CloudBlobContainer myBlobContainer = blobClient.getContainerReference(BlobContainerName);
+                        myBlobContainer.createIfNotExists();
 
                         // Upload a file.
-                        CloudBlockBlob blob = container.getBlockBlobReference(FileName_local);// i.e. "foto.png"
+                        CloudBlockBlob blob = myBlobContainer.getBlockBlobReference(FileName_local);// i.e. "foto.png"
                         File sourceFile = new File(File_FullPath);// "C:\\Users\\Desktop\\foto.png");
                         blob.upload(new FileInputStream(sourceFile), sourceFile.length());
                         return null;
@@ -233,18 +344,17 @@ public class AzureManager {
             }
         }
     }
-
+/*
     //==========================================================================
     protected void Upload_NotSentFiles(){
     //==========================================================================
         //if (FilesToSend.size() != 0) {
 
-
             UploadBlobs_Async new_upload = new UploadBlobs_Async(FilesToSend.get(FilesToSend.size() - 2), FilesToSend.get(FilesToSend.size() - 1), FilesToSend.get(FilesToSend.size()), FilesToSend.size());
             new_upload.execute();
         //}
     }
-
+*/
     // scarica il blob BlobName da un container (BlobContainer)
     //==========================================================================
     protected Boolean DownloadBlob(String WhereToSaveIt, String BlobContainer, String BlobName, int battery) {
@@ -385,9 +495,9 @@ public class AzureManager {
     {
         VersionCheckerAndUpdater new_version_checker_and_updater = new VersionCheckerAndUpdater();
         new_version_checker_and_updater.execute();
-
     }
 
+    /*
     //==========================================================================
     //==========================================================================
     public void CheckNewUpdates(int battery){
@@ -405,13 +515,13 @@ public class AzureManager {
         VersionChecker new_version_checker = new VersionChecker();
         new_version_checker.execute();
    }
-
+*/
 
     //==========================================================================
     private class VersionCheckerAndUpdater extends AsyncTask<Void, Boolean, Boolean> {
         //==========================================================================
         //String BlobContainer_local = "";
-        String WhereToSaveIt_local = "";
+        //String WhereToSaveIt_local = "";
         //String BlobName_local = "";
 
         int NewRelease;
@@ -424,7 +534,7 @@ public class AzureManager {
         public VersionCheckerAndUpdater(){
             //myConfig = new Configuration();
             //BlobContainer_local = myConfig.get_APK_Container();
-            WhereToSaveIt_local = myConfig.get_WhereToSaveXML_LocalPath();
+            //WhereToSaveIt_local = myConfig.get_WhereToSaveXML_LocalPath();
             //BlobName_local = myConfig.get_XML_FileName();
         }
 
@@ -539,7 +649,7 @@ public class AzureManager {
         public VersionChecker(){
             //myConfig = new Configuration();
             //BlobContainer_local = myConfig.get_APK_Container();
-            WhereToSaveIt_local = myConfig.get_WhereToSaveXML_LocalPath();
+            //WhereToSaveIt_local = myConfig.get_WhereToSaveXML_LocalPath();
             //BlobName_local = myConfig.get_XML_FileName();
         }
 
@@ -632,7 +742,7 @@ public class AzureManager {
             }
         }
     }
-
+/*
 
     private static final short MAX_NUM_OF_FILES_TO_BE_SENT = 5; // FILES: ACC, GYRO, MOTOR, BATTERY, WHEELCH
     String XmlString = "";
@@ -707,7 +817,9 @@ public class AzureManager {
             }
         }
     } // end of AppendNew_UploadedFileName
+*/
 
+/*
     //==========================================================================
     public void AddFileToSaveList(String WhereIsIt, String ItsName, String WhereDoesItGo){
     //==========================================================================
@@ -715,13 +827,15 @@ public class AzureManager {
         FilesToSend.add(FilesToSend.size(), ItsName);
         FilesToSend.add(FilesToSend.size(), WhereDoesItGo);
     }
+*/
 
     //==========================================================================
     public void AddFileToSaveList(String _FileName){
-        //==========================================================================
-        FilesToSend.add(FilesToSend.size(), _FileName);
+    //==========================================================================
+        //FilesToSend.add(FilesToSend.size(), _FileName);
+        FilesToSend.add(_FileName);
     }
-
+/*
     //==========================================================================
     public void AppendNew_NotUploadedFileName(String text){
     //==========================================================================
@@ -771,10 +885,6 @@ public class AzureManager {
             e.printStackTrace();
         }
     } // end of AppendNew_UploadedFileName
-
-
-
-
-
+*/
 
 } // end class myAzureManager

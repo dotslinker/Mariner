@@ -35,6 +35,9 @@ public class AzureEventManager {
     public static final short IntervalInHours = 24;
     public static final int CHECK_EVENTS_INTERVAL = IntervalInHours * 3600000; // conversion from hours to milliseconds
 
+    private final String TEST_PHASE_STRING = "Testing";
+    private final String PRODUCTION_PHASE_STRING = "On Duty";
+
     private final short EVENT_READY = 0;
     private final short EVENT_BUSY = 1;
     private final short EVENT_FAILED = 2;
@@ -219,7 +222,8 @@ public class AzureEventManager {
 
             //myData.ID = "SMN-TEST-0S6";
             //String EventType = "HOURLY_STATUS";
-            myData.HourlyNote = "Just good news";
+            //myData.HourlyNote = "Just good news";
+            myData.HourlyNote = TEST_PHASE_STRING;
 
             JSONObject ParamsToSend = new JSONObject();
             java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(Calendar.getInstance().getTime().getTime());
@@ -325,7 +329,7 @@ public class AzureEventManager {
 
             ParamsToSend.put("UploadedFileList", myData.GetUploadedFileList());
             ParamsToSend.put("DailyLog", myData.GetDailyLog());
-            ParamsToSend.put("Note", ""); //puoi chiamarla più volte per mandare più param nello stesso evento
+            ParamsToSend.put("Note", TEST_PHASE_STRING); //puoi chiamarla più volte per mandare più param nello stesso evento
 
             SendJsonEvent(ParamsToSend, myConfig.DailyUpdate_EventHub_url, myConfig.DailyUpdate_EventHub_connstring);
         }

@@ -143,7 +143,7 @@ public class InertialData {
         AccYDataArray[acc_data_counter] = new_acc_y;
         AccZDataArray[acc_data_counter] = new_acc_z;
 
-        AccTimestampArray[acc_data_counter] = (int) ((event.timestamp - reference_time) / 100000);
+        AccTimestampArray[acc_data_counter] = (int) ((event.timestamp - reference_time) / 100000L);
 
         if (++acc_data_counter >= NUM_OF_SMPLES)
             acc_data_counter = NUM_OF_SMPLES - 1;
@@ -212,8 +212,7 @@ public class InertialData {
         AccYDataArray[gyro_data_counter] = new_gyro_y;
         AccZDataArray[gyro_data_counter] = new_gyro_z;
 
-
-        AccTimestampArray[gyro_data_counter] = (int) ((event.timestamp - reference_time) / 100000);
+        AccTimestampArray[gyro_data_counter] = (int) ((event.timestamp - reference_time) / 100000L);
 
         if (++gyro_data_counter >= NUM_OF_SMPLES)
             gyro_data_counter = NUM_OF_SMPLES - 1;

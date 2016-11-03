@@ -43,7 +43,7 @@ public class TemperatureData {
         DataArray[data_counter] = act_temp;
         TempMA.UpdateValue(act_temp);
 
-        TimestampArray[data_counter] = (int)(data.timestamp - reference_time)/100000;
+        TimestampArray[data_counter] = (int)((data.timestamp - reference_time)/100000L);
 
         //Se sforo il
         if(++data_counter >= data_size)

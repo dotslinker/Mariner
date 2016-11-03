@@ -37,7 +37,7 @@ import java.util.Date;
 public class FileLog
 {
     private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";
-    private static final String MSG_FORMAT = "%s: %s - %s\r\n";  // timestamp, tag, message
+    private static final String MSG_FORMAT = "%s: %s - %s";  // timestamp, tag, message
 
     private static String sLogFilePath;
     private static File sTheLogFile;
@@ -238,7 +238,7 @@ public class FileLog
 
     private static String formatMsg( String tag, String msg )
     {
-        return String.format( MSG_FORMAT, getCurrentTimeStamp( ), tag, msg );
+        return String.format( MSG_FORMAT, getCurrentTimeStamp( ), tag, msg ) + "\r\n";
     }
 
     private static String getCurrentTimeStamp( )

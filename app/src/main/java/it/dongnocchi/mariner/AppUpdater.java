@@ -12,7 +12,7 @@ import java.io.File;
 /**
  * Created by Giovanni on 26/06/2015.
  */
-public class UpdateApp extends AsyncTask<String,Void,Boolean> {
+public class AppUpdater extends AsyncTask<String,Void,Boolean> {
     private Context context;
     private String ApkPath="";
 
@@ -22,7 +22,7 @@ public class UpdateApp extends AsyncTask<String,Void,Boolean> {
 
     //    User user;
 
-    public UpdateApp(String path) {
+    public AppUpdater(String path) {
         ApkPath = path;
     }
 

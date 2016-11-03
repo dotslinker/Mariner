@@ -190,7 +190,7 @@ public class WheelchairData {
 
     public void AddPowerONEvent(long EventTime)
     {
-        int deltatime = (int) ((EventTime - DailyReferenceTime) / 100000);
+        int deltatime = (int) ((EventTime - DailyReferenceTime) / 100000L);
 
         PowerStatusLocker.lock();
         try {
@@ -215,7 +215,7 @@ public class WheelchairData {
 
     public void AddPowerOFFEvent(long EventTime)
     {
-        int deltatime = (int) ((EventTime - DailyReferenceTime) / 100000);
+        int deltatime = (int) ((EventTime - DailyReferenceTime) / 100000L);
 
         PowerStatusLocker.lock();
 
@@ -249,7 +249,7 @@ public class WheelchairData {
     }
 
     public void AddMotorONEvent(long EventTime) {
-        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000);
+        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000L);
 
         MotorStatusLocker.lock();
         try {
@@ -283,7 +283,7 @@ public class WheelchairData {
     public void AddMotorOFFEvent(long EventTime)
     {
         //calcolo la differenza di tempo ed aggiorno la variabile del tempo
-        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000);
+        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000L);
 
         MotorStatusLocker.lock();
         try {
@@ -301,7 +301,6 @@ public class WheelchairData {
             }
             myEventData.AddData(deltatime, EventData.MOTOR_OFF);
 
-
             MotorON = false;
 
         }
@@ -313,13 +312,13 @@ public class WheelchairData {
 
     public void AddBatteryValChangeEvent(long EventTime, int new_val)
     {
-        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000);
+        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000L);
         myBatteryData.AddData(deltatime, new_val);
     }
 
     public void AddEveBatteryLowEvent(Long EventTime)
     {
-        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000);
+        int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000L);
 
 
 

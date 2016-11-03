@@ -52,11 +52,12 @@ public class Configuration {
 
     //private String Azure_Acquisition_Container;
     private String APK_Container;
+    private String Config_Container;
     private String Data_Container;
 
     private String AcquisitionFolderPath;
     private String WhereToSaveAPK_LocalPath;
-    //private String WhereToSaveXML_LocalPath;
+    private String WhereToSaveConfig_LocalPath;
     private String Wheelchair_path;
 
 //    private String UploadedFiles_XmlName;
@@ -171,7 +172,7 @@ public class Configuration {
 
         //Azure_Acquisition_Container =     WheelchairID + "-acquisitions";// nei nomi dei containers: NO maiuscole, NO _
 
-        //WhereToSaveXML_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "XMLFiles/";
+        WhereToSaveConfig_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/";
         WhereToSaveAPK_LocalPath =  getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "APK/";
         Wheelchair_path =           getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/";
         AcquisitionFolderPath =     getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/" + "Data/";
@@ -185,10 +186,11 @@ public class Configuration {
 
     public String get_Wheelchair_path()            {return Wheelchair_path;}
     public String get_WhereToSaveAPK_LocalPath()   {return WhereToSaveAPK_LocalPath;}
-    //public String get_WhereToSaveXML_LocalPath()   {return WhereToSaveXML_LocalPath;}
+    public String get_WhereToSaveConfig_LocalPath()   {return WhereToSaveConfig_LocalPath;}
     public String get_Acquisition_Folder()         {return AcquisitionFolderPath;}
 
     public String get_APK_Container()              {return APK_Container;}
+    public String get_Config_Container()           {return Config_Container;}
     public String get_Acquisition_Container()      {return Data_Container + "-" + WheelchairID;}
 
     //public String get_APK_FileName()               {return APK_FileName;}
@@ -245,6 +247,8 @@ public class Configuration {
         //File XMLConfigFile = new File(getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/config.xml");
         //String Filename = getExternalStorageDirectory().getAbsolutePath() + "/Wheelchair/config.xml";
 
+        LoadDefaultValues();
+
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(false);
@@ -294,6 +298,9 @@ public class Configuration {
                         case "eventhub_dailyupdate_connstring":
                             DailyUpdate_EventHub_connstring = s;
                             break;
+                        case "config_container":
+                            Config_Container = s;
+                            break;
                         case "apk_container":
                             APK_Container = s;
                             break;
@@ -331,6 +338,27 @@ public class Configuration {
         catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void LoadDefaultValues()
+    {
+        WheelchairID = "S4-XXXXX";
+        LocalAcquisitionFolder = "/AcquisitionFolder";
+        serviceNamespace = "mariner";
+        storageConnectionString = "DefaultEndpointsProtocol=http;AccountName=marinerblobs;AccountKey=2goGmxgHQEk/6iWtf2xyNBW2I+uNwqmE83VANtnnWsPmiZTJ2Q1m2g7aR474wFGdxc7YVa3FvHCHflLSXG3aLg==";
+        Events_EventHub_url = "https://mariner.servicebus.windows.net/asyncevents/publishers/wheelchair/messages";
+        Events_EventHub_connstring = "Endpoint=sb://mariner.servicebus.windows.net/;SharedAccessKeyName=sender;SharedAccessKey=f29+zFKUhIzZnmM/ORynR2u8fYcqRE2OjjEFrQ+4K6o=";
+        HourlyUpdate_EventHub_url = "https://mariner.servicebus.windows.net/hourlyupdate/publishers/wheelchair/messages";
+        HourlyUpdate_EventHub_connstring = "Endpoint=sb://mariner.servicebus.windows.net/;SharedAccessKeyName=sender;SharedAccessKey=2kG3L+gE5s7qo+XDjJyFi0F9lIMsQzNBhPRBWqGfFTg=";
+        DailyUpdate_EventHub_url = "https://mariner.servicebus.windows.net/dailyupdate/publishers/wheelchair/messages";
+        DailyUpdate_EventHub_connstring = "Endpoint=sb://mariner.servicebus.windows.net/;SharedAccessKeyName=sender;SharedAccessKey=V/EqRuyyUEMa4spfJ0TO9h7mBvIRJGJ5UW5FoX6Z0VQ=";
+        Config_Container = "config-container";
+        APK_Container = "apk-container";
+        Data_Container= "data-container";
+        DailyUpdateHour = 2;
+        UseGPSLocalization = true;
+        AlertSMSPhoneNumber = "+393396564476";
+        TemperatureThresholdAlert = 45;
     }
 
 

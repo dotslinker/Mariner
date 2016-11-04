@@ -435,12 +435,13 @@ public class AzureManager {
                                 if (blobItem instanceof CloudBlob) {
                                     // Download the item and save it to a file with the same name.
                                     CloudBlob blob = (CloudBlob) blobItem;
-                                    if (blob.getName().equals(BlobName_remote))
+                                    if (blob.getName().equals(BlobName_remote)) {
                                         blob.download(new FileOutputStream(WhereToSaveIt_local + BlobName_local));
                                         //blob.download(new FileOutputStream(WhereToSaveIt_local + blob.getName()));
 
-                                    if(Size_FilesToDownload == COMMAND_UPDATE_CONFIG)
-                                        blob.deleteIfExists();
+                                        if (Size_FilesToDownload == COMMAND_UPDATE_CONFIG)
+                                            blob.deleteIfExists();
+                                    }
                                 }
                             }
                         }

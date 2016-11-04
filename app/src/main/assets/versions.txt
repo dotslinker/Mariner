@@ -1,0 +1,3 @@
+
+2016-1104 - Vers. 01010 - tentativo di togliere la parte di caricamento automatico, andata male. Corretto il problema della cancellazione di tutti i file config
+2016-1104 - Vers. 01011 - RIpristinata la parte in AndroidManifest.xml per l'utilizzo del modulo USB Yocto. sembra tutto ripristinato

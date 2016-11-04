@@ -64,7 +64,7 @@ public class MainActivity extends Activity
     //TODO: da verificare tutta la politica di Logging
 
     //xxyyy xx = major release, yyy = minor release
-    public static final int CURRENT_BUILD = 1009;
+    public static final int CURRENT_BUILD = 1011;
 
     public static final String TAG = MainActivity.class.getSimpleName();
 

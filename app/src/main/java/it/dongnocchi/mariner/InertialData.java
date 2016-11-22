@@ -21,8 +21,12 @@ public class InertialData {
     public float[] GyroZDataArray;
     public int[] GyroTimestampArray;
     public int acc_data_counter;
+    public int acc_data_counter_calibration;
     public int gyro_data_counter;
+    public int gyro_data_counter_calibration;
     public float m_acc_x, m_acc_y, m_acc_z;
+    public float m_gyro_x, m_gyro_y, m_gyro_z;
+
     public float[] min_acc_values;
     public float[] max_acc_values;
     public float[] min_gyro_values;
@@ -47,8 +51,20 @@ public class InertialData {
     public float Acc_DevStd_X = 0;
     public float Acc_DevStd_Y = 0;
     public float Acc_DevStd_Z = 0;
+
+    public float Gyro_Mean_X = 0;
+    public float Gyro_Mean_Y = 0;
+    public float Gyro_Mean_Z = 0;
+    public float Gyro_DevStd_X = 0;
+    public float Gyro_DevStd_Y = 0;
+    public float Gyro_DevStd_Z = 0;
+
+    public float Acc_MeanDeltaTime, Gyro_MeanDeltaTime;
+    public float Acc_StdDevDeltaTime, Gyro_StdDevDeltaTime;
+
     MovingAverage ma_acc_x, ma_acc_y, ma_acc_z;
     MedianFilter3 mf_acc_x, mf_acc_y, mf_acc_z;
+    MovingAverage ma_gyro_x, ma_gyro_y, ma_gyro_z;
     MedianFilter3 mf_gyro_x, mf_gyro_y, mf_gyro_z;
     float last_acc_x;
     float delta_x;
@@ -68,6 +84,10 @@ public class InertialData {
         mf_acc_x = new MedianFilter3();
         mf_acc_y = new MedianFilter3();
         mf_acc_z = new MedianFilter3();
+
+        ma_gyro_x = new MovingAverage(MA_SIZE);
+        ma_gyro_y = new MovingAverage(MA_SIZE);
+        ma_gyro_z = new MovingAverage(MA_SIZE);
 
         mf_gyro_x = new MedianFilter3();
         mf_gyro_y = new MedianFilter3();
@@ -105,15 +125,14 @@ public class InertialData {
 
         float dt = (float) (event.timestamp - last_acc_timestamp) * NS2S;
 
-        //TODO: verificare che questo sia il migliore compromesso tra velocità
-        //      e precisione, e che non sia necessario usare una rotazione matriciale
-        new_acc_x = event.values[0] - acc_offset[0];
-        new_acc_y = event.values[1] - acc_offset[1];
-        new_acc_z = event.values[2] - acc_offset[2];
+        //Change here to take into consideration bias and/or axis rotation
+        new_acc_x = event.values[0];
+        new_acc_y = event.values[1];
+        new_acc_z = event.values[2];
 
-        mf_ax = mf_acc_x.UpdateValue(new_acc_x);
-        mf_ay = mf_acc_y.UpdateValue(new_acc_y);
-        mf_az = mf_acc_z.UpdateValue(new_acc_z);
+        mf_ax = mf_acc_x.UpdateValue(new_acc_x - acc_offset[0]);
+        mf_ay = mf_acc_y.UpdateValue(new_acc_y - acc_offset[1]);
+        mf_az = mf_acc_z.UpdateValue(new_acc_z - acc_offset[2]);
 
         m_acc_x = ma_acc_x.UpdateValue(mf_ax);
         m_acc_y = ma_acc_y.UpdateValue(mf_ay);
@@ -166,8 +185,7 @@ public class InertialData {
             DailyDistanceCoveredBw += Math.abs(delta_x);
         }
 
-        //TODO: verificare se ci sia da inserire anche un movimento complessivo
-        // che valuti il modulo dello spostamento
+        //TODO: verificare
         HourlyDistanceCovered += delta_x;
 
         last_acc_x = m_acc_x;
@@ -177,6 +195,7 @@ public class InertialData {
 
     public void UpdateGyroData(SensorEvent event) {
         float new_gyro_x, new_gyro_y, new_gyro_z;
+        float mf_gx, mf_gy, mf_gz;
 
         //evito che il primo delta t sia enorme
         if (last_gyro_timestamp == 0)
@@ -184,10 +203,18 @@ public class InertialData {
 
         float dt = (float) (event.timestamp - last_gyro_timestamp) * NS2S;
 
-        //TODO: da verificare ed eventualmente modificare
-        new_gyro_x = event.values[0] - gyro_offset[0];
-        new_gyro_y = event.values[1] - gyro_offset[1];
-        new_gyro_z = event.values[2] - gyro_offset[2];
+        //Change here to take into consideration bias and/or axis rotation
+        new_gyro_x = event.values[0];// - gyro_offset[0];
+        new_gyro_y = event.values[1];// - gyro_offset[1];
+        new_gyro_z = event.values[2];// - gyro_offset[2];
+
+        mf_gx = mf_gyro_x.UpdateValue(new_gyro_x - gyro_offset[0]);
+        mf_gy = mf_gyro_y.UpdateValue(new_gyro_y - gyro_offset[1]);
+        mf_gz = mf_gyro_z.UpdateValue(new_gyro_z - gyro_offset[2]);
+
+        m_gyro_x = ma_gyro_x.UpdateValue(mf_gx);
+        m_gyro_y = ma_gyro_y.UpdateValue(mf_gy);
+        m_gyro_z = ma_gyro_z.UpdateValue(mf_gz);
 
         //testo massimo e minimo
         if (min_gyro_values[0] > new_gyro_x)
@@ -219,12 +246,12 @@ public class InertialData {
 
         //verifico se l'accelerazione è sopra soglia
         //altrimenti l'azzero
-        if (Math.abs(new_gyro_z) < THRESHOLD_GYRO)
-            new_gyro_z = 0;
+        if (Math.abs(m_gyro_z) < THRESHOLD_GYRO)
+            m_gyro_z = 0;
 
         if (dt > 0) {
             //velocity_x += (new_gyro_x + last_gyro_x) / 2.0f * dt;
-            delta_omega_z = (new_gyro_z + last_gyro_z) / 2.0f * dt * 180 / 3.14159265359f;
+            delta_omega_z = (m_gyro_z + last_gyro_z) / 2.0f * dt * 180 / 3.14159265359f;
         } else {
             //velocity_x = 0;
             delta_omega_z = 0;
@@ -240,9 +267,9 @@ public class InertialData {
 
         HourlyAngleCovered += delta_omega_z;
 
-        last_gyro_x = new_gyro_x;
-        last_gyro_y = new_gyro_y;
-        last_gyro_z = new_gyro_z;
+        last_gyro_x = m_gyro_x;
+        last_gyro_y = m_gyro_y;
+        last_gyro_z = m_gyro_z;
 
         last_gyro_timestamp = event.timestamp;
 
@@ -257,8 +284,233 @@ public class InertialData {
 
 
     public void UpdateAccDataCalibration(SensorEvent event) {
+        float new_acc_x, new_acc_y, new_acc_z;
+        float mf_ax, mf_ay, mf_az;
+
+        //evito che il primo delta t sia enorme
+        if (last_acc_timestamp == 0)
+            last_acc_timestamp = event.timestamp;
+
+        float dt = (float) (event.timestamp - last_acc_timestamp) * NS2S;
+
+        new_acc_x = event.values[0];
+        new_acc_y = event.values[1];
+        new_acc_z = event.values[2];
+
+        mf_ax = mf_acc_x.UpdateValue(new_acc_x);
+        mf_ay = mf_acc_y.UpdateValue(new_acc_y);
+        mf_az = mf_acc_z.UpdateValue(new_acc_z);
+
+        m_acc_x = ma_acc_x.UpdateValue(mf_ax);
+        m_acc_y = ma_acc_y.UpdateValue(mf_ay);
+        m_acc_z = ma_acc_z.UpdateValue(mf_az);
+
+        //testo massimo e minimo
+        if (min_acc_values[0] > new_acc_x)
+            min_acc_values[0] = new_acc_x;
+
+        if (min_acc_values[1] > new_acc_y)
+            min_acc_values[1] = new_acc_y;
+
+        if (min_acc_values[2] > new_acc_z)
+            min_acc_values[2] = new_acc_z;
+
+        if (max_acc_values[0] < new_acc_x)
+            max_acc_values[0] = new_acc_x;
+
+        if (max_acc_values[1] < new_acc_y)
+            max_acc_values[1] = new_acc_y;
+
+        if (max_acc_values[2] < new_acc_z)
+            max_acc_values[2] = new_acc_z;
+
+        AccXDataArray[acc_data_counter] = new_acc_x;
+        AccYDataArray[acc_data_counter] = new_acc_y;
+        AccZDataArray[acc_data_counter] = new_acc_z;
+
+        AccTimestampArray[acc_data_counter] = (int) ((event.timestamp - reference_time) / 100000L);
+
+        if (++acc_data_counter >= NUM_OF_SMPLES)
+            acc_data_counter = NUM_OF_SMPLES - 1;
+
+        acc_data_counter_calibration = acc_data_counter;
+
+        last_acc_x = m_acc_x;
+        last_acc_timestamp = event.timestamp;
+    }
 
 
+    public void UpdateGyroDataCalibration(SensorEvent event) {
+        float new_gyro_x, new_gyro_y, new_gyro_z;
+        float mf_gx, mf_gy, mf_gz;
+
+        //evito che il primo delta t sia enorme
+        if (last_gyro_timestamp == 0)
+            last_gyro_timestamp = event.timestamp;
+
+        float dt = (float) (event.timestamp - last_gyro_timestamp) * NS2S;
+
+        //Change here to take into consideration bias and/or axis rotation
+        new_gyro_x = event.values[0];// - gyro_offset[0];
+        new_gyro_y = event.values[1];// - gyro_offset[1];
+        new_gyro_z = event.values[2];// - gyro_offset[2];
+
+        //testo massimo e minimo
+        if (min_gyro_values[0] > new_gyro_x)
+            min_gyro_values[0] = new_gyro_x;
+
+        if (min_gyro_values[1] > new_gyro_y)
+            min_gyro_values[1] = new_gyro_y;
+
+        if (min_gyro_values[2] > new_gyro_z)
+            min_gyro_values[2] = new_gyro_z;
+
+        if (max_gyro_values[0] < new_gyro_x)
+            max_gyro_values[0] = new_gyro_x;
+
+        if (max_gyro_values[1] < new_gyro_y)
+            max_gyro_values[1] = new_gyro_y;
+
+        if (max_gyro_values[2] < new_gyro_z)
+            max_gyro_values[2] = new_gyro_z;
+
+        GyroXDataArray[gyro_data_counter] = new_gyro_x;
+        GyroYDataArray[gyro_data_counter] = new_gyro_y;
+        GyroZDataArray[gyro_data_counter] = new_gyro_z;
+
+        GyroTimestampArray[gyro_data_counter] = (int) ((event.timestamp - reference_time) / 100000L);
+
+        if (++gyro_data_counter >= NUM_OF_SMPLES)
+            gyro_data_counter = NUM_OF_SMPLES - 1;
+
+        gyro_data_counter_calibration = gyro_data_counter;
+
+        last_gyro_x = m_gyro_x;
+        last_gyro_y = m_gyro_y;
+        last_gyro_z = m_gyro_z;
+
+        last_gyro_timestamp = event.timestamp;
+
+
+    }
+
+    public void UpdateCalibrationInfo()
+    {
+        float squared_sum_x =0.0f;
+        float squared_sum_y =0.0f;
+        float squared_sum_z =0.0f;
+        float squared_sum_t =0.0f;
+        float dx = 0.0f;
+        float dy = 0.0f;
+        float dz = 0.0f;
+        float dt = 0.0f;
+
+        //Part I - Acceleration
+
+        for(int i = 0; i< acc_data_counter_calibration; i++)
+        {
+            Acc_Mean_X += AccXDataArray[i];
+            Acc_Mean_Y += AccYDataArray[i];
+            Acc_Mean_Z += AccZDataArray[i];
+            if (i>0)
+            Acc_MeanDeltaTime += (float) (AccTimestampArray[i+1] - AccTimestampArray[i]);
+        }
+
+        if(acc_data_counter_calibration>0) {
+            Acc_Mean_X /= (float) acc_data_counter_calibration;
+            Acc_Mean_Y /= (float) acc_data_counter_calibration;
+            Acc_Mean_Z /= (float) acc_data_counter_calibration;
+            Acc_MeanDeltaTime /= (float) acc_data_counter_calibration;
+        }
+
+        Acc_MeanDeltaTime /= 10.0f;
+
+        for(int i = 0; i< acc_data_counter_calibration; i++)
+        {
+            dx = AccXDataArray[i] - Acc_Mean_X;
+            squared_sum_x += dx * dx;
+
+            dy = AccYDataArray[i] - Acc_Mean_Y;
+            squared_sum_y += dy * dy;
+
+            dz = AccZDataArray[i] - Acc_Mean_Z;
+            squared_sum_z += dz * dz;
+
+            if(i>0) {
+                dt = (float)(AccTimestampArray[i] -AccTimestampArray[i-1]) / 10.0f - Acc_MeanDeltaTime;
+                squared_sum_t += dt * dt;
+            }
+        }
+
+        if ( acc_data_counter_calibration > 1) {
+            squared_sum_x /= (float) (acc_data_counter_calibration - 1);
+            squared_sum_y /= (float) (acc_data_counter_calibration - 1);
+            squared_sum_z /= (float) (acc_data_counter_calibration - 1);
+            squared_sum_t /= (float) (acc_data_counter_calibration - 1);
+        }
+
+        Acc_DevStd_X = (float)Math.sqrt((double)squared_sum_x);
+        Acc_DevStd_Y = (float)Math.sqrt((double)squared_sum_y);
+        Acc_DevStd_Z = (float)Math.sqrt((double)squared_sum_z);
+        Acc_StdDevDeltaTime = (float)Math.sqrt((double)squared_sum_t);
+
+        //Part II - Gyroscope
+        squared_sum_x =0.0f;
+        squared_sum_y =0.0f;
+        squared_sum_z =0.0f;
+        squared_sum_t =0.0f;
+        dx = 0.0f;
+        dy = 0.0f;
+        dz = 0.0f;
+        dt = 0.0f;
+
+        for(int i = 0; i< gyro_data_counter_calibration; i++)
+        {
+            Gyro_Mean_X += GyroXDataArray[i];
+            Gyro_Mean_Y += GyroYDataArray[i];
+            Gyro_Mean_Z += GyroZDataArray[i];
+
+            if (i>0)
+                Gyro_MeanDeltaTime += (float) (GyroTimestampArray[i+1] - GyroTimestampArray[i]);
+        }
+
+        if(gyro_data_counter_calibration>0) {
+            Gyro_Mean_X /= (float) gyro_data_counter_calibration;
+            Gyro_Mean_Y /= (float) gyro_data_counter_calibration;
+            Gyro_Mean_Z /= (float) gyro_data_counter_calibration;
+            Gyro_MeanDeltaTime /= (float) gyro_data_counter_calibration;
+        }
+
+        Gyro_MeanDeltaTime /= 10.0f;
+
+        for(int i = 0; i< gyro_data_counter_calibration; i++)
+        {
+            dx = GyroXDataArray[i] - Gyro_Mean_X;
+            squared_sum_x += dx * dx;
+
+            dy = GyroYDataArray[i] - Gyro_Mean_Y;
+            squared_sum_y += dy * dy;
+
+            dz = GyroZDataArray[i] - Gyro_Mean_Z;
+            squared_sum_z += dz * dz;
+
+            if(i>0) {
+                dt = (float) (GyroTimestampArray[i] - GyroTimestampArray[i - 1]) / 10.0f - Gyro_MeanDeltaTime;
+                squared_sum_t += dt * dt;
+            }
+        }
+
+        if ( gyro_data_counter_calibration > 1) {
+            squared_sum_x /= (float) (gyro_data_counter_calibration - 1);
+            squared_sum_y /= (float) (gyro_data_counter_calibration - 1);
+            squared_sum_z /= (float) (gyro_data_counter_calibration - 1);
+            squared_sum_t /= (float) (gyro_data_counter_calibration - 1);
+        }
+
+        Gyro_DevStd_X = (float)Math.sqrt((double)squared_sum_x);
+        Gyro_DevStd_Y = (float)Math.sqrt((double)squared_sum_y);
+        Gyro_DevStd_Z = (float)Math.sqrt((double)squared_sum_z);
+        Gyro_StdDevDeltaTime = (float)Math.sqrt((double)squared_sum_t);
     }
 
     public void ResetDailyData(long _new_ref_time) {
@@ -281,6 +533,9 @@ public class InertialData {
 
         acc_data_counter = 0;
         gyro_data_counter = 0;
+
+        acc_data_counter_calibration = 0;
+        gyro_data_counter_calibration = 0;
 
         //TODO: verificare se serve resettare anche questi
         HourlyAngleCovered = 0;
@@ -328,6 +583,18 @@ public class InertialData {
         gyro_offset[1] = gy;
         gyro_offset[2] = gz;
     }
+
+    public void UpdateBias() {
+        acc_offset[0] = Acc_Mean_X;
+        acc_offset[1] = Acc_Mean_Y;
+        acc_offset[2] = Acc_Mean_Z;
+
+        gyro_offset[0] = Gyro_Mean_X;
+        gyro_offset[1] = Gyro_Mean_Y;
+        gyro_offset[2] = Gyro_Mean_Z;
+    }
+
+
 
 
 /*

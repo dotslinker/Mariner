@@ -1,13 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion '22.0.1'
+    compileSdkVersion 24
+    buildToolsVersion '24.0.1'
+
+    useLibrary 'org.apache.http.legacy'
 
     defaultConfig {
         applicationId "it.dongnocchi.mariner"
         minSdkVersion 21
-        targetSdkVersion 22
+        targetSdkVersion 24
         versionCode 1
         versionName "1.0"
     }
@@ -18,6 +20,7 @@ android {
         }
     }
 
+
     packagingOptions {
         exclude 'META-INF/MSFTSIG.RSA'
         exclude 'META-INF/MSFTSIG.SF'
@@ -26,7 +29,7 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.android.support:appcompat-v7:22.2.0'
+    compile 'com.android.support:appcompat-v7:24.2.1'
     compile 'com.microsoft.azure:azure-mobile-services-android-sdk:2.0.3'
     compile 'com.microsoft.azure:azure-notifications-handler:1.0.1@jar'
     compile files('libs/json_simple-1.1.jar')

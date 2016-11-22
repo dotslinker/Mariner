@@ -1,3 +1,11 @@
 
 2016-1104 - Vers. 01010 - tentativo di togliere la parte di caricamento automatico, andata male. Corretto il problema della cancellazione di tutti i file config
 2016-1104 - Vers. 01011 - RIpristinata la parte in AndroidManifest.xml per l'utilizzo del modulo USB Yocto. sembra tutto ripristinato
+2016-1107 - Vers. 01012 - Modificata la modalità di inizializzazione della MAXI-IO (adesso inizializzata soltanto una volta all'inizio), tolta la cancellazione dell'allarme orario per l'aggiornamento della situazione, ed aggiunto un test in più per verificare che l'aggiornamento orario avvenga una sola volta all'ora
+2016-1107 - Vers. 01013 - Ripristinata la modificata la modalità di inizializzazione della MAXI-IO
+2016-1108 - Vers. 01014 - Evento orario spostato di dieci minuti in avanti. Sistemata la cancellazione dell'aggiornamento della grafica e la routine di calcolo dell'orario di partenza dell'allarme orario.
+2016-1109 - Vers. 01015 - Tentativo di sistemare gli allarmi orari (anteponendo la cancellazione di quelli esistenti). Tentativo di sistemare la raccolta dei dati in calibrazione inserendoli nell'array dei dati normali.
+2016-1111 - Vers. 01016 - Allungato il periodo di lettura della temperatura a dieci secondi per vedere se cosi' si elimnina la variabilità sul rilevamento della temperatura. Cambiato l'orario di preparazione dei report orari, ora alla mezz'ora di ciascuna ora
+2016-1121 - Vers. 01017 - NON VA - Sistemati alcuni problemi di trasferimento dei dati nel daily-report. modificato la tipologia del valore dei tempi di accensione della carrozzina e del motore, ora espressi in secondi
+2016-1121 - Vers. 01018 - NON VA - Prova per vedere se funziona un mix con quanto sviluppato da Yoctopuce
+2016-1122 - Vers. 01019 - Bugfix delle precedenti per fare funzionare Yocto

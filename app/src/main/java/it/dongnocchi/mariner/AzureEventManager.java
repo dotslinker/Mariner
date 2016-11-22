@@ -33,10 +33,10 @@ import javax.crypto.spec.SecretKeySpec;
 public class AzureEventManager {
     //==========================================================================
     public static final short IntervalInHours = 24;
-    public static final int CHECK_EVENTS_INTERVAL = IntervalInHours * 3600000; // conversion from hours to milliseconds
+    //public static final int CHECK_EVENTS_INTERVAL = IntervalInHours * 3600000; // conversion from hours to milliseconds
 
     private final String TEST_PHASE_STRING = "Testing";
-    private final String PRODUCTION_PHASE_STRING = "On Duty";
+    private final String PRODUCTION_PHASE_STRING = "Production";
 
     private final short EVENT_READY = 0;
     private final short EVENT_BUSY = 1;
@@ -223,7 +223,7 @@ public class AzureEventManager {
             //myData.ID = "SMN-TEST-0S6";
             //String EventType = "HOURLY_STATUS";
             //myData.HourlyNote = "Just good news";
-            myData.HourlyNote = TEST_PHASE_STRING;
+            myData.HourlyNote = TEST_PHASE_STRING + " - Build 0" +  myConfig.currentBuild;
 
             JSONObject ParamsToSend = new JSONObject();
             java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(Calendar.getInstance().getTime().getTime());
@@ -231,7 +231,7 @@ public class AzureEventManager {
             ParamsToSend.put("WheelchairID", myConfig.WheelchairID); //puoi chiamarla più volte per mandare più param nello stesso evento
             ParamsToSend.put("TimeInfo", currentTimestamp);
             ParamsToSend.put("HourlyPowerOnTime", myData.HourlyPowerOnTimePerc);
-            ParamsToSend.put("HourlyMotorOnTime", myData.HourlyMotorOnTimePerc);
+            ParamsToSend.put("HourlyMotorOnTime", myData.HourlyMotorOnTime);
             ParamsToSend.put("PhoneBatteryLevel", myData.myBatteryData.level);
             ParamsToSend.put("SignalStrength", (float) myData.SignalStrength);
             ParamsToSend.put("NumberOfPowerOn", myData.PowerONHourlyCounter);
@@ -301,8 +301,8 @@ public class AzureEventManager {
 
             ParamsToSend.put("WheelchairID", myConfig.WheelchairID); //puoi chiamarla più volte per mandare più param nello stesso evento
             ParamsToSend.put("TimeInfo", currentTimestamp);
-            ParamsToSend.put("DailyPowerOnTime", myData.DailyUse);
-            ParamsToSend.put("DailyMotorOnTime", myData.DailyUse);
+            ParamsToSend.put("DailyPowerOnTime", myData.DailyPowerOnTime);
+            ParamsToSend.put("DailyMotorOnTime", myData.DailyMotorOnTime);
             ParamsToSend.put("PhoneBatteryLevel", myData.myBatteryData.level);
             ParamsToSend.put("NumberOfPowerOn", myData.PowerONDailyCounter);
             ParamsToSend.put("NumberOfPowerOff", myData.PowerOFFDailyCounter);
@@ -329,7 +329,7 @@ public class AzureEventManager {
 
             ParamsToSend.put("UploadedFileList", myData.GetUploadedFileList());
             ParamsToSend.put("DailyLog", myData.GetDailyLog());
-            ParamsToSend.put("Note", TEST_PHASE_STRING); //puoi chiamarla più volte per mandare più param nello stesso evento
+            ParamsToSend.put("Note", TEST_PHASE_STRING + " - Build 0" +  myConfig.currentBuild); //puoi chiamarla più volte per mandare più param nello stesso evento
 
             SendJsonEvent(ParamsToSend, myConfig.DailyUpdate_EventHub_url, myConfig.DailyUpdate_EventHub_connstring);
         }

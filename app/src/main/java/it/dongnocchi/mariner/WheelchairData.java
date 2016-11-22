@@ -320,8 +320,6 @@ public class WheelchairData {
     {
         int deltatime = (int) ((EventTime - DailyReferenceTime)/ 100000L);
 
-
-
     }
 
 
@@ -371,7 +369,7 @@ public class WheelchairData {
         LightDataDailyReset();
     }
 
-    public void LightDataDailyReset()
+    private void LightDataDailyReset()
     {
         MaxDailyLightValue = 0;
         NumOfDailyLightTransitions = 0;
@@ -461,12 +459,17 @@ public class WheelchairData {
         UpdateMemoryUsage();
     }
 
-
+/*
     public void updateDailyUse()
     {
         //TODO: verificare che l'utilizzo quotidiano sia dato lungo le 24 ore o rispetto alle ore di accensione della carrozzina
         DailyUse = DailyMotorOnTime / 864.0f;
+
     }
+*/
+    public void UpdateCalibrationData()
+    {
+        myInertialData.UpdateCalibrationInfo();
 
-
+    }
 }

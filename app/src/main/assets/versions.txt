@@ -9,3 +9,4 @@
 2016-1121 - Vers. 01017 - NON VA - Sistemati alcuni problemi di trasferimento dei dati nel daily-report. modificato la tipologia del valore dei tempi di accensione della carrozzina e del motore, ora espressi in secondi
 2016-1121 - Vers. 01018 - NON VA - Prova per vedere se funziona un mix con quanto sviluppato da Yoctopuce
 2016-1122 - Vers. 01019 - Bugfix delle precedenti per fare funzionare Yocto
+2016-1124 - Vers. 01020 - Correzione di alcuni bug sulle temperature e sulla sequenza di log

@@ -238,7 +238,7 @@ public class FileLog
 
     private static String formatMsg( String tag, String msg )
     {
-        return "\r\n" + String.format( MSG_FORMAT, getCurrentTimeStamp( ), tag, msg );
+        return String.format( MSG_FORMAT, getCurrentTimeStamp( ), tag, msg );
     }
 
     private static String getCurrentTimeStamp( )

@@ -313,9 +313,9 @@ public class AzureEventManager {
             ParamsToSend.put("AngleCoveredL", myData.DegreesCoveredTurningLeft);
             ParamsToSend.put("AngleCoveredR", myData.DegreesCoveredTurningRight);
 
-            ParamsToSend.put("MinTemperature", myData.MinDailyTemperature);
-            ParamsToSend.put("MeanTemperature", myData.MeanDailyTemperature);
-            ParamsToSend.put("MaxTemperature", myData.MaxDailyTemperature);
+            ParamsToSend.put("MinTemperature", myData.myTempData.MinDailyTemperature);
+            ParamsToSend.put("MeanTemperature", myData.myTempData.MeanDailyTemperature);
+            ParamsToSend.put("MaxTemperature", myData.myTempData.MaxDailyTemperature);
             ParamsToSend.put("MinMemory", myData.MinDailyMemory);
             ParamsToSend.put("MeanMemory", myData.MeanDailyMemory);
             ParamsToSend.put("MaxMemory", myData.MaxDailyMemory);

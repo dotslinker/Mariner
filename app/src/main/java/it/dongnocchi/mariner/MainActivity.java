@@ -14,6 +14,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
@@ -50,7 +51,7 @@ public class MainActivity extends Activity
     //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public static final int CURRENT_BUILD = 1019;
+    public static final int CURRENT_BUILD = 1020;
 
     public static final String TAG = MainActivity.class.getSimpleName();
 
@@ -246,12 +247,6 @@ public class MainActivity extends Activity
             CreateAndOpenNewFileLogger();
             //myLogger = new FileLog();
 
-            //TODO: da rivedere l'intera politica di Logging
-            FileLog.d("MARINER", "App started", null);
-            //FileLog.close();
-            //CreateAndOpenNewFileLogger();
-
-            //lastfiles = new it.dongnocchi.mariner.LastFiles();                              // SET OUTPUT TO INIT ACTIVITY
 
             // INITIALISE SENSOR MANAGER and Sensors
             mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -316,6 +311,7 @@ public class MainActivity extends Activity
 
             //CloseSaveAndRestartLogger(true);
 
+            //TODO: da verificare perchè parzialmente sovrapponibile al precendnte UpdateDailyReferenceTimeAndDate();
             DailyResetData();
 
             StartCalibration();
@@ -379,20 +375,20 @@ public class MainActivity extends Activity
     protected void onStart() {
         super.onStart();
         myEventManager.SendEventNew("APP_ON_START", myData.myBatteryData.level, "");
-        FileLog.d("MARINER", "App START", null);
+        FileLog.d(TAG, "App START", null);
     }
 
     @Override
     protected void onRestart() {
         super.onRestart();
         myEventManager.SendEventNew("APP_ON_RESTART", myData.myBatteryData.level, "");
-        FileLog.d("MARINER", "App RESTART", null);
+        FileLog.d(TAG, "App RESTART", null);
     }
 
     @Override
     protected void onPause() {
         myEventManager.SendEventNew("APP_ON_PAUSE", myData.myBatteryData.level, "");
-        FileLog.d("MARINER", "App Pause", null);
+        FileLog.d(TAG, "App Pause", null);
         super.onPause();
     }
 
@@ -401,7 +397,7 @@ public class MainActivity extends Activity
 
         super.onResume();
         myEventManager.SendEventNew("APP_ON_RESUME", myData.myBatteryData.level, "");
-        FileLog.d("MARINER", "App RESUME", null);
+        FileLog.d(TAG, "App RESUME", null);
 
     }
 
@@ -417,7 +413,7 @@ public class MainActivity extends Activity
         }
 
         myEventManager.SendEventNew("APP_ON_STOP", myData.myBatteryData.level, "");
-        FileLog.d("MARINER", "App STOP", null);
+        FileLog.d(TAG, "App STOP", null);
 
         super.onStop();
     }
@@ -477,14 +473,14 @@ public class MainActivity extends Activity
                 long actual_time = System.nanoTime();
                 actual_hour_of_day = GetActualHourOfDay();//
 
-                LogDebug(TAG, "OnceEveryHour_Receiver - Start (h" + actual_hour_of_day + "/" + previous_hour_of_day + ")");
+                LogDebug(TAG, "OnceEveryHour_Receiver - (h" + actual_hour_of_day + "/" + previous_hour_of_day + ")");
 
                 if (actual_hour_of_day != previous_hour_of_day) {
 
                     myData.updateHourlyUse(Hourly_Reference_Time, actual_time);
 
                     if (actual_hour_of_day == myConfig.get_DailyUpdateHour()) { // do this only once a day at 2 in the night
-                        LogDebug(TAG, "OnceEveryHour_Receiver - Daily Report start");
+                        LogDebug(TAG, "Daily Report start");
                         //FileLog.d("MARINER", "Start Daily Report", null);
                         //Step 1 - let's stop periodic operations and acquisitions (if any)
                         StopPeriodicRefreshUX();//StopPeriodicUpdateUX();
@@ -498,16 +494,25 @@ public class MainActivity extends Activity
 
                         //myData.updateDailyUse();
 
-                        CloseSaveAndRestartLogger();
-
                         myEventManager.SendDailyReport();
+
+                        LogDebug(TAG, "Daily Report end");
+
+                        CloseAndSaveLogger();
+
+                        DailyResetData();
+
+                        CreateAndOpenNewFileLogger();
 
                         //CalibrateAccelerometer();
                         //UpdateListofFilesToUpload();
 
+
+
                         //Upload Blobs
                         //myAzureManager.UploadBlobs(myData.myBatteryData.level);
                         myAzureManager.UploadBlobs();
+                        LogDebug(TAG, "Upload Blobs done");
 
                         //Check for App updates
                         //myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
@@ -515,7 +520,8 @@ public class MainActivity extends Activity
 
                         myAzureManager.CheckAndUpdateConfig();
 
-                        DailyResetData();
+                        LogDebug(TAG, "Checked (and updated)");
+
                         //myData.DailyReset(Daily_Reference_Time);//DailyResetData();
 
                         ResetHourlyCounters();
@@ -527,7 +533,8 @@ public class MainActivity extends Activity
                         StartLightAcquisition();
 
                         StartPeriodicRefreshUX();//StartPeriodicUpdateUX();
-                        LogDebug(TAG, "OnceEveryHour_Receiver - Daily Report end");
+
+                        LogDebug(TAG, "Daily update - all functions started");
                         //FileLog.d("MARINER", "End Daily Report", null);
 
                     } else {
@@ -538,7 +545,7 @@ public class MainActivity extends Activity
 
                     Hourly_Reference_Time = actual_time;
 
-                    LogDebug(TAG, "OnceEveryHour_Receiver - End");
+                    //LogDebug(TAG, "OnceEveryHour_Receiver - End");
 
                     previous_hour_of_day = actual_hour_of_day;
                 }
@@ -564,9 +571,6 @@ public class MainActivity extends Activity
     };
 
 
-
-
-
     //==========================================================================
     private BroadcastReceiver mBatChargeOn = new BroadcastReceiver()
             //==========================================================================
@@ -588,31 +592,6 @@ public class MainActivity extends Activity
             PowerIsOFF(null);
         }
     };
-
-    //==========================================================================
-    final Runnable YoctoRunnable = new Runnable()
-            //==========================================================================
-    {
-        public void run() {
-            if (MaxiIO_SerialN != null) {
-                //YDigitalIO io = YDigitalIO.FindDigitalIO(MaxiIO_SerialN);
-                try {
-                    YAPI.HandleEvents();
-                    // DO THIS EVERYTIME TO LET IT WORK PROPERLY
-                    Init_Yocto(MaxiIO);
-
-                    // da togliere per versione finale app
-                    /*_outputdata = (_outputdata + 1) % 16;   // cycle ouput 0..15
-                    io.set_portState(_outputdata);          // set output value*/
-
-                } catch (YAPI_Exception e) {
-                    LogException(TAG, "final Runnable YoctoRunnable", e);
-                }
-            }
-            YoctoHandler.postDelayed(this, 200);
-        }
-    };
-
 
     //==========================================================================
     private void DailyResetData()
@@ -875,24 +854,7 @@ public class MainActivity extends Activity
         }
     }
 
-    //==========================================================================
-    private void InitYoctoMaxiIO(long new_power_on_time) {
-    //==========================================================================
-        int k = 0;
-        YoctoInUse = false;
-        while (!(ConnectYoctoMaxiIO())) {
-            k++;
-            if (k == 4000) {
-                MaxiIO_textview.setText("Yocto not found");
-                break;
-            }
-        }
-        if (YoctoInUse) {
-            float time_to_talk_with_yocto_ms = ((float) (System.nanoTime() - new_power_on_time)) / 1000000.0f;
-            Start_Yocto();
-            MaxiIO_textview.setText("Yocto connected in: " + time_to_talk_with_yocto_ms + " ms");
-        }
-    }
+
 
     //==========================================================================
     public void PowerIsOFF(View view)
@@ -1334,12 +1296,56 @@ public class MainActivity extends Activity
             }
             YoctoRunnable.run();
         } catch (YAPI_Exception ex) {
-            LogException(TAG, "Start_Yocto", ex);
+            LogException(TAG, "Start_Yocto Exception: ", ex);
         }
 
         //Faccio partire tra un secondo il runnable di rilevamento del dato dal sensore
         YoctoHandler.postDelayed(YoctoRunnable, 100);
     }
+
+    //==========================================================================
+    private void InitYoctoMaxiIO(long new_power_on_time) {
+        //==========================================================================
+        int k = 0;
+        YoctoInUse = false;
+        while (!(ConnectYoctoMaxiIO())) {
+            k++;
+            if (k == 4000) {
+                MaxiIO_textview.setText("Yocto not found");
+                break;
+            }
+        }
+        if (YoctoInUse) {
+            float time_to_talk_with_yocto_ms = ((float) (System.nanoTime() - new_power_on_time)) / 1000000.0f;
+            Start_Yocto();
+            MaxiIO_textview.setText("Yocto connected in: " + time_to_talk_with_yocto_ms + " ms");
+        }
+    }
+
+    //==========================================================================
+    final Runnable YoctoRunnable = new Runnable()
+            //==========================================================================
+    {
+        public void run() {
+            if (MaxiIO_SerialN != null) {
+                //YDigitalIO io = YDigitalIO.FindDigitalIO(MaxiIO_SerialN);
+                try {
+                    YAPI.HandleEvents();
+                    // DO THIS EVERYTIME TO LET IT WORK PROPERLY
+                    Init_Yocto(MaxiIO);
+
+                    // da togliere per versione finale app
+                    /*_outputdata = (_outputdata + 1) % 16;   // cycle ouput 0..15
+                    io.set_portState(_outputdata);          // set output value*/
+
+                } catch (YAPI_Exception e) {
+                    LogException(TAG, "final Runnable YoctoRunnable", e);
+                }
+            }
+            YoctoHandler.postDelayed(this, 200);
+        }
+    };
+
 
     //==========================================================================
     protected void Init_Yocto(YDigitalIO YoctoIOModule)
@@ -1351,7 +1357,7 @@ public class MainActivity extends Activity
             YoctoIOModule.set_portOpenDrain(0);                // No open drain
             //moduleName.set_portState(0x00);                 // imposta valori logici di uscita inizialmente tutti bassi
         } catch (YAPI_Exception e) {
-            LogException(TAG, "Init_Yocto", e);
+            LogException(TAG, "Init_Yocto Exception: ", e);
         }
     }
 
@@ -1359,8 +1365,13 @@ public class MainActivity extends Activity
     protected void Stop_Yocto()
     //==========================================================================
     {
-        YAPI.FreeAPI();
-        YoctoHandler.removeCallbacks(YoctoRunnable);
+        try {
+            YAPI.FreeAPI();
+            YoctoHandler.removeCallbacks(YoctoRunnable);
+        }
+        catch (Exception e) {
+            LogException(TAG, "Stop_Yocto Exception: ", e);
+        }
     }
 
     // NEW VALUE ON PORT:
@@ -1389,7 +1400,7 @@ public class MainActivity extends Activity
             }
 
         } catch (YAPI_Exception e) {
-            LogException(TAG, "yNewValue", e);
+            LogException(TAG, "yNewValue Exception: ", e);
         }
     }
 
@@ -1398,6 +1409,7 @@ public class MainActivity extends Activity
     //==========================================================================
     {
         try {
+
             YAPI.EnableUSBHost(getApplicationContext());
             YAPI.RegisterHub("usb");
 
@@ -1421,7 +1433,7 @@ public class MainActivity extends Activity
                 myYModule = myYModule.nextModule();
             }
         } catch (YAPI_Exception e) {
-            LogException(TAG, "ConnectYoctoMaxiIO", e);
+            LogException(TAG, "ConnectYoctoMaxiIO Exception: ", e);
         }
 
         //lastfiles.isyoctoinuse = YoctoInUse;
@@ -1626,7 +1638,9 @@ public class MainActivity extends Activity
 
         //myData.updateDailyUse();
 
-        CloseSaveAndRestartLogger();
+        CloseAndSaveLogger();
+
+        CreateAndOpenNewFileLogger();
 
         myEventManager.SendDailyReport();
 
@@ -2009,7 +2023,7 @@ public class MainActivity extends Activity
 
     //TODO: da verificare l'implementazione della chiusura e riapertura del file .log
     //==========================================================================
-    private void CloseSaveAndRestartLogger()//boolean initializing)
+    private void CloseAndSaveLogger()//boolean initializing)
     //==========================================================================
     {
         //CLose the existing Logger (if any)
@@ -2022,7 +2036,7 @@ public class MainActivity extends Activity
         myData.DailyLogFileName = logger_filename;
         //}
 
-        CreateAndOpenNewFileLogger();
+
     }
 
     //==========================================================================
@@ -2035,6 +2049,7 @@ public class MainActivity extends Activity
         logger_filename_complete = myConfig.get_Acquisition_Folder() + logger_filename;
         //Open the new one for the new day
         FileLog.open(logger_filename_complete, Log.VERBOSE, MAX_LOGFILE_SIZE);
+        FileLog.d("Wheelchair Remote Monitor", "Vers. " + Integer.toString(CURRENT_BUILD), null);
     }
 
 

@@ -1,9 +1,5 @@
 package it.dongnocchi.mariner;
 
-import android.database.CursorIndexOutOfBoundsException;
-
-import java.util.Calendar;
-import java.util.Date;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -54,9 +50,9 @@ public class WheelchairData {
 
     //public float HourlyUse;
 
-    public float MinDailyTemperature;
-    public float MeanDailyTemperature;
-    public float MaxDailyTemperature;
+    //public float MinDailyTemperature;
+    //public float MeanDailyTemperature;
+    //public float MaxDailyTemperature;
 
     public long MinHourlyMemory;
     public long MeanHourlyMemory;
@@ -154,6 +150,14 @@ public class WheelchairData {
         CurrentLightValue = new_val;
 
     }
+
+    public void UpdateTemperatureValue(float new_val)
+    {
+
+
+
+    }
+
 
     //==========================================================================
     private void UpdateMemoryUsage()
@@ -380,10 +384,11 @@ public class WheelchairData {
     {
         DailyReferenceTime = _dailyReferenceTime;
         myInertialData.ResetDailyData(_dailyReferenceTime);
-        myTempData.Reset(_dailyReferenceTime);
+        myTempData.DailyReset(_dailyReferenceTime);
+
         myEventData.Reset();
-        //myMotorData.Reset();
-        //myPowerData.Reset();
+        //myMotorData.DailyReset();
+        //myPowerData.DailyReset();
         myBatteryData.Reset();
 
         ResetDailyCounters();
@@ -393,7 +398,7 @@ public class WheelchairData {
 
     private void MemoryDataDailyReset()
     {
-        //Reset Memory Usage indexes
+        //DailyReset Memory Usage indexes
         MaxMemoryUsedFloat_KB = 0;
         MemoryUsedFloat_KB = 0;
         MemoryUsedFloatSumCounter = 0;

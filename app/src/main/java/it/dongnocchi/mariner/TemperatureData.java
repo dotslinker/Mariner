@@ -16,8 +16,14 @@ public class TemperatureData {
     long reference_time;
 
     MovingAverage TempMA;
-    public float MaxTemperature;
-    public float MinTemperature;
+    public float MaxTemperature = 0.0f;
+    public float MinTemperature = 100.0f;
+    
+    public float MinHourlyTemperature = 100.0f;
+    public float MaxHourlyTemperature = 0.0f;
+    public float MinDailyTemperature = 100.0f;
+    public float MeanDailyTemperature = 100.0f;
+    public float MaxDailyTemperature = 0.0f;
 
     public TemperatureData(int num_of_samples, int sampling_period_ms, int num_of_seconds_for_mean)
     {
@@ -49,13 +55,23 @@ public class TemperatureData {
         if(++data_counter >= data_size)
             data_counter = 0;
 
-        //TotalNumOfSamples++;
-
         if (act_temp > MaxTemperature)
             MaxTemperature = act_temp;
 
         if (act_temp < MinTemperature)
             MinTemperature = act_temp;
+
+        if (act_temp > MaxHourlyTemperature)
+            MaxHourlyTemperature= act_temp;
+
+        if (act_temp < MinHourlyTemperature)
+            MinHourlyTemperature= act_temp;
+
+        if (act_temp > MaxDailyTemperature)
+            MaxDailyTemperature= act_temp;
+
+        if (act_temp < MinDailyTemperature)
+            MinDailyTemperature= act_temp;
 
     }
 
@@ -65,18 +81,21 @@ public class TemperatureData {
         MinTemperature = 100.0f;
     }
 
-    public void Reset(long _new_ref_time)
+    public void DailyReset(long _new_ref_time)
     {
         for(int i= 0; i<data_size;i++)
         {
             TimestampArray[i] = 0;
-            DataArray[i] = 0;
+            DataArray[i] = 0.0f;
         }
         data_counter = 0;
 
         ResetMinMax();
 
         TempMA.ResetData();
+
+        MinDailyTemperature = 100.0f;
+        MaxDailyTemperature = 0.0f;
 
         reference_time = _new_ref_time;
     }

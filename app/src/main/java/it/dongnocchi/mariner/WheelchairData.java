@@ -331,6 +331,8 @@ public class WheelchairData {
     {
         PowerONHourlyCounter = 0;
         MotorONHourlyCounter = 0;
+        PowerOFFHourlyCounter = 0;
+        MotorOFFDailyCounter= 0;
 
         HourlyMotorOnTime = 0f;
         HourlyPowerOnTime = 0f;
@@ -355,7 +357,9 @@ public class WheelchairData {
     public void ResetDailyCounters()
     {
         PowerONDailyCounter = 0;
+        PowerOFFDailyCounter = 0;
         MotorONDailyCounter = 0;
+        MotorOFFDailyCounter = 0;
 
         DailyMotorOnTime = 0f;
         DailyPowerOnTime = 0f;

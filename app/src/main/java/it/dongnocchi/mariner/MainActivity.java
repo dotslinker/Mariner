@@ -51,7 +51,7 @@ public class MainActivity extends Activity
     //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public static final int CURRENT_BUILD = 1020;
+    public static final int CURRENT_BUILD = 1021;
 
     public static final String TAG = MainActivity.class.getSimpleName();
 
@@ -507,16 +507,19 @@ public class MainActivity extends Activity
                         //CalibrateAccelerometer();
                         //UpdateListofFilesToUpload();
 
-
-
                         //Upload Blobs
                         //myAzureManager.UploadBlobs(myData.myBatteryData.level);
                         myAzureManager.UploadBlobs();
+
+                        WaitForEmptyBlobListOrTimeout(180);
+
                         LogDebug(TAG, "Upload Blobs done");
 
                         //Check for App updates
                         //myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
                         myAzureManager.CheckAndUpdateAPK();
+
+                        Sleep(2000);
 
                         myAzureManager.CheckAndUpdateConfig();
 
@@ -556,6 +559,22 @@ public class MainActivity extends Activity
                 LogException(TAG, "OnceEveryHour_Receiver ERROR: ", ex);
             }        }
     };
+
+
+    private int WaitForEmptyBlobListOrTimeout(int num_seconds_timeout)
+    {
+        int sleep_time = num_seconds_timeout * 1000;
+        int sec_counter = 0;
+        do {
+            Sleep(1000);
+            if ( num_seconds_timeout > 0)
+                if( ++sec_counter > num_seconds_timeout)
+                    break;
+        }
+        while(myAzureManager.FilesToSend.size()>0);
+
+        return(myAzureManager.FilesToSend.size());
+    }
 
     //==========================================================================
     private BroadcastReceiver ViewRefreshUpdate_Receiver = new BroadcastReceiver()
@@ -1300,7 +1319,8 @@ public class MainActivity extends Activity
         }
 
         //Faccio partire tra un secondo il runnable di rilevamento del dato dal sensore
-        YoctoHandler.postDelayed(YoctoRunnable, 100);
+        //TODO:  2016-1124 Eliminata la seguente riga - verificare che funzioni
+        //YoctoHandler.postDelayed(YoctoRunnable, 100);
     }
 
     //==========================================================================
@@ -1324,15 +1344,18 @@ public class MainActivity extends Activity
 
     //==========================================================================
     final Runnable YoctoRunnable = new Runnable()
-            //==========================================================================
+    //==========================================================================
     {
         public void run() {
             if (MaxiIO_SerialN != null) {
                 //YDigitalIO io = YDigitalIO.FindDigitalIO(MaxiIO_SerialN);
                 try {
+                    YAPI.UpdateDeviceList();
                     YAPI.HandleEvents();
+
                     // DO THIS EVERYTIME TO LET IT WORK PROPERLY
-                    Init_Yocto(MaxiIO);
+                    //TODO: 2016-1124 tolta la seguente riga. vediamo se funziona
+                    //Init_Yocto(MaxiIO);
 
                     // da togliere per versione finale app
                     /*_outputdata = (_outputdata + 1) % 16;   // cycle ouput 0..15
@@ -1377,16 +1400,19 @@ public class MainActivity extends Activity
     // NEW VALUE ON PORT:
     @Override
     //==========================================================================
-    public void yNewValue(YDigitalIO yDigitalIO, String s)
+    public void yNewValue(YDigitalIO yDigitalIO, String newPortValue)
     //==========================================================================
     {
         long new_event_time = System.nanoTime();
-        event_textview.setText(s);
+        event_textview.setText(newPortValue);
 
         try {
             // CHECK MOTOR PIN VALUE
             //Motor_OldInputData = Motor_NewInputData;
-            Motor_NewInputData = MaxiIO.get_bitState(MaxiIO_MotorPin);
+            //Motor_NewInputData = MaxiIO.get_bitState(MaxiIO_MotorPin);
+            int portvalue = Integer.valueOf(newPortValue, 16);
+
+            Motor_NewInputData = (portvalue >> MaxiIO_MotorPin) & 1;
 
             // MOTOR EVENT HANDLING
             if (Motor_NewInputData == 1) {
@@ -1399,7 +1425,7 @@ public class MainActivity extends Activity
                 myData.AddMotorOFFEvent(new_event_time);
             }
 
-        } catch (YAPI_Exception e) {
+        } catch (Exception e) {
             LogException(TAG, "yNewValue Exception: ", e);
         }
     }
@@ -1651,6 +1677,8 @@ public class MainActivity extends Activity
         //Upload Blobs
         //myAzureManager.UploadBlobs(myData.myBatteryData.level);
         myAzureManager.UploadBlobs();
+
+        WaitForEmptyBlobListOrTimeout(180);
 
         myAzureManager.CheckAndUpdateConfig();
 

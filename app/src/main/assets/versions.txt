@@ -10,3 +10,5 @@
 2016-1121 - Vers. 01018 - NON VA - Prova per vedere se funziona un mix con quanto sviluppato da Yoctopuce
 2016-1122 - Vers. 01019 - Bugfix delle precedenti per fare funzionare Yocto
 2016-1124 - Vers. 01020 - Correzione di alcuni bug sulle temperature e sulla sequenza di log
+2016-1205 - Vers. 01021 - Aggiunta di un controllo con timeout a 180s sull'effettivo trasferimento dei file salvati, in modo da evitare situazioni di trasferimento incompleto dei file. Qualche fix su dati ON/OFF registrati
+                          Leggermente modificata la routine yNewValue, in risposta alla proposta di YoctoPuce, per ridurre i tempi di rilevamento della transazione

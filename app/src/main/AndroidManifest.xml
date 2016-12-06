@@ -54,16 +54,7 @@ package="it.dongnocchi.mariner" >
     <service android:name=".AutoStartUp" >
     </service-->
 
-    <activity
-        android:name=".MainActivity"
-        android:label="@string/app_name"
-        android:screenOrientation="portrait">
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
-    </activity>
-
+    <!-- ***************************************************************************** -->
     <!--activity
         android:name=".MainActivity"
         android:label="@string/app_name"
@@ -77,6 +68,17 @@ package="it.dongnocchi.mariner" >
             android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
             android:resource="@xml/usb_device_filter"/>
     </activity-->
+
+    <!-- ***************************************************************************** -->
+    <activity
+        android:name=".MainActivity"
+        android:label="@string/app_name"
+        android:screenOrientation="portrait">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
 
     <activity
         android:name=".YoctoPlugged"

@@ -12,3 +12,5 @@
 2016-1124 - Vers. 01020 - Correzione di alcuni bug sulle temperature e sulla sequenza di log
 2016-1205 - Vers. 01021 - Aggiunta di un controllo con timeout a 180s sull'effettivo trasferimento dei file salvati, in modo da evitare situazioni di trasferimento incompleto dei file. Qualche fix su dati ON/OFF registrati
                           Leggermente modificata la routine yNewValue, in risposta alla proposta di YoctoPuce, per ridurre i tempi di rilevamento della transazione
+                          Aumento della granularità del campionamento della memoria da uno all'ora ad uno ogni campione della temperatura
+2016-1206 - Vers. 01022 - Prova di integrazione della parte Yocto come proposta da Sebastien.

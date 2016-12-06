@@ -100,8 +100,8 @@ public class WheelchairData {
     private static final int NUM_OF_TEMPERARURE_SAMPLES = 8650; //8640 sarebbe il numero corretto
 
     public long MemoryUsed, MemoryAvailable;
-    public float MemoryUsedFloat_KB, MaxMemoryUsedFloat_KB;
-    public int MemoryUsedFloatSumCounter;
+    //public float MemoryUsedFloat_KB, MaxMemoryUsedFloat_KB;
+    //public int MemoryUsedFloatSumCounter;
 
     //Runtime myRuntime;
 
@@ -160,17 +160,17 @@ public class WheelchairData {
 
 
     //==========================================================================
-    private void UpdateMemoryUsage()
+    public void UpdateMemoryUsage()
     //==========================================================================
     {
         Runtime myRuntime = Runtime.getRuntime();
         float memused_KB = ((float)(myRuntime.totalMemory() - myRuntime.freeMemory())) / 1048576.0F;
 
-        if( MaxMemoryUsedFloat_KB < memused_KB)
-            MaxMemoryUsedFloat_KB = memused_KB;
+        //if( MaxMemoryUsedFloat_KB < memused_KB)
+        //    MaxMemoryUsedFloat_KB = memused_KB;
 
-        MemoryUsedFloat_KB += memused_KB;
-        MemoryUsedFloatSumCounter++;
+        //MemoryUsedFloat_KB += memused_KB;
+        //MemoryUsedFloatSumCounter++;
 
         MemoryUsed = (myRuntime.totalMemory() - myRuntime.freeMemory()) / 1048576L;
         MemoryAvailable = myRuntime.maxMemory() / 1048576L;
@@ -383,7 +383,6 @@ public class WheelchairData {
         NumOfDailyLightTransitions = 0;
     }
 
-
     public void DailyReset(long _dailyReferenceTime)
     {
         DailyReferenceTime = _dailyReferenceTime;
@@ -403,9 +402,9 @@ public class WheelchairData {
     private void MemoryDataDailyReset()
     {
         //DailyReset Memory Usage indexes
-        MaxMemoryUsedFloat_KB = 0;
-        MemoryUsedFloat_KB = 0;
-        MemoryUsedFloatSumCounter = 0;
+        //MaxMemoryUsedFloat_KB = 0;
+        //MemoryUsedFloat_KB = 0;
+        //MemoryUsedFloatSumCounter = 0;
 
         MinDailyMemory = 100000000L;
         MaxDailyMemory = 0;
@@ -416,7 +415,6 @@ public class WheelchairData {
         MinHourlyMemory = 100000000L;
         MaxHourlyMemory = 0;
     }
-
 
 
     public void updateHourlyUse(long hourly_ref_time, long now)

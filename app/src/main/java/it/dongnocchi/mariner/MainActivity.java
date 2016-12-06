@@ -670,6 +670,8 @@ public class MainActivity extends Activity
             } else if ((event.sensor.getType() == Sensor.TYPE_AMBIENT_TEMPERATURE)) {
                 myData.myTempData.AppendData(event);
 
+                myData.UpdateMemoryUsage();
+
                 //TODO: da sistemare una routine con un intervallo di un secondo...
                 UpdateRunningTime();
 

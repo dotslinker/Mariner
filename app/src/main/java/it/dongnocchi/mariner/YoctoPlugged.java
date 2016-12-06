@@ -43,6 +43,7 @@ public class YoctoPlugged extends Activity {
         }
     }
 
+    /*
 
     @Override
     protected void onNewIntent(Intent intent)
@@ -85,4 +86,6 @@ public class YoctoPlugged extends Activity {
         //Log.i(TAG, "onStop");
         super.onDestroy();
     }
+    */
+
 }

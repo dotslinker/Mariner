@@ -160,6 +160,38 @@ public class AzureEventManager {
         return Status;
     }
 
+    //==========================================================================
+    protected short SendEventNew(String EventName, float EventValue, String Note) {
+        //==========================================================================
+
+        try {
+
+            JSONObject DataToSend = new JSONObject();
+            java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(Calendar.getInstance().getTime().getTime());
+
+            Status = EVENT_BUSY;
+            DataToSend.put("WheelchairID", myConfig.WheelchairID); //puoi chiamarla più volte per mandare più param nello stesso evento
+            DataToSend.put("TimeInfo", currentTimestamp);
+            //DataToSend.put("Time", time_string);
+            DataToSend.put("EventName", EventName);
+            DataToSend.put("EventValue", EventValue);
+            DataToSend.put("Status", 1);
+            DataToSend.put("Note", Note);
+
+            //String s = DataToSend.toString();
+            SendJsonEvent(DataToSend,myConfig.Events_EventHub_url, myConfig.Events_EventHub_connstring );
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return Status;
+    }
+
+
+
+
+
+
     public void SendJsonEvent(JSONObject jso, String url, String connstring)
     {
         String sas;
@@ -245,6 +277,8 @@ public class AzureEventManager {
             ParamsToSend.put("MinMemory", myData.MinHourlyMemory);
             ParamsToSend.put("MeanMemory", myData.MeanHourlyMemory);
             ParamsToSend.put("MaxMemory", myData.MaxHourlyMemory);
+
+            ParamsToSend.put("StorageMemoryAvailable", myData.StorageMemoryAvailable);
 
             ParamsToSend.put("NumOfLightTransitions", myData.NumOfHourlyLightTransitions);
             ParamsToSend.put("MaxLight", myData.MaxLightValue);

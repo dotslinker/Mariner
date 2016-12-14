@@ -18,7 +18,8 @@ public class TemperatureData {
     MovingAverage TempMA;
     public float MaxTemperature = 0.0f;
     public float MinTemperature = 100.0f;
-    
+    public float CurrentTemperature = 0;
+
     public float MinHourlyTemperature = 100.0f;
     public float MaxHourlyTemperature = 0.0f;
     public float MinDailyTemperature = 100.0f;
@@ -45,6 +46,8 @@ public class TemperatureData {
     public void AppendData(SensorEvent data)
     {
         float act_temp = data.values[0];
+
+        CurrentTemperature = act_temp;
 
         DataArray[data_counter] = act_temp;
         TempMA.UpdateValue(act_temp);

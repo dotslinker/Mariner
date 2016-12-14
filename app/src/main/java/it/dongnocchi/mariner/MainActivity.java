@@ -13,12 +13,15 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.view.View;
@@ -28,6 +31,7 @@ import android.widget.Toast;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
@@ -37,6 +41,10 @@ import java.util.concurrent.TimeUnit;
 
 import android.util.Log;
 
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.appindexing.Thing;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.yoctopuce.YoctoAPI.YAPI;
 import com.yoctopuce.YoctoAPI.YAPI_Exception;
 import com.yoctopuce.YoctoAPI.YDigitalIO;
@@ -44,41 +52,50 @@ import com.yoctopuce.YoctoAPI.YModule;
 
 import static com.yoctopuce.YoctoAPI.YDigitalIO.FindDigitalIO;
 
+/*
+//MODIFICA PER TESTARE IL CODICE DI SEBASTIEN 2016-1206
 
 //==========================================================================
 public class MainActivity extends Activity
         implements SensorEventListener, YDigitalIO.UpdateCallback {
     //==========================================================================
+*/
+
+//==========================================================================
+public class MainActivity extends Activity
+        implements SensorEventListener, YAPI.DeviceArrivalCallback, YAPI.DeviceRemovalCallback, YDigitalIO.UpdateCallback {
+    //==========================================================================
+
 
     //xxyyy xx = major release, yyy = minor release
-    public static final int CURRENT_BUILD = 1021;
+    public final int CURRENT_BUILD = 1023;
 
-    public static final String TAG = MainActivity.class.getSimpleName();
+    public final String TAG = MainActivity.class.getSimpleName();
 
     //TODO: da verificare la gestione dello status
 
-    public static final int STATUS_INIT = 0;
-    public static final int STATUS_SLEEP = 1;
-    public static final int STATUS_IDLE = 2;
-    public static final int STATUS_ACTIVE = 3;
-    public static final int STATUS_DAILY_UPDATE = 4;
-    public static final int STATUS_OFFLINE = 5;
-    public static final String[] STATUS_STRING = {"INIT", "SLEEP", "IDLE", "ACTIVE", "DAILY_UPDATE", "OFFLINE"};
+    public final int STATUS_INIT = 0;
+    public final int STATUS_SLEEP = 1;
+    public final int STATUS_IDLE = 2;
+    public final int STATUS_ACTIVE = 3;
+    public final int STATUS_DAILY_UPDATE = 4;
+    public final int STATUS_OFFLINE = 5;
+    public final String[] STATUS_STRING = {"INIT", "SLEEP", "IDLE", "ACTIVE", "DAILY_UPDATE", "OFFLINE"};
 
-    public static final short MaxiIO_MotorPin = 7;
+    public final short MaxiIO_MotorPin = 7;
 
-    static final int MAX_LOGFILE_SIZE = 20000000;
-    private static final int ACC_READING_PERDIOD = 20000; // 20 ms
-    private static final int GYRO_READING_PERDIOD = 20000; //20 ms
-    private static final int TEMPERATURE_READING_PERDIOD = 100000000; //10 s
-    private static final int LIGHT_READING_PERDIOD = 10000000; //1s
+    final int MAX_LOGFILE_SIZE = 20000000;
+    private final int ACC_READING_PERDIOD = 20000; // 20 ms
+    private final int GYRO_READING_PERDIOD = 20000; //20 ms
+    private final int TEMPERATURE_READING_PERDIOD = 100000000; //10 s
+    private final int LIGHT_READING_PERDIOD = 10000000; //1s
 
     //During the Calibration, we require a less frequent sampling period
-    private static final int ACC_READING_PERDIOD_CALIB = 50000;
-    private static final int GYRO_READING_PERDIOD_CALIB = 50000;
+    private final int ACC_READING_PERDIOD_CALIB = 50000;
+    private final int GYRO_READING_PERDIOD_CALIB = 50000;
     //private static final int NUM_OF_TEMPERARURE_SAMPLES = 8650; //8640 sarebbe il numero corretto
     //private static final int NUM_OF_SIGNAL_STRENGTH_SAMPLES = 8650; //8640 sarebbe il numero corretto
-    private static final int NUM_OF_SECONDS_CALIBRATION = 10;
+    private final int NUM_OF_SECONDS_CALIBRATION = 10;
     //private static final int CALIB_DATA_SIZE = 1000; // 500 per 10 secondi
     //Reference date reporting the reset performed at the very first start
     //and at the reset each night. Needs to be evaluated very close to Daily_referece_time
@@ -149,7 +166,7 @@ public class MainActivity extends Activity
     //LastFiles lastfiles;    //output
     // phone network variables
     TelephonyManager TelephonManager;
-    it.dongnocchi.mariner.NetworkInfo myNetworkInfo;
+    NetworkInfo myNetworkInfo;
     AzureManager myAzureManager;
     Configuration myConfig;
     AzureEventManager myEventManager;
@@ -176,7 +193,7 @@ public class MainActivity extends Activity
 
     //it.dongnocchi.mariner.NotSentFileHandler notSent;
     //WindowManager.LayoutParams NewLayoutParams = null;
-    it.dongnocchi.mariner.WheelchairData myData;
+    WheelchairData myData;
     String logger_filename;
     String logger_filename_complete;
 
@@ -209,8 +226,13 @@ public class MainActivity extends Activity
     // INDICATE WHEN YOCTO IS IN USE (AVAILABLE)
     private boolean YoctoInUse = false;
     private int Status;
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    //private GoogleApiClient client;
 
-    private boolean init_yocto_just_once = false;
+    //private boolean init_yocto_just_once = false;
 
     @Override
     //==========================================================================
@@ -265,7 +287,7 @@ public class MainActivity extends Activity
             //registerReceiver(mBatOkay, new IntentFilter(Intent.ACTION_BATTERY_OKAY));
             registerReceiver(mBatChanged, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 
-            myData = new it.dongnocchi.mariner.WheelchairData(Daily_Reference_Time);
+            myData = new WheelchairData(Daily_Reference_Time);
 
             //set the log filename to the DailyLogFileName varabile
             myData.DailyLogFileName = logger_filename;
@@ -298,7 +320,7 @@ public class MainActivity extends Activity
             //DebugTestWriteBin();
 
             //TODO: semplificare il codice del AzureManager
-            myAzureManager = new AzureManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
+            myAzureManager = new AzureManager(getApplicationContext(), new AsyncResponse() {
                 @Override
                 public void processFinish(String last_uploaded_file) {
                 }
@@ -325,7 +347,7 @@ public class MainActivity extends Activity
             StartPeriodicRefreshUX(); //StartPeriodicUpdateUX();
 
             // inizializzazione eventhub manager
-            myEventManager = new AzureEventManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
+            myEventManager = new AzureEventManager(getApplicationContext(), new AsyncResponse() {
                 @Override
                 public void processFinish(String output) {
                 }
@@ -337,8 +359,11 @@ public class MainActivity extends Activity
                 //myData.AddPowerONEvent(AppStartTime);
             }
 
-            if(init_yocto_just_once)
-                InitYoctoMaxiIO(System.nanoTime());
+            /***********************************
+
+             if(init_yocto_just_once)
+             InitYoctoMaxiIO(System.nanoTime());
+             */
 
             SetUXInteraction(false);
 
@@ -359,6 +384,7 @@ public class MainActivity extends Activity
             float d = acc_x_calib.stdev_deltatime;
             float e = 0.0f;
             */
+            UpdateStorageMemoryAvailable();
 
             //CreateMyWheelchairFile();
             //call_toast(ByteOrder.nativeOrder().toString()); system is little endian
@@ -374,20 +400,24 @@ public class MainActivity extends Activity
     @Override
     protected void onStart() {
         super.onStart();
-        myEventManager.SendEventNew("APP_ON_START", myData.myBatteryData.level, "");
+
+
+        Start_Yocto();
+
+        //myEventManager.SendEventNew("APP_ON_START", myData.myBatteryData.level, "");
         FileLog.d(TAG, "App START", null);
     }
 
     @Override
     protected void onRestart() {
         super.onRestart();
-        myEventManager.SendEventNew("APP_ON_RESTART", myData.myBatteryData.level, "");
+        //myEventManager.SendEventNew("APP_ON_RESTART", myData.myBatteryData.level, "");
         FileLog.d(TAG, "App RESTART", null);
     }
 
     @Override
     protected void onPause() {
-        myEventManager.SendEventNew("APP_ON_PAUSE", myData.myBatteryData.level, "");
+        //myEventManager.SendEventNew("APP_ON_PAUSE", myData.myBatteryData.level, "");
         FileLog.d(TAG, "App Pause", null);
         super.onPause();
     }
@@ -396,26 +426,28 @@ public class MainActivity extends Activity
     protected void onResume() {
 
         super.onResume();
-        myEventManager.SendEventNew("APP_ON_RESUME", myData.myBatteryData.level, "");
+        //myEventManager.SendEventNew("APP_ON_RESUME", myData.myBatteryData.level, "");
         FileLog.d(TAG, "App RESUME", null);
 
     }
 
     @Override
-    protected void onStop()
-    {
-        if(init_yocto_just_once) {
-            if (YoctoInUse) {
-                Stop_Yocto();
-                MaxiIO_textview.setText("Yocto = stopped");
-            } else
-                MaxiIO_textview.setText("Yocto = not present");
-        }
+    protected void onStop() {
+        /********************* Eliminato perchè non usato
+         if(init_yocto_just_once) {
+         if (YoctoInUse) {
+         Stop_Yocto();
+         MaxiIO_textview.setText("Yocto = stopped");
+         } else
+         MaxiIO_textview.setText("Yocto = not present");
+         }
+         */
 
-        myEventManager.SendEventNew("APP_ON_STOP", myData.myBatteryData.level, "");
+        //myEventManager.SendEventNew("APP_ON_STOP", myData.myBatteryData.level, "");
         FileLog.d(TAG, "App STOP", null);
 
         super.onStop();
+        Stop_Yocto();
     }
 
 
@@ -437,14 +469,14 @@ public class MainActivity extends Activity
 
     //==========================================================================
     private BroadcastReceiver mBatLow = new BroadcastReceiver()
-    //==========================================================================
+            //==========================================================================
     {
         @Override
         public void onReceive(Context cont, Intent battery_intent) {
 
             // GET BATTERY LEVEL
             long eventtime = System.nanoTime();
-            myEventManager.SendEventNew("BATTERY_LOW", myData.myBatteryData.level, "");
+            myEventManager.SendEventNew("ALERT: BATTERY LOW", myData.myBatteryData.level, "");
             myData.AddBatteryValChangeEvent(eventtime, battery_intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1));
             //battery_textview.setText(myData.BatteryLevel + "%");
             // save data
@@ -493,6 +525,7 @@ public class MainActivity extends Activity
                         SaveData();
 
                         //myData.updateDailyUse();
+                        UpdateStorageMemoryAvailable();
 
                         myEventManager.SendDailyReport();
 
@@ -540,6 +573,7 @@ public class MainActivity extends Activity
                         LogDebug(TAG, "Daily update - all functions started");
                         //FileLog.d("MARINER", "End Daily Report", null);
 
+
                     } else {
                         //myData.updateHourlyUse(Hourly_Reference_Time, actual_time);
                         myEventManager.SendHourlyStatusEvent();
@@ -554,26 +588,33 @@ public class MainActivity extends Activity
                 }
 
 
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 LogException(TAG, "OnceEveryHour_Receiver ERROR: ", ex);
-            }        }
+            }
+        }
     };
 
 
-    private int WaitForEmptyBlobListOrTimeout(int num_seconds_timeout)
-    {
+    private int WaitForEmptyBlobListOrTimeout(int num_seconds_timeout) {
         int sleep_time = num_seconds_timeout * 1000;
         int sec_counter = 0;
         do {
             Sleep(1000);
-            if ( num_seconds_timeout > 0)
-                if( ++sec_counter > num_seconds_timeout)
+            if (num_seconds_timeout > 0)
+                if (++sec_counter > num_seconds_timeout)
                     break;
         }
-        while(myAzureManager.FilesToSend.size()>0);
+        while (myAzureManager.FilesToSend.size() > 0);
 
-        return(myAzureManager.FilesToSend.size());
+        return (myAzureManager.FilesToSend.size());
+    }
+
+    private void UpdateStorageMemoryAvailable() {
+
+        File external = Environment.getExternalStorageDirectory();
+        myData.StorageMemoryAvailable = (int) external.getFreeSpace();
+        myData.StorageTotalMemory = (int) external.getTotalSpace();
+
     }
 
     //==========================================================================
@@ -583,7 +624,6 @@ public class MainActivity extends Activity
         @Override
         public void onReceive(Context context, Intent intent) {
             //Aggiorno i dati presenti sullo schermo
-
 
             RefreshGUI();
         }
@@ -669,6 +709,9 @@ public class MainActivity extends Activity
                 }
             } else if ((event.sensor.getType() == Sensor.TYPE_AMBIENT_TEMPERATURE)) {
                 myData.myTempData.AppendData(event);
+
+                if (myData.myTempData.CurrentTemperature >= myConfig.TemperatureThresholdAlert)
+                    myEventManager.SendEventNew("ALERT: HIGH TEMPERATURE", myData.myTempData.CurrentTemperature, "");
 
                 myData.UpdateMemoryUsage();
 
@@ -838,7 +881,7 @@ public class MainActivity extends Activity
     //==============================================================================================
     protected void start_network_listener() {
         try {
-            myNetworkInfo = new it.dongnocchi.mariner.NetworkInfo();
+            myNetworkInfo = new NetworkInfo();
             TelephonManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
             TelephonManager.listen(myNetworkInfo, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
         } catch (Exception ex) {
@@ -866,15 +909,19 @@ public class MainActivity extends Activity
                 sys_stat_textview.setText("POWER ON");
 
                 //ConnectYoctoMaxiIO(); // sets YoctoInUse if its connected
-                if(!init_yocto_just_once)
-                    InitYoctoMaxiIO(new_power_on_time);
+                //if(!init_yocto_just_once)
+/***************************************************
+ *
+ * Prova di eliminazione 2016-1206
 
+
+ InitYoctoMaxiIO(new_power_on_time);
+ */
             }
         } catch (Exception ex) {
             LogException(TAG, "PowerIsON", ex);
         }
     }
-
 
 
     //==========================================================================
@@ -897,13 +944,25 @@ public class MainActivity extends Activity
                 sys_stat_textview.setText("Power OFF");
 
                 // STOP ACQUISITIONS
-                if(!init_yocto_just_once) {
-                    if (YoctoInUse) {
-                        Stop_Yocto();
-                        MaxiIO_textview.setText("Yocto = stopped");
-                    } else
-                        MaxiIO_textview.setText("Yocto = not present");
-                }
+                //if(!init_yocto_just_once) {
+
+                /***********************************
+                 *
+                 * Prova di eliminazione 2016-1206
+                 *
+                 *
+                 *
+                 if (YoctoInUse) {
+                 Stop_Yocto();
+                 MaxiIO_textview.setText("Yocto = stopped");
+                 } else
+                 MaxiIO_textview.setText("Yocto = not present");
+
+
+
+                 */
+
+                //}
                 //LowerScreenBrightness();
 
                 StopInertialAcquisition();
@@ -967,30 +1026,24 @@ public class MainActivity extends Activity
     }
 
 
-    private void StartPeriodicRefreshUX(final int delay)
-    {
+    private void StartPeriodicRefreshUX(final int delay) {
         RefreshUX = true;
-        RefreshUX_Handler.postDelayed(new Runnable(){
-            public void run(){
+        RefreshUX_Handler.postDelayed(new Runnable() {
+            public void run() {
                 RefreshGUI();
-                if(RefreshUX)
+                if (RefreshUX)
                     RefreshUX_Handler.postDelayed(this, delay);
             }
         }, delay);
 
     }
 
-    private void StartPeriodicRefreshUX()
-    {
+    private void StartPeriodicRefreshUX() {
         StartPeriodicRefreshUX(SLOW_INFO_UPDATE_PERIOD_IN_MILLIS);
     }
 
 
-
-
-
-    private void StopPeriodicRefreshUX()
-    {
+    private void StopPeriodicRefreshUX() {
         RefreshUX = false;
     }
 
@@ -1022,7 +1075,7 @@ public class MainActivity extends Activity
 
     //==========================================================================
     private void StopHourlyTimer() {
-    //==========================================================================
+        //==========================================================================
         this.unregisterReceiver(OnceEveryHour_Receiver);
         AlarmManager am = (AlarmManager) (this.getSystemService(Context.ALARM_SERVICE));
         am.cancel(OnceAnHour_pintent);
@@ -1290,6 +1343,9 @@ public class MainActivity extends Activity
     //==============================================================================================
     //==============================================================================================
 
+    /*
+
+
     //==========================================================================
     protected void Start_Yocto()
     //==========================================================================
@@ -1360,8 +1416,8 @@ public class MainActivity extends Activity
                     //Init_Yocto(MaxiIO);
 
                     // da togliere per versione finale app
-                    /*_outputdata = (_outputdata + 1) % 16;   // cycle ouput 0..15
-                    io.set_portState(_outputdata);          // set output value*/
+                    //_outputdata = (_outputdata + 1) % 16;   // cycle ouput 0..15
+                    //io.set_portState(_outputdata);          // set output value
 
                 } catch (YAPI_Exception e) {
                     LogException(TAG, "final Runnable YoctoRunnable", e);
@@ -1467,6 +1523,175 @@ public class MainActivity extends Activity
         //lastfiles.isyoctoinuse = YoctoInUse;
         return YoctoInUse;
     }
+    */
+
+    //==============================================================================================
+    //==============================================================================================
+    //  NEW Yocto Methods
+    //==============================================================================================
+    //==============================================================================================
+
+
+    //==========================================================================
+    protected void Start_Yocto()
+    //==========================================================================
+    {
+        // Connect to Yoctopuce Maxi-IO
+        try {
+            YAPI.EnableUSBHost(getApplicationContext());
+            YAPI.SetUSBPacketAckMS(50);
+            YAPI.RegisterHub("usb");
+            YAPI.RegisterDeviceArrivalCallback(this);
+            YAPI.RegisterDeviceRemovalCallback(this);
+            YoctoRunnable.run();
+        } catch (YAPI_Exception ex) {
+            LogException(TAG, "Start_Yocto Exception: ", ex);
+        }
+        //Start the runnable in 100 ms
+        YoctoHandler.postDelayed(YoctoRunnable, 100);
+    }
+
+
+
+    //==========================================================================
+    final Runnable YoctoRunnable = new Runnable()
+//==========================================================================
+    {
+        public void run()
+        {
+            try {
+                //CHANGE: add a call to UpdateDeviceList to receive plug/unplug events
+                YAPI.UpdateDeviceList();
+                YAPI.HandleEvents();
+                // DO THIS EVERYTIME TO LET IT WORK PROPERLY
+                //CHANGE: calling Init_Yocto every time is a bad idea. This will trigger 3 USB request
+                //        every time. The correct solution is to call one time and save the setting
+                //        with the method saveToFlash(). See change in Start_Yocto
+
+            } catch (YAPI_Exception e) {
+                LogException(TAG, "final Runnable YoctoRunnable", e);
+            }
+            YoctoHandler.postDelayed(this, 200);
+        }
+    };
+
+
+    //==========================================================================
+    protected void Init_Yocto(YDigitalIO YoctoIOModule)
+//==========================================================================
+    {        // set the port as input
+        try {
+            YoctoIOModule.set_portDirection(0x0);             //bit 0-3: OUT; bit 4-7: IN ( bit set to 0)
+            YoctoIOModule.set_portPolarity(0);                 // polarity set to regular
+            YoctoIOModule.set_portOpenDrain(0);                // No open drain
+        } catch (YAPI_Exception e) {
+            LogException(TAG, "Init_Yocto Exception: ", e);
+        }
+    }
+
+
+    //==========================================================================
+    protected void Stop_Yocto()
+//==========================================================================
+    {
+        try {
+            YAPI.FreeAPI();
+            YoctoHandler.removeCallbacks(YoctoRunnable);
+        } catch (Exception e) {
+            LogException(TAG, "Stop_Yocto Exception: ", e);
+        }
+    }
+
+    // NEW VALUE ON PORT:
+//==========================================================================
+    public void yNewValue(YDigitalIO yDigitalIO, String newPortValue)
+//==========================================================================
+    {
+        long new_event_time = System.nanoTime();
+        event_textview.setText(newPortValue);
+
+        MaxiIO_textview.setText(newPortValue);
+        int portvalue = Integer.valueOf(newPortValue, 16);
+        // CHECK MOTOR PIN VALUE
+        //Motor_OldInputData = Motor_NewInputData;
+        //CHANGE: It's far more efficient to compute the bit state form newPortValue.
+        //        a call to "MaxiIO.get_bitState(MaxiIO_MotorPin" will trigger an USB
+        //        transaction that can take few hundreds milliseconds
+        Motor_NewInputData = (portvalue >> MaxiIO_MotorPin) & 1;
+
+        // MOTOR EVENT HANDLING
+        if (Motor_NewInputData == 1) {
+            myData.AddMotorONEvent(new_event_time);
+            StartInertialAcquisition();
+        }
+
+        if (Motor_NewInputData == 0) {
+            StopInertialAcquisition();
+            myData.AddMotorOFFEvent(new_event_time);
+        }
+
+    }
+
+
+    //==========================================================================
+    public boolean ConnectYoctoMaxiIO()
+    //==========================================================================
+    {
+
+        //CHANGE: do not init YAPI or do any enumeration only use MaxiIO object that
+        //        have been set by the yDeviceArrival callback
+        if (MaxiIO != null && MaxiIO.isOnline()) {
+            YoctoInUse = true;
+            MaxiIO_textview.setText("MaxiIO connected: YES");
+        } else {
+            YoctoInUse = false;
+            MaxiIO_textview.setText("MaxiIO connected: NO");
+        }
+        //lastfiles.isyoctoinuse = YoctoInUse;
+        return YoctoInUse;
+    }
+
+    //CHANGE: yDeviceArrival will be called every time the Yocto-Maxi-IO is plugged
+    @Override
+    public void yDeviceArrival(YModule module)
+    {
+        try {
+            if (module.get_productName().equals("Yocto-Maxi-IO")) {
+                MaxiIO_SerialN = module.get_serialNumber();
+                MaxiIO_textview.setText("Yocto-Maxi-IO " + MaxiIO_SerialN + " connected");
+
+                MaxiIO = FindDigitalIO(MaxiIO_SerialN);
+                if (MaxiIO.isOnline()) {
+                    //call_toast("Maxi-IO connected");
+                    Init_Yocto(MaxiIO);
+                    //CHANGE: Save port configuration in device flash. So event if the device reboot
+                    //        the port will work correctly
+                    module.saveToFlash();
+                    MaxiIO.registerValueCallback(this);
+                }
+            }
+        } catch (YAPI_Exception ex) {
+            LogException(TAG, "Start_Yocto Exception: ", ex);
+        }
+
+    }
+
+    @Override
+    public void yDeviceRemoval(YModule module)
+    {
+        try {
+            String serialNumber = module.get_serialNumber();
+            if (serialNumber.equals(MaxiIO_SerialN)) {
+                MaxiIO_textview.setText("No Yocto-Maxi-IO connected");
+                MaxiIO = null;
+                MaxiIO_SerialN = null;
+            }
+        } catch (YAPI_Exception ex) {
+            LogException(TAG, "Start_Yocto Exception: ", ex);
+        }
+    }
+
+
 
     //******************************************************************************
     //******************************************************************************
@@ -1565,7 +1790,7 @@ public class MainActivity extends Activity
     private void SaveErrorLog(String msg) {
         //==========================================================================
         String StringToSend = "" + SystemClock.elapsedRealtime() + "\t" + msg + "\n";
-        it.dongnocchi.mariner.LogFile_Handler BkgSave_LogHandler = new it.dongnocchi.mariner.LogFile_Handler(StringToSend);
+        LogFile_Handler BkgSave_LogHandler = new LogFile_Handler(StringToSend);
         BkgSave_LogHandler.execute();
     }
 
@@ -1669,6 +1894,8 @@ public class MainActivity extends Activity
         CloseAndSaveLogger();
 
         CreateAndOpenNewFileLogger();
+
+        UpdateStorageMemoryAvailable();
 
         myEventManager.SendDailyReport();
 
@@ -1911,8 +2138,7 @@ public class MainActivity extends Activity
 */
     }
 
-    private void DebugTestWriteBin()
-    {
+    private void DebugTestWriteBin() {
         long LastTime = System.nanoTime();//Calendar.getInstance().getTime().getTime();
         long mills = (LastTime - Daily_Reference_Time) / 100000;
 
@@ -1931,17 +2157,17 @@ public class MainActivity extends Activity
             for (int i = 0; i < 100; i++) {
                 LastTime = System.nanoTime();//Calendar.getInstance().getTime().getTime();
                 mills = (LastTime - Daily_Reference_Time) / 100000;
-                act_time = (int) ((System.nanoTime() - Daily_Reference_Time)/100000L);
+                act_time = (int) ((System.nanoTime() - Daily_Reference_Time) / 100000L);
                 data_out.writeInt(act_time);
                 data_out.writeFloat(((float) i) / 10.0f);
                 //data_out.writeFloat(myData.myBatteryData.Values[i]);
                 Sleep(20);
             }
-                data_out.flush();
-                data_out.close();
+            data_out.flush();
+            data_out.close();
 
-                //myAzureManager.AddFileToSaveList(filename);
-                //myData.UploadedFileListString += filename + "\YoctoRunnable\n";
+            //myAzureManager.AddFileToSaveList(filename);
+            //myData.UploadedFileListString += filename + "\YoctoRunnable\n";
 
         } catch (Exception ex) {
             LogException(TAG, "SaveData", ex);
@@ -1991,7 +2217,7 @@ public class MainActivity extends Activity
 
     //==========================================================================
     public long GetNextStartHourAndTenInMillis() {
-    //==========================================================================
+        //==========================================================================
 
         Calendar tmpCalendar = Calendar.getInstance();
 
@@ -2004,6 +2230,7 @@ public class MainActivity extends Activity
 
         return tmpCalendar.getTimeInMillis();
     }
+
     //==========================================================================
     public long GetNextStartHourAndHalfInMillis() {
         //==========================================================================
@@ -2019,9 +2246,10 @@ public class MainActivity extends Activity
 
         return tmpCalendar.getTimeInMillis();
     }
+
     //==========================================================================
     public long GetNextStartHourAndQuarterInMillis() {
-    //==========================================================================
+        //==========================================================================
 
         Calendar tmpCalendar = Calendar.getInstance();
 
@@ -2093,7 +2321,6 @@ public class MainActivity extends Activity
         FileLog.e(tag, msg, ex);
     }
 
-
     //==========================================================================
     private void LogDebug(String tag, String msg)
     //==========================================================================
@@ -2128,6 +2355,22 @@ public class MainActivity extends Activity
         Status = new_status;
         sys_stat_textview.setText("System status = " + STATUS_STRING[new_status]);
 
+    }
+
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    public Action getIndexApiAction() {
+        Thing object = new Thing.Builder()
+                .setName("Main Page") // TODO: Define a title for the content shown.
+                // TODO: Make sure this auto-generated URL is correct.
+                .setUrl(Uri.parse("http://[ENTER-YOUR-URL-HERE]"))
+                .build();
+        return new Action.Builder(Action.TYPE_VIEW)
+                .setObject(object)
+                .setActionStatus(Action.STATUS_TYPE_COMPLETED)
+                .build();
     }
 
 

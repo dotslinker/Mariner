@@ -26,7 +26,7 @@ import static android.os.Environment.getExternalStorageDirectory;
 public class Configuration {
 
 
-    public final int DEFAULT_TEMPERATURE_THRESH_ALERT = 50;
+    public final int DEFAULT_TEMPERATURE_THRESH_ALERT = 45;
 
     public int currentBuild;
 

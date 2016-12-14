@@ -42,7 +42,10 @@ public class WheelchairData {
 
     long LastPowerOnTime, LastPowerOffTime, LastMotorOnTime, LastMotorOffTime;
 
+    public int StorageMemoryAvailable, StorageTotalMemory;
+
     // Amount of seconds the power is on
+
     public float DailyPowerOnTime;
 
     //Amount of seconds the motor is on

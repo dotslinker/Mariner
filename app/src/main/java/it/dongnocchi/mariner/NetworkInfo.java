@@ -17,7 +17,7 @@ import java.lang.reflect.Method;
  */
 public class NetworkInfo extends PhoneStateListener {
 
-    private int SignalStrength = 0;
+    private int mySignalStrength = 0;
 
     //==========================================================================
     public String getNetworkClass(Context context) {
@@ -66,19 +66,22 @@ public class NetworkInfo extends PhoneStateListener {
 
     //==========================================================================
     public int getSignalStrength() {
-        return SignalStrength;
+        return mySignalStrength;
     }
     //==========================================================================
 
+
+    //TODO: implementare qualcosa che consenta di avere il valore di segnale anche all'inizio senza dovere attendere il cambio di
 
     @Override
     //==========================================================================
     public void onSignalStrengthsChanged(SignalStrength signalStrength) {
         //==========================================================================
         super.onSignalStrengthsChanged(signalStrength);
-        SignalStrength = signalStrength.getGsmSignalStrength();
-        SignalStrength = (2 * SignalStrength) - 113; // -> dBm
+        mySignalStrength = signalStrength.getGsmSignalStrength();
+        mySignalStrength = (2 * mySignalStrength) - 113; // -> dBm
     }
+
 
     //==========================================================================
     protected boolean MyWiFiManager(Context context, boolean enable) {

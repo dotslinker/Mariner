@@ -17,6 +17,7 @@ import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.SystemClock;
@@ -68,7 +69,7 @@ public class MainActivity extends Activity
 
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1024;
+    public final int CURRENT_BUILD = 1025;
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -124,6 +125,10 @@ public class MainActivity extends Activity
     boolean CalibrationMode = false;
     //TimestampedDataArray acc_x_calib, acc_y_calib, acc_z_calib;
     //TimestampedDataArray gyro_x_calib, gyro_y_calib, gyro_z_calib;
+
+    private int tens_sec_counter; //counter of tens seconds for timeout
+    private int ms_to_sleep;
+    private int ms_interval;
 
     // TextView
     TextView acc_x_1_tview, acc_y_1_tview, acc_z_1_tview;
@@ -386,6 +391,7 @@ public class MainActivity extends Activity
             UpdateStorageMemoryAvailable();
             //int val = myData.StorageMemoryAvailable;
 
+
             //CreateMyWheelchairFile();
             //call_toast(ByteOrder.nativeOrder().toString()); system is little endian
             //FileLog.d(TAG, "onCreate completed");
@@ -406,6 +412,38 @@ public class MainActivity extends Activity
 
         //myEventManager.SendEventNew("APP_ON_START", myData.myBatteryData.level, "");
         FileLog.d(TAG, "App START", null);
+
+
+
+/*      Prove relative allo Sleep...
+
+        Sleep(1000, 100);
+
+        Sleep(7000,1000);
+
+        Sleep(10000, 100);
+
+
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                ;
+            }
+        }, 5000);
+
+
+
+        handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                ;
+            }
+        }, 10000);
+    */
+
+
     }
 
     @Override
@@ -522,7 +560,7 @@ public class MainActivity extends Activity
 
                         StopAllAcquisitions();
 
-                        Sleep(2000);
+                        Sleep(2000, 100);
                         //Step 2 -
 
                         SaveData();
@@ -545,6 +583,8 @@ public class MainActivity extends Activity
                         //myAzureManager.UploadBlobs(myData.myBatteryData.level);
                         myAzureManager.UploadBlobs();
 
+                        //tens_sec_counter = 18;
+                        //CheckForEmptyBlobListOrTimeout();
                         WaitForEmptyBlobListOrTimeout(180);
 
                         LogDebug(TAG, "Upload Blobs done");
@@ -553,7 +593,7 @@ public class MainActivity extends Activity
                         //myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
                         myAzureManager.CheckAndUpdateAPK();
 
-                        Sleep(2000);
+                        Sleep(2000, 100);
 
                         myAzureManager.CheckAndUpdateConfig();
 
@@ -596,11 +636,25 @@ public class MainActivity extends Activity
     };
 
 
+    private void CheckForEmptyBlobListOrTimeout() {
+        if (myAzureManager.FilesToSend.size() > 0) {
+            if (tens_sec_counter > 0) {
+                tens_sec_counter--;
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        CheckForEmptyBlobListOrTimeout();
+                    }
+                }, 10000);
+            }
+        }
+    }
+
     private int WaitForEmptyBlobListOrTimeout(int num_seconds_timeout) {
         int sleep_time = num_seconds_timeout * 1000;
         int sec_counter = 0;
         do {
-            Sleep(1000);
+            Sleep(1000, 100);
             if (num_seconds_timeout > 0)
                 if (++sec_counter > num_seconds_timeout)
                     break;
@@ -1836,7 +1890,7 @@ public class MainActivity extends Activity
         UpdateTextViewsEnabled = !UpdateTextViewsEnabled;
 
         StopPeriodicRefreshUX();
-        Sleep(1000);
+        Sleep(1000, 100);
         //CancelAlarm(ViewRefreshUpdate_alarmMgr, ViewRefreshUpdate_pintent);
 
         if (UpdateTextViewsEnabled) {
@@ -1892,7 +1946,7 @@ public class MainActivity extends Activity
 
         StopAllAcquisitions();
 
-        Sleep(2000);
+        Sleep(2000, 100);
         //Step 2 -
 
         SaveData();
@@ -1915,11 +1969,14 @@ public class MainActivity extends Activity
         //myAzureManager.UploadBlobs(myData.myBatteryData.level);
         myAzureManager.UploadBlobs();
 
+        //        tens_sec_counter = 18;
+        //        CheckForEmptyBlobListOrTimeout();
+
         WaitForEmptyBlobListOrTimeout(180);
 
         myAzureManager.CheckAndUpdateConfig();
 
-        Sleep(2000);
+        Sleep(2000, 100);
 
         myAzureManager.CheckAndUpdateAPK();
 
@@ -2169,7 +2226,7 @@ public class MainActivity extends Activity
                 data_out.writeInt(act_time);
                 data_out.writeFloat(((float) i) / 10.0f);
                 //data_out.writeFloat(myData.myBatteryData.Values[i]);
-                Sleep(20);
+                Sleep(20, 20);
             }
             data_out.flush();
             data_out.close();
@@ -2183,15 +2240,68 @@ public class MainActivity extends Activity
     }
 
     //==========================================================================
-    private void Sleep(int ms_to_sleep)
+    private void Sleep_CountDownTimer(int ms_to_sleep, int ms_interval)
     //==========================================================================
     {
+        CountDownTimer cdt = new CountDownTimer(ms_to_sleep, ms_interval) {
+
+            @Override
+            public void onTick(long millisUntilFinished) {
+                // do something after 1s
+            }
+
+            @Override
+            public void onFinish() {
+                // do something end times 5s
+            }
+
+        }.start();
+
+        /*
         try {
             Thread.sleep(ms_to_sleep);
         } catch (Exception ex) {
             LogException(TAG, "Sleep", ex);
         }
+        */
     }
+
+
+    //==========================================================================
+    private void Sleep(int new_ms_to_sleep, int new_ms_interval)
+    //==========================================================================
+    {
+        int my_ms_to_sleep = new_ms_to_sleep;
+        int my_ms_interval = new_ms_interval;
+
+        try {
+            for(;;) {
+                Thread.sleep(my_ms_interval);
+                my_ms_to_sleep -= my_ms_interval;
+                if(my_ms_to_sleep <= 0 )
+                    break;
+            }
+        } catch (Exception ex) {
+            LogException(TAG, "Sleep", ex);
+        }
+    }
+
+
+
+
+    private void checkIfWaitFinisched()
+    {
+        if (ms_to_sleep > 0) {
+            ms_to_sleep -= ms_interval;
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    checkIfWaitFinisched();
+                }
+            }, ms_interval);
+        }
+    }
+
 
     //==========================================================================
     public void UpdateRunningTime()

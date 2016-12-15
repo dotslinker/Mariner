@@ -19,3 +19,4 @@
                           Introdotta la verifica di temperatura sopra soglia e relativa segnalazione come evento
                           risolto un piccolo bug sulla segnalazione della memoria disponibile
 2016-1215 - Vers. 01024 - Bugfix della precedente versione, per risolvere un problema di crash non gestito
+2016-1215 - Vers. 01025 - Modifica al meccanismo di attesa che sia completato il trasferimento dei file alle due di notte

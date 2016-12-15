@@ -68,7 +68,7 @@ public class MainActivity extends Activity
 
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1023;
+    public final int CURRENT_BUILD = 1024;
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -137,9 +137,8 @@ public class MainActivity extends Activity
     TextView gyro_x_3_tview, gyro_y_3_tview, gyro_z_3_tview;
     TextView gyro_angle_total_tview, gyro_angle_tview;
     TextView gyro_period_mean_tview, gyro_period_stdev_tview;
-    TextView MaxiIO_textview;
+    TextView MaxiIO_status_tview, MaxiIO_event_tview;
     TextView battery_textview;
-    TextView event_textview;
     TextView sys_stat_textview;
     TextView sys_ref_date_textview;
     TextView WheelchairID_tview;
@@ -385,6 +384,7 @@ public class MainActivity extends Activity
             float e = 0.0f;
             */
             UpdateStorageMemoryAvailable();
+            //int val = myData.StorageMemoryAvailable;
 
             //CreateMyWheelchairFile();
             //call_toast(ByteOrder.nativeOrder().toString()); system is little endian
@@ -517,6 +517,9 @@ public class MainActivity extends Activity
                         //Step 1 - let's stop periodic operations and acquisitions (if any)
                         StopPeriodicRefreshUX();//StopPeriodicUpdateUX();
 
+                        //myData.updateDailyUse();
+                        UpdateStorageMemoryAvailable();
+
                         StopAllAcquisitions();
 
                         Sleep(2000);
@@ -524,8 +527,6 @@ public class MainActivity extends Activity
 
                         SaveData();
 
-                        //myData.updateDailyUse();
-                        UpdateStorageMemoryAvailable();
 
                         myEventManager.SendDailyReport();
 
@@ -611,9 +612,12 @@ public class MainActivity extends Activity
 
     private void UpdateStorageMemoryAvailable() {
 
+        long temp;
         File external = Environment.getExternalStorageDirectory();
-        myData.StorageMemoryAvailable = (int) external.getFreeSpace();
-        myData.StorageTotalMemory = (int) external.getTotalSpace();
+        temp = external.getFreeSpace();
+        myData.StorageMemoryAvailable = (int) (temp / (1024 * 1024));
+        //myData.StorageMemoryAvailable = (int) temp;
+        //myData.StorageTotalMemory = (int) external.getTotalSpace();
 
     }
 
@@ -778,8 +782,8 @@ public class MainActivity extends Activity
         gyro_period_stdev_tview = (TextView) findViewById(R.id.gyro_period_stdev_tview);
 
         battery_textview = (TextView) findViewById(R.id.battery_val_tview);
-        MaxiIO_textview = (TextView) findViewById(R.id.MaxiIO_view);
-        event_textview = (TextView) findViewById(R.id.event_view);
+        MaxiIO_status_tview = (TextView) findViewById(R.id.MaxiIO_status_view);
+        MaxiIO_event_tview = (TextView) findViewById(R.id.MaxiIO_event_view);
         sys_stat_textview = (TextView) findViewById(R.id.system_status_view);
 
         sys_ref_date_textview = (TextView) findViewById(R.id.system_ref_date_view);
@@ -941,7 +945,7 @@ public class MainActivity extends Activity
                 myData.AddPowerOFFEvent(new_power_off_time);
                 //PowerOFFHourlyCounter++;
 
-                sys_stat_textview.setText("Power OFF");
+                sys_stat_textview.setText("POWER OFF");
 
                 // STOP ACQUISITIONS
                 //if(!init_yocto_just_once) {
@@ -980,7 +984,7 @@ public class MainActivity extends Activity
             myEventManager.SendEventNew("POWER_OFF", 0, "");
             long new_power_off_time = System.nanoTime();
             myData.AddPowerOFFEvent(new_power_off_time);
-            sys_stat_textview.setText("Power OFF");
+            sys_stat_textview.setText("POWER OFF");
             Status = STATUS_SLEEP;
         } catch (Exception ex) {
             LogException(TAG, "Power_OFF_Click", ex);
@@ -996,7 +1000,7 @@ public class MainActivity extends Activity
             myEventManager.SendEventNew("POWER_ON", 0, "");
             long new_power_on_time = System.nanoTime();
             myData.AddPowerONEvent(new_power_on_time);
-            sys_stat_textview.setText("Power ON");
+            sys_stat_textview.setText("POWER ON");
             Status = STATUS_IDLE;
         } catch (Exception ex) {
             LogException(TAG, "Power_ON_Click", ex);
@@ -1608,26 +1612,30 @@ public class MainActivity extends Activity
 //==========================================================================
     {
         long new_event_time = System.nanoTime();
-        event_textview.setText(newPortValue);
+        try {
+            MaxiIO_event_tview.setText(newPortValue);
+            int portvalue = Integer.valueOf(newPortValue, 16);
+            // CHECK MOTOR PIN VALUE
+            //Motor_OldInputData = Motor_NewInputData;
+            //CHANGE: It's far more efficient to compute the bit state form newPortValue.
+            //        a call to "MaxiIO.get_bitState(MaxiIO_MotorPin" will trigger an USB
+            //        transaction that can take few hundreds milliseconds
+            Motor_NewInputData = (portvalue >> MaxiIO_MotorPin) & 1;
 
-        MaxiIO_textview.setText(newPortValue);
-        int portvalue = Integer.valueOf(newPortValue, 16);
-        // CHECK MOTOR PIN VALUE
-        //Motor_OldInputData = Motor_NewInputData;
-        //CHANGE: It's far more efficient to compute the bit state form newPortValue.
-        //        a call to "MaxiIO.get_bitState(MaxiIO_MotorPin" will trigger an USB
-        //        transaction that can take few hundreds milliseconds
-        Motor_NewInputData = (portvalue >> MaxiIO_MotorPin) & 1;
+            // MOTOR EVENT HANDLING
+            if (Motor_NewInputData == 1) {
+                myData.AddMotorONEvent(new_event_time);
+                StartInertialAcquisition();
+            }
 
-        // MOTOR EVENT HANDLING
-        if (Motor_NewInputData == 1) {
-            myData.AddMotorONEvent(new_event_time);
-            StartInertialAcquisition();
+            if (Motor_NewInputData == 0) {
+                StopInertialAcquisition();
+                myData.AddMotorOFFEvent(new_event_time);
+            }
         }
-
-        if (Motor_NewInputData == 0) {
-            StopInertialAcquisition();
-            myData.AddMotorOFFEvent(new_event_time);
+        catch(Exception ex)
+        {
+            LogException(TAG, "yNewValue Exception: ", ex);
         }
 
     }
@@ -1642,10 +1650,10 @@ public class MainActivity extends Activity
         //        have been set by the yDeviceArrival callback
         if (MaxiIO != null && MaxiIO.isOnline()) {
             YoctoInUse = true;
-            MaxiIO_textview.setText("MaxiIO connected: YES");
+            MaxiIO_status_tview.setText("MaxiIO connected: YES");
         } else {
             YoctoInUse = false;
-            MaxiIO_textview.setText("MaxiIO connected: NO");
+            MaxiIO_status_tview.setText("MaxiIO connected: NO");
         }
         //lastfiles.isyoctoinuse = YoctoInUse;
         return YoctoInUse;
@@ -1658,7 +1666,7 @@ public class MainActivity extends Activity
         try {
             if (module.get_productName().equals("Yocto-Maxi-IO")) {
                 MaxiIO_SerialN = module.get_serialNumber();
-                MaxiIO_textview.setText("Yocto-Maxi-IO " + MaxiIO_SerialN + " connected");
+                MaxiIO_event_tview.setText("Yocto-Maxi-IO " + MaxiIO_SerialN + " connected");
 
                 MaxiIO = FindDigitalIO(MaxiIO_SerialN);
                 if (MaxiIO.isOnline()) {
@@ -1671,7 +1679,7 @@ public class MainActivity extends Activity
                 }
             }
         } catch (YAPI_Exception ex) {
-            LogException(TAG, "Start_Yocto Exception: ", ex);
+            LogException(TAG, "yDeviceArrival Exception: ", ex);
         }
 
     }
@@ -1682,12 +1690,12 @@ public class MainActivity extends Activity
         try {
             String serialNumber = module.get_serialNumber();
             if (serialNumber.equals(MaxiIO_SerialN)) {
-                MaxiIO_textview.setText("No Yocto-Maxi-IO connected");
+                MaxiIO_status_tview.setText("No Yocto-Maxi-IO connected");
                 MaxiIO = null;
                 MaxiIO_SerialN = null;
             }
         } catch (YAPI_Exception ex) {
-            LogException(TAG, "Start_Yocto Exception: ", ex);
+            LogException(TAG, "yDeviceRemoval Exception: ", ex);
         }
     }
 

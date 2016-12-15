@@ -278,8 +278,6 @@ public class AzureEventManager {
             ParamsToSend.put("MeanMemory", myData.MeanHourlyMemory);
             ParamsToSend.put("MaxMemory", myData.MaxHourlyMemory);
 
-            ParamsToSend.put("StorageMemoryAvailable", myData.StorageMemoryAvailable);
-
             ParamsToSend.put("NumOfLightTransitions", myData.NumOfHourlyLightTransitions);
             ParamsToSend.put("MaxLight", myData.MaxLightValue);
             ParamsToSend.put("NumOfTouch", myData.NumberOfTouch);
@@ -353,6 +351,8 @@ public class AzureEventManager {
             ParamsToSend.put("MinMemory", myData.MinDailyMemory);
             ParamsToSend.put("MeanMemory", myData.MeanDailyMemory);
             ParamsToSend.put("MaxMemory", myData.MaxDailyMemory);
+
+            ParamsToSend.put("StorageMemoryFree", myData.StorageMemoryAvailable);
 
             ParamsToSend.put("NumOfLightTransitions", myData.NumOfDailyLightTransitions);
             ParamsToSend.put("MaxLight", myData.MaxDailyLightValue);

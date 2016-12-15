@@ -667,12 +667,12 @@
                     android:layout_height="match_parent">
 
                     <TextView
-                        android:id="@+id/MaxiIO_view"
+                        android:id="@+id/MaxiIO_status_view"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"
                         android:layout_span="4"
-                        android:hint="Maxi-IO: data"
+                        android:hint="Maxi-IO: status"
                         android:textAppearance="?android:attr/textAppearanceSmall" />
 
                 </TableRow>
@@ -683,7 +683,7 @@
 
 
                     <TextView
-                        android:id="@+id/event_view"
+                        android:id="@+id/MaxiIO_event_view"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="0"

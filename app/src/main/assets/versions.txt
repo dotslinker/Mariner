@@ -20,3 +20,6 @@
                           risolto un piccolo bug sulla segnalazione della memoria disponibile
 2016-1215 - Vers. 01024 - Bugfix della precedente versione, per risolvere un problema di crash non gestito
 2016-1215 - Vers. 01025 - Modifica al meccanismo di attesa che sia completato il trasferimento dei file alle due di notte
+2016-1216 - Vers. 01026 - Modifica del meccanismo di attesa per ovviare al problema di interfaccia non responsiva che fa apparire una popup alle due di notte
+                          tutti gli sleep() in MainActivity sono stati sostituiti da postdelayed runnable()
+                            

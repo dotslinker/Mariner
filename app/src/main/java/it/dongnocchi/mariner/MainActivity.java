@@ -67,9 +67,8 @@ public class MainActivity extends Activity
         implements SensorEventListener, YAPI.DeviceArrivalCallback, YAPI.DeviceRemovalCallback, YDigitalIO.UpdateCallback {
     //==========================================================================
 
-
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1025;
+    public final int CURRENT_BUILD = 1026;
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -230,6 +229,7 @@ public class MainActivity extends Activity
     // INDICATE WHEN YOCTO IS IN USE (AVAILABLE)
     private boolean YoctoInUse = false;
     private int Status;
+
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -237,7 +237,6 @@ public class MainActivity extends Activity
     //private GoogleApiClient client;
 
     //private boolean init_yocto_just_once = false;
-
     @Override
     //==========================================================================
     protected void onCreate(Bundle savedInstanceState)
@@ -391,58 +390,31 @@ public class MainActivity extends Activity
             UpdateStorageMemoryAvailable();
             //int val = myData.StorageMemoryAvailable;
 
-
             //CreateMyWheelchairFile();
             //call_toast(ByteOrder.nativeOrder().toString()); system is little endian
             //FileLog.d(TAG, "onCreate completed");
             myEventManager.SendEventNew("APP_ON_CREATE", myData.myBatteryData.level, "");
-
 
         } catch (Exception ex) {
             LogException(TAG, "onCreate", ex);
         }
     }
 
+    private void test() {
+        int a = 6;
+    }
+
+
     @Override
     protected void onStart() {
         super.onStart();
-
 
         Start_Yocto();
 
         //myEventManager.SendEventNew("APP_ON_START", myData.myBatteryData.level, "");
         FileLog.d(TAG, "App START", null);
 
-
-
-/*      Prove relative allo Sleep...
-
-        Sleep(1000, 100);
-
-        Sleep(7000,1000);
-
-        Sleep(10000, 100);
-
-
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                ;
-            }
-        }, 5000);
-
-
-
-        handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                ;
-            }
-        }, 10000);
-    */
-
+        //ProvediSleep()
 
     }
 
@@ -529,16 +501,6 @@ public class MainActivity extends Activity
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            //SimpleDateFormat formatter = new SimpleDateFormat("HH_mm_ss");
-            //Date now = new Date();
-            //stringafake = formatter.format(now);
-            //event_textview.setText(stringafake);
-            //SendEvent_SystemStatus();
-            //SendHourlyStatusEvent();
-            //NumOfSecWorking_LastHour = 0;
-            //Calendar rightNow = Calendar.getInstance();
-            //rightNow.get(Calendar.HOUR_OF_DAY); // gets hour in 24h format
-
             try {
                 long actual_time = System.nanoTime();
                 actual_hour_of_day = GetActualHourOfDay();//
@@ -550,7 +512,7 @@ public class MainActivity extends Activity
                     myData.updateHourlyUse(Hourly_Reference_Time, actual_time);
 
                     if (actual_hour_of_day == myConfig.get_DailyUpdateHour()) { // do this only once a day at 2 in the night
-                        LogDebug(TAG, "Daily Report start");
+                        LogDebug(TAG, "Daily Report Start");
                         //FileLog.d("MARINER", "Start Daily Report", null);
                         //Step 1 - let's stop periodic operations and acquisitions (if any)
                         StopPeriodicRefreshUX();//StopPeriodicUpdateUX();
@@ -560,61 +522,76 @@ public class MainActivity extends Activity
 
                         StopAllAcquisitions();
 
-                        Sleep(2000, 100);
-                        //Step 2 -
+                        //Sleep(2000, 100);
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
 
-                        SaveData();
+                                //Step 2 -
+                                SaveData();
 
+                                myEventManager.SendDailyReport();
 
-                        myEventManager.SendDailyReport();
+                                LogDebug(TAG, "Daily Report End");
 
-                        LogDebug(TAG, "Daily Report end");
+                                CloseAndSaveLogger();
 
-                        CloseAndSaveLogger();
+                                DailyResetData();
 
-                        DailyResetData();
+                                CreateAndOpenNewFileLogger();
 
-                        CreateAndOpenNewFileLogger();
+                                //CalibrateAccelerometer();
+                                //UpdateListofFilesToUpload();
 
-                        //CalibrateAccelerometer();
-                        //UpdateListofFilesToUpload();
+                                //Upload Blobs
+                                //myAzureManager.UploadBlobs(myData.myBatteryData.level);
+                                myAzureManager.UploadBlobs();
 
-                        //Upload Blobs
-                        //myAzureManager.UploadBlobs(myData.myBatteryData.level);
-                        myAzureManager.UploadBlobs();
+                                //tens_sec_counter = 18;
+                                //CheckForEmptyBlobListOrTimeout();
 
-                        //tens_sec_counter = 18;
-                        //CheckForEmptyBlobListOrTimeout();
-                        WaitForEmptyBlobListOrTimeout(180);
+                                //WaitForEmptyBlobListOrTimeout(180);
+                                new Handler().postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
 
-                        LogDebug(TAG, "Upload Blobs done");
+                                        LogDebug(TAG, "Upload Blobs done");
 
-                        //Check for App updates
-                        //myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
-                        myAzureManager.CheckAndUpdateAPK();
-
-                        Sleep(2000, 100);
-
-                        myAzureManager.CheckAndUpdateConfig();
-
-                        LogDebug(TAG, "Checked (and updated)");
-
-                        //myData.DailyReset(Daily_Reference_Time);//DailyResetData();
-
-                        ResetHourlyCounters();
-
-                        StartCalibration();
-
-                        StartTemperatureAcquisition();
-
-                        StartLightAcquisition();
-
-                        StartPeriodicRefreshUX();//StartPeriodicUpdateUX();
-
-                        LogDebug(TAG, "Daily update - all functions started");
-                        //FileLog.d("MARINER", "End Daily Report", null);
+                                        //Check for App updates
+                                        //myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
+                                        myAzureManager.CheckAndUpdateAPK();
 
 
+                                        //Sleep(2000, 100);
+                                        new Handler().postDelayed(new Runnable() {
+                                            @Override
+                                            public void run() {
+
+                                                myAzureManager.CheckAndUpdateConfig();
+
+                                                LogDebug(TAG, "Checked (and updated)");
+
+                                                //myData.DailyReset(Daily_Reference_Time);//DailyResetData();
+
+                                                ResetHourlyCounters();
+
+                                                StartCalibration();
+
+                                                StartTemperatureAcquisition();
+
+                                                StartLightAcquisition();
+
+                                                StartPeriodicRefreshUX();//StartPeriodicUpdateUX();
+
+                                                LogDebug(TAG, "Daily update - all functions started");
+                                                //FileLog.d("MARINER", "End Daily Report", null);
+
+                                            }
+                                        }, 10000);
+                                    }
+                                }, 120000);
+                            }
+                        }, 2000);
                     } else {
                         //myData.updateHourlyUse(Hourly_Reference_Time, actual_time);
                         myEventManager.SendHourlyStatusEvent();
@@ -627,14 +604,23 @@ public class MainActivity extends Activity
 
                     previous_hour_of_day = actual_hour_of_day;
                 }
-
-
             } catch (Exception ex) {
                 LogException(TAG, "OnceEveryHour_Receiver ERROR: ", ex);
             }
         }
     };
 
+
+    private void esempio_di_attesa() {
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                //cose da fare dopo il timeout
+            }
+        }, 10000);
+
+
+    }
 
     private void CheckForEmptyBlobListOrTimeout() {
         if (myAzureManager.FilesToSend.size() > 0) {
@@ -650,6 +636,7 @@ public class MainActivity extends Activity
         }
     }
 
+    /*
     private int WaitForEmptyBlobListOrTimeout(int num_seconds_timeout) {
         int sleep_time = num_seconds_timeout * 1000;
         int sec_counter = 0;
@@ -663,6 +650,7 @@ public class MainActivity extends Activity
 
         return (myAzureManager.FilesToSend.size());
     }
+*/
 
     private void UpdateStorageMemoryAvailable() {
 
@@ -1610,13 +1598,11 @@ public class MainActivity extends Activity
     }
 
 
-
     //==========================================================================
     final Runnable YoctoRunnable = new Runnable()
 //==========================================================================
     {
-        public void run()
-        {
+        public void run() {
             try {
                 //CHANGE: add a call to UpdateDeviceList to receive plug/unplug events
                 YAPI.UpdateDeviceList();
@@ -1686,9 +1672,7 @@ public class MainActivity extends Activity
                 StopInertialAcquisition();
                 myData.AddMotorOFFEvent(new_event_time);
             }
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             LogException(TAG, "yNewValue Exception: ", ex);
         }
 
@@ -1715,8 +1699,7 @@ public class MainActivity extends Activity
 
     //CHANGE: yDeviceArrival will be called every time the Yocto-Maxi-IO is plugged
     @Override
-    public void yDeviceArrival(YModule module)
-    {
+    public void yDeviceArrival(YModule module) {
         try {
             if (module.get_productName().equals("Yocto-Maxi-IO")) {
                 MaxiIO_SerialN = module.get_serialNumber();
@@ -1739,8 +1722,7 @@ public class MainActivity extends Activity
     }
 
     @Override
-    public void yDeviceRemoval(YModule module)
-    {
+    public void yDeviceRemoval(YModule module) {
         try {
             String serialNumber = module.get_serialNumber();
             if (serialNumber.equals(MaxiIO_SerialN)) {
@@ -1752,7 +1734,6 @@ public class MainActivity extends Activity
             LogException(TAG, "yDeviceRemoval Exception: ", ex);
         }
     }
-
 
 
     //******************************************************************************
@@ -1805,12 +1786,17 @@ public class MainActivity extends Activity
 
             if (CalibrationMode) {
                 StopInertialAcquisition();
-                TimeUnit.MILLISECONDS.sleep(200);
+                //TimeUnit.MILLISECONDS.sleep(200);
                 //Thread.sleep(200);//Sleep(100);
 
-                myData.UpdateCalibrationData();
+                //Uso i runnable per introdurre dei ritardi compatibili con l'interfaccia grafica
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
 
-/*                acc_x_calib.UpdateStats();
+                        myData.UpdateCalibrationData();
+/*
+                acc_x_calib.UpdateStats();
                 acc_y_calib.UpdateStats();
                 acc_z_calib.UpdateStats();
 
@@ -1818,9 +1804,13 @@ public class MainActivity extends Activity
                 gyro_y_calib.UpdateStats();
                 gyro_z_calib.UpdateStats();
 */
-                myData.myInertialData.UpdateBias();
+                        myData.myInertialData.UpdateBias();
 
-                CalibrationMode = false;
+                        CalibrationMode = false;
+
+                    }
+                }, 200);
+
             }
         } catch (Exception ex) {
             LogException(TAG, "StopCalibrateInertialSensors", ex);
@@ -1890,20 +1880,27 @@ public class MainActivity extends Activity
         UpdateTextViewsEnabled = !UpdateTextViewsEnabled;
 
         StopPeriodicRefreshUX();
-        Sleep(1000, 100);
-        //CancelAlarm(ViewRefreshUpdate_alarmMgr, ViewRefreshUpdate_pintent);
 
-        if (UpdateTextViewsEnabled) {
-            //Thread.sleep(100);
-            StartPeriodicRefreshUX(UXUPDATE_PERIOD_IN_MILLIS_FAST);
-            //StartUXUpdateTimer(UXUPDATE_PERIOD_IN_MILLIS_FAST);
-        } else {
-            //Thread.sleep(100);
-            StartPeriodicRefreshUX(UXUPDATE_PERIOD_IN_MILLIS_SLOW);
-            //StartUXUpdateTimer(UXUPDATE_PERIOD_IN_MILLIS_SLOW);
-        }
+        //Sleep(1000, 100);
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                //cose da fare dopo il timeout
+
+                //CancelAlarm(ViewRefreshUpdate_alarmMgr, ViewRefreshUpdate_pintent);
+                if (UpdateTextViewsEnabled) {
+                    //Thread.sleep(100);
+                    StartPeriodicRefreshUX(UXUPDATE_PERIOD_IN_MILLIS_FAST);
+                    //StartUXUpdateTimer(UXUPDATE_PERIOD_IN_MILLIS_FAST);
+                } else {
+                    //Thread.sleep(100);
+                    StartPeriodicRefreshUX(UXUPDATE_PERIOD_IN_MILLIS_SLOW);
+                    //StartUXUpdateTimer(UXUPDATE_PERIOD_IN_MILLIS_SLOW);
+                }
+
+            }
+        }, 1000);
     }
-
 
     //==========================================================================
     public void ToggleManualModeButton(View view)
@@ -1946,51 +1943,75 @@ public class MainActivity extends Activity
 
         StopAllAcquisitions();
 
-        Sleep(2000, 100);
-        //Step 2 -
+        //Sleep(2000, 100);
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                //cose da fare dopo il timeout
 
-        SaveData();
+                //Step 2 -
 
-        //myData.updateDailyUse();
+                SaveData();
 
-        CloseAndSaveLogger();
+                //myData.updateDailyUse();
 
-        CreateAndOpenNewFileLogger();
+                CloseAndSaveLogger();
 
-        UpdateStorageMemoryAvailable();
+                CreateAndOpenNewFileLogger();
 
-        myEventManager.SendDailyReport();
+                UpdateStorageMemoryAvailable();
 
-        //CalibrateAccelerometer();
+                myEventManager.SendDailyReport();
 
-        //UpdateListofFilesToUpload();
+                //CalibrateAccelerometer();
 
-        //Upload Blobs
-        //myAzureManager.UploadBlobs(myData.myBatteryData.level);
-        myAzureManager.UploadBlobs();
+                //UpdateListofFilesToUpload();
 
-        //        tens_sec_counter = 18;
-        //        CheckForEmptyBlobListOrTimeout();
+                //Upload Blobs
+                //myAzureManager.UploadBlobs(myData.myBatteryData.level);
+                myAzureManager.UploadBlobs();
 
-        WaitForEmptyBlobListOrTimeout(180);
+                //        tens_sec_counter = 18;
+                //        CheckForEmptyBlobListOrTimeout();
 
-        myAzureManager.CheckAndUpdateConfig();
+                //WaitForEmptyBlobListOrTimeout(180);
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
 
-        Sleep(2000, 100);
 
-        myAzureManager.CheckAndUpdateAPK();
+                        myAzureManager.CheckAndUpdateConfig();
 
-        myData.DailyReset(Daily_Reference_Time);//DailyResetData();
+                        //Sleep(2000, 100);
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                //cose da fare dopo il timeout
 
-        ResetHourlyCounters();
+                                myAzureManager.CheckAndUpdateAPK();
 
-        StartCalibration();
+                                myData.DailyReset(Daily_Reference_Time);//DailyResetData();
 
-        StartTemperatureAcquisition();
+                                ResetHourlyCounters();
 
-        StartLightAcquisition();
+                                StartCalibration();
 
-        StartPeriodicRefreshUX();//StartPeriodicUpdateUX();
+                                StartTemperatureAcquisition();
+
+                                StartLightAcquisition();
+
+                                StartPeriodicRefreshUX();//StartPeriodicUpdateUX();
+
+                            }
+                        }, 2000);
+
+                    }
+                }, 120000);
+
+            }
+        }, 2000);
+
+
     }
 
     //==========================================================================
@@ -2203,6 +2224,7 @@ public class MainActivity extends Activity
 */
     }
 
+    /*
     private void DebugTestWriteBin() {
         long LastTime = System.nanoTime();//Calendar.getInstance().getTime().getTime();
         long mills = (LastTime - Daily_Reference_Time) / 100000;
@@ -2238,6 +2260,8 @@ public class MainActivity extends Activity
             LogException(TAG, "SaveData", ex);
         }
     }
+*/
+
 
     //==========================================================================
     private void Sleep_CountDownTimer(int ms_to_sleep, int ms_interval)
@@ -2265,7 +2289,7 @@ public class MainActivity extends Activity
         }
         */
     }
-
+    /*
 
     //==========================================================================
     private void Sleep(int new_ms_to_sleep, int new_ms_interval)
@@ -2275,22 +2299,19 @@ public class MainActivity extends Activity
         int my_ms_interval = new_ms_interval;
 
         try {
-            for(;;) {
+            for (; ; ) {
                 Thread.sleep(my_ms_interval);
                 my_ms_to_sleep -= my_ms_interval;
-                if(my_ms_to_sleep <= 0 )
+                if (my_ms_to_sleep <= 0)
                     break;
             }
         } catch (Exception ex) {
             LogException(TAG, "Sleep", ex);
         }
     }
+*/
 
-
-
-
-    private void checkIfWaitFinisched()
-    {
+    private void checkIfWaitFinisched() {
         if (ms_to_sleep > 0) {
             ms_to_sleep -= ms_interval;
             new Handler().postDelayed(new Runnable() {
@@ -2560,6 +2581,45 @@ public class MainActivity extends Activity
 
 
     float ramp_acc = 0;
+*/
+    /*
+    private void ProveDiSleep() {
+        // Prove relative allo Sleep ...
+
+        Sleep(1000, 100);
+
+        Sleep(7000, 1000);
+
+        Sleep(10000, 100);
+
+
+        Handler handler = new Handler();
+        handler.postDelayed(new
+
+                                    Runnable() {
+                                        @Override
+                                        public void run() {
+                                            ;
+                                        }
+                                    }
+
+                , 5000);
+
+        handler = new
+
+                Handler();
+
+        handler.postDelayed(new
+
+                                    Runnable() {
+                                        @Override
+                                        public void run() {
+                                            ;
+                                        }
+                                    }
+
+                , 10000);
+    }
 */
 
 

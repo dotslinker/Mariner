@@ -2,6 +2,7 @@ package it.dongnocchi.mariner;
 
 import android.app.Activity;
 import android.app.AlarmManager;
+import android.app.DialogFragment;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -68,7 +69,7 @@ public class MainActivity extends Activity
     //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1026;
+    public final int CURRENT_BUILD = 1027;
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -229,6 +230,15 @@ public class MainActivity extends Activity
     // INDICATE WHEN YOCTO IS IN USE (AVAILABLE)
     private boolean YoctoInUse = false;
     private int Status;
+
+    public static Context applicationContext = null;
+    public static Thread.UncaughtExceptionHandler defaultHandler = null;
+    public static Thread.UncaughtExceptionHandler exceptionHandler = null;
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -393,21 +403,54 @@ public class MainActivity extends Activity
             //CreateMyWheelchairFile();
             //call_toast(ByteOrder.nativeOrder().toString()); system is little endian
             //FileLog.d(TAG, "onCreate completed");
+
+
+            ///*****************************************************************
+            //  Inserito per provare a loggare gli errori non gestiti della App
+            ///*****************************************************************
+            if (defaultHandler == null) {
+                defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+            }
+
+            if (applicationContext == null) {
+                applicationContext = getApplicationContext();
+            }
+
+            if (exceptionHandler == null) {
+                exceptionHandler = new Thread.UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread paramThread, Throwable paramThrowable) {
+                        Log.e("Uncaught Exception", paramThrowable.getMessage());
+                        logUnhandledExceptionError(paramThrowable);
+                        defaultHandler.uncaughtException(paramThread, paramThrowable);
+                    }
+                };
+
+                Thread.setDefaultUncaughtExceptionHandler(exceptionHandler);
+            }
+            ///**********************************************
+            ///**********************************************
+
+
             myEventManager.SendEventNew("APP_ON_CREATE", myData.myBatteryData.level, "");
 
         } catch (Exception ex) {
             LogException(TAG, "onCreate", ex);
         }
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     private void test() {
         int a = 6;
     }
 
-
     @Override
     protected void onStart() {
-        super.onStart();
+        super.onStart();// ATTENTION: This was auto-generated to implement the App Indexing API.
+// See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
 
         Start_Yocto();
 
@@ -416,6 +459,9 @@ public class MainActivity extends Activity
 
         //ProvediSleep()
 
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        AppIndex.AppIndexApi.start(client, getIndexApiAction0());
     }
 
     @Override
@@ -456,9 +502,82 @@ public class MainActivity extends Activity
         //myEventManager.SendEventNew("APP_ON_STOP", myData.myBatteryData.level, "");
         FileLog.d(TAG, "App STOP", null);
 
-        super.onStop();
+        super.onStop();// ATTENTION: This was auto-generated to implement the App Indexing API.
+// See https://g.co/AppIndexing/AndroidStudio for more information.
+        AppIndex.AppIndexApi.end(client, getIndexApiAction0());
         Stop_Yocto();
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.disconnect();
     }
+
+
+    private void logUnhandledExceptionError(final Throwable paramThrowable) {
+        try {
+
+            //static Context context = this.getBaseContext();// ;
+            CharSequence text = "Hello toast!";
+            int duration = Toast.LENGTH_LONG;
+
+            Toast toast = Toast.makeText(applicationContext, text, duration);
+            toast.show();
+
+            //ApplicationError error = new ApplicationError();
+
+            String stackTrace = "";
+            for (int i = 0; i < paramThrowable.getStackTrace().length; i++) {
+                stackTrace += paramThrowable.getStackTrace()[i].toString() + "\n";
+            }
+
+            Log.e("Saving error...", "");
+
+            Throwable tmp = paramThrowable;
+            int j = 0;
+            while ((tmp = tmp.getCause()) != null && j < 5) {
+                j++;
+                stackTrace += "Coused by:\n";
+                for (int i = 0; i < tmp.getStackTrace().length; i++) {
+                    stackTrace += tmp.getStackTrace()[i].toString() + "\n";
+                }
+            }
+
+            String deviceInfo = "";
+            deviceInfo += "OS version: " + System.getProperty("os.version") + "\n";
+            deviceInfo += "API level: " + Build.VERSION.SDK_INT + "\n";
+            deviceInfo += "Manufacturer: " + Build.MANUFACTURER + "\n";
+            deviceInfo += "Device: " + Build.DEVICE + "\n";
+            deviceInfo += "Model: " + Build.MODEL + "\n";
+            deviceInfo += "Product: " + Build.PRODUCT + "\n";
+
+            /*
+            error.mDeviceInfo = deviceInfo;
+            error.mErrorMessage = paramThrowable.getMessage();
+            error.mStackTrace = stackTrace;
+
+            error.save();
+            */
+
+            Log.e("Saved error:", paramThrowable.getMessage() + "\n" + stackTrace);
+
+
+
+            DialogFragment dialog = new YesNoDialog();
+            Bundle args = new Bundle();
+            args.putString("title", paramThrowable.getMessage());
+            args.putString("message", stackTrace);
+            dialog.setArguments(args);
+            //dialog.setTargetFragment(this, 0);
+            dialog.show(getFragmentManager(), "tag");
+
+
+    }
+
+    catch( Exception e )
+    {
+        LogException(TAG, "logUnhandledExceptionError : ", e);
+    }
+
+}
 
 
     //==========================================================================
@@ -2501,6 +2620,22 @@ public class MainActivity extends Activity
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     public Action getIndexApiAction() {
+        Thing object = new Thing.Builder()
+                .setName("Main Page") // TODO: Define a title for the content shown.
+                // TODO: Make sure this auto-generated URL is correct.
+                .setUrl(Uri.parse("http://[ENTER-YOUR-URL-HERE]"))
+                .build();
+        return new Action.Builder(Action.TYPE_VIEW)
+                .setObject(object)
+                .setActionStatus(Action.STATUS_TYPE_COMPLETED)
+                .build();
+    }
+
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    public Action getIndexApiAction0() {
         Thing object = new Thing.Builder()
                 .setName("Main Page") // TODO: Define a title for the content shown.
                 // TODO: Make sure this auto-generated URL is correct.

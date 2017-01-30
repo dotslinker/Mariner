@@ -23,3 +23,4 @@
 2016-1216 - Vers. 01026 - Modifica del meccanismo di attesa per ovviare al problema di interfaccia non responsiva che fa apparire una popup alle due di notte
                           tutti gli sleep() in MainActivity sono stati sostituiti da postdelayed runnable()
 2016-1228 - Vers. 01027 - Inserita una procedura per loggare le eccezioni della App non gestite, in modo da verificare quali siano le ragioni dei periodici crash che non vengon segnalati
+2017-0130 - Vers. 01028 - Sistemato l'ordine delle attivazioni in OnCreate per cercare di salvare i dati di calibrazioen anche il giorno dell'attivazione dell'applicazione

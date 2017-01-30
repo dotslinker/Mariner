@@ -390,8 +390,6 @@ public class InertialData {
         last_gyro_z = m_gyro_z;
 
         last_gyro_timestamp = event.timestamp;
-
-
     }
 
     public void UpdateCalibrationInfo()

@@ -23,7 +23,6 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
-import android.support.v4.content.ContextCompat;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.view.View;
@@ -39,14 +38,11 @@ import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 import android.util.Log;
 
 import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.appindexing.Thing;
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.yoctopuce.YoctoAPI.YAPI;
 import com.yoctopuce.YoctoAPI.YAPI_Exception;
 import com.yoctopuce.YoctoAPI.YDigitalIO;
@@ -69,7 +65,7 @@ public class MainActivity extends Activity
     //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1027;
+    public final int CURRENT_BUILD = 1028;
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -238,7 +234,7 @@ public class MainActivity extends Activity
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
-    private GoogleApiClient client;
+    //private GoogleApiClient client;
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -344,20 +340,7 @@ public class MainActivity extends Activity
 
             start_network_listener();
 
-            //CloseSaveAndRestartLogger(true);
-
-            //TODO: da verificare perchè parzialmente sovrapponibile al precendnte UpdateDailyReferenceTimeAndDate();
-            DailyResetData();
-
-            StartCalibration();
-
-            StartTemperatureAcquisition();
-
-            StartLightAcquisition();
-
-            StartHourlyTimer();
-
-            StartPeriodicRefreshUX(); //StartPeriodicUpdateUX();
+            UpdateStorageMemoryAvailable();
 
             // inizializzazione eventhub manager
             myEventManager = new AzureEventManager(getApplicationContext(), new AsyncResponse() {
@@ -372,13 +355,28 @@ public class MainActivity extends Activity
                 //myData.AddPowerONEvent(AppStartTime);
             }
 
+            SetGUIButtonEnabled(false);
+
+
+            //TODO: da verificare perchè parzialmente sovrapponibile al precendnte UpdateDailyReferenceTimeAndDate();
+            DailyResetData();
+
+            StartCalibration();
+
+            StartTemperatureAcquisition();
+
+            StartLightAcquisition();
+
+            StartHourlyTimer();
+
+            StartPeriodicRefreshUX(); //StartPeriodicUpdateUX();
+
+
             /***********************************
 
              if(init_yocto_just_once)
              InitYoctoMaxiIO(System.nanoTime());
              */
-
-            SetUXInteraction(false);
 
             //notSent = new it.dongnocchi.mariner.NotSentFileHandler(myConfig.get_Wheelchair_path());
 
@@ -397,7 +395,6 @@ public class MainActivity extends Activity
             float d = acc_x_calib.stdev_deltatime;
             float e = 0.0f;
             */
-            UpdateStorageMemoryAvailable();
             //int val = myData.StorageMemoryAvailable;
 
             //CreateMyWheelchairFile();
@@ -431,7 +428,6 @@ public class MainActivity extends Activity
             ///**********************************************
             ///**********************************************
 
-
             myEventManager.SendEventNew("APP_ON_CREATE", myData.myBatteryData.level, "");
 
         } catch (Exception ex) {
@@ -439,18 +435,20 @@ public class MainActivity extends Activity
         }
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+        //client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
+    /*
     private void test() {
         int a = 6;
     }
+    */
 
     @Override
     protected void onStart() {
         super.onStart();// ATTENTION: This was auto-generated to implement the App Indexing API.
 // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client.connect();
+        //client.connect();
 
         Start_Yocto();
 
@@ -461,7 +459,7 @@ public class MainActivity extends Activity
 
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
-        AppIndex.AppIndexApi.start(client, getIndexApiAction0());
+        //AppIndex.AppIndexApi.start(client, getIndexApiAction0());
     }
 
     @Override
@@ -502,13 +500,14 @@ public class MainActivity extends Activity
         //myEventManager.SendEventNew("APP_ON_STOP", myData.myBatteryData.level, "");
         FileLog.d(TAG, "App STOP", null);
 
-        super.onStop();// ATTENTION: This was auto-generated to implement the App Indexing API.
-// See https://g.co/AppIndexing/AndroidStudio for more information.
-        AppIndex.AppIndexApi.end(client, getIndexApiAction0());
+        super.onStop();
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        //AppIndex.AppIndexApi.end(client, getIndexApiAction0());
         Stop_Yocto();
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client.disconnect();
+        //client.disconnect();
     }
 
 
@@ -559,8 +558,6 @@ public class MainActivity extends Activity
 
             Log.e("Saved error:", paramThrowable.getMessage() + "\n" + stackTrace);
 
-
-
             DialogFragment dialog = new YesNoDialog();
             Bundle args = new Bundle();
             args.putString("title", paramThrowable.getMessage());
@@ -568,15 +565,12 @@ public class MainActivity extends Activity
             dialog.setArguments(args);
             //dialog.setTargetFragment(this, 0);
             dialog.show(getFragmentManager(), "tag");
-
-
     }
 
     catch( Exception e )
     {
         LogException(TAG, "logUnhandledExceptionError : ", e);
     }
-
 }
 
 
@@ -729,7 +723,7 @@ public class MainActivity extends Activity
         }
     };
 
-
+/*
     private void esempio_di_attesa() {
         new Handler().postDelayed(new Runnable() {
             @Override
@@ -754,6 +748,7 @@ public class MainActivity extends Activity
             }
         }
     }
+*/
 
     /*
     private int WaitForEmptyBlobListOrTimeout(int num_seconds_timeout) {
@@ -989,7 +984,7 @@ public class MainActivity extends Activity
     }
 
     //==========================================================================
-    private void SetUXInteraction(boolean enabled)
+    private void SetGUIButtonEnabled(boolean enabled)
     //==========================================================================
     {
         btCalibrate.setEnabled(enabled);
@@ -1018,7 +1013,6 @@ public class MainActivity extends Activity
         int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
 
         return (plugged == BatteryManager.BATTERY_PLUGGED_AC || plugged == BatteryManager.BATTERY_PLUGGED_USB);
-
     }
 
     /*
@@ -1867,7 +1861,7 @@ public class MainActivity extends Activity
     private boolean CheckIfCalibrationCompleted()
     //==========================================================================
     {
-        long delta_time = (System.nanoTime() - CalibrationStartTime) / 1000000000;
+        long delta_time = (System.nanoTime() - CalibrationStartTime) / 1000000000L;
 
         return (delta_time > NUM_OF_SECONDS_CALIBRATION);
     }
@@ -2026,14 +2020,14 @@ public class MainActivity extends Activity
     //==========================================================================
     {
         if (ManualMode) {
-            SetUXInteraction(false);
+            SetGUIButtonEnabled(false);
 
             btToggleMode.setText("Manual Mode");
             btToggleMode.getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
 
             ManualMode = false;
         } else {
-            SetUXInteraction(true);
+            SetGUIButtonEnabled(true);
 
             btToggleMode.setText("Auto Mode");
             btToggleMode.getBackground().setColorFilter(Color.LTGRAY, PorterDuff.Mode.MULTIPLY);

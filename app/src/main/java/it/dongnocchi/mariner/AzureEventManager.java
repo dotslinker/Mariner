@@ -30,7 +30,7 @@ import javax.crypto.spec.SecretKeySpec;
 //==========================================================================
 
 //==========================================================================
-public class AzureEventManager {
+class AzureEventManager {
     //==========================================================================
     public static final short IntervalInHours = 24;
     //public static final int CHECK_EVENTS_INTERVAL = IntervalInHours * 3600000; // conversion from hours to milliseconds
@@ -49,15 +49,15 @@ public class AzureEventManager {
 
     //private JSONObject JsonPacketToSend;
 
-    Configuration myConfig;
+    private Configuration myConfig;
     //User user_local;
-    Context context;
+    private Context context;
 
-    boolean result = false;
+    private boolean result = false;
 
-    WheelchairData myData;
+    private WheelchairData myData;
 
-    public AsyncResponse delegate = null;//Call back interface
+    private AsyncResponse delegate = null;//Call back interface
 
     private String HubEndpoint = null;
     private String HubSasKeyName = null;
@@ -66,7 +66,7 @@ public class AzureEventManager {
 
     // costruttore
     //==========================================================================
-    public AzureEventManager(Context in_context, AsyncResponse asyncResponse, Configuration mc, WheelchairData wd)
+    AzureEventManager(Context in_context, AsyncResponse asyncResponse, Configuration mc, WheelchairData wd)
     //==========================================================================
     {
         myConfig = mc;
@@ -80,7 +80,7 @@ public class AzureEventManager {
     }
 
     //TODO: implementare un httpresponsehandler per ogni event hub
-    AsyncHttpResponseHandler MyAsyncHttpResponseHandler = new AsyncHttpResponseHandler() {
+    private AsyncHttpResponseHandler MyAsyncHttpResponseHandler = new AsyncHttpResponseHandler() {
         @Override
         //==========================================================================
         public void onSuccess(int i, Header[] headers, byte[] bytes) {
@@ -133,8 +133,9 @@ public class AzureEventManager {
 
     //Aggiunta da PM
     //*************************************************************************
+
     //==========================================================================
-    protected short SendEventNew(String EventName, int EventValue, String Note) {
+    public short SendEventNew(String EventName, int EventValue, String Note) {
     //==========================================================================
 
         try {
@@ -161,7 +162,7 @@ public class AzureEventManager {
     }
 
     //==========================================================================
-    protected short SendEventNew(String EventName, float EventValue, String Note) {
+    public short SendEventNew(String EventName, float EventValue, String Note) {
         //==========================================================================
 
         try {
@@ -180,6 +181,7 @@ public class AzureEventManager {
 
             //String s = DataToSend.toString();
             SendJsonEvent(DataToSend,myConfig.Events_EventHub_url, myConfig.Events_EventHub_connstring );
+            //AsyncSendJsonEvent(DataToSend,myConfig.Events_EventHub_url, myConfig.Events_EventHub_connstring );
 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -187,12 +189,7 @@ public class AzureEventManager {
         return Status;
     }
 
-
-
-
-
-
-    public void SendJsonEvent(JSONObject jso, String url, String connstring)
+    private void SendJsonEvent(JSONObject jso, String url, String connstring)
     {
         String sas;
         AsyncHttpClient client = new AsyncHttpClient();
@@ -216,6 +213,20 @@ public class AzureEventManager {
             ex.printStackTrace();
         }
     }
+
+    public void AsyncSendJsonEvent(final JSONObject jso, final  String url, final String connstring)
+    {
+        new Thread(new Runnable() {
+            public void run() {
+                SendJsonEvent(jso, url, connstring);
+            }
+        }).start();
+    }
+
+
+
+
+
 
     /// Versione nuova del SendEvent_SystemStatus() modificata il 2016-0126 da pm
 

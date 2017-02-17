@@ -163,7 +163,7 @@ class AzureEventManager {
 
     //==========================================================================
     public short SendEventNew(String EventName, float EventValue, String Note) {
-        //==========================================================================
+    //==========================================================================
 
         try {
 
@@ -222,10 +222,6 @@ class AzureEventManager {
             }
         }).start();
     }
-
-
-
-
 
 
     /// Versione nuova del SendEvent_SystemStatus() modificata il 2016-0126 da pm
@@ -315,6 +311,7 @@ class AzureEventManager {
             Log.e("AzureEventManager", "SendHourlyStatusEvent", e);
         }
     }
+
 
     public void SendDailyReport() {
         //Preparo l'oggeto Json da spedire con i dati giornalieri
@@ -430,6 +427,7 @@ class AzureEventManager {
         }
         return Status;
     }
+
 
     public void sendEventTestClick() {
         try {

@@ -10,7 +10,7 @@ public class TriaxialData {
 
     //TODO: verificare le seguenti
 
-    //static final int NUM_OF_SMPLES = 720000; //= 4 ore * 50 Hz * 3600 secondi
+    //static final int NUM_OF_SAMPLES = 720000; //= 4 ore * 50 Hz * 3600 secondi
     //static final float CONV_COEF = 1.0f / 50000000.0f;
 
     public int Timestamps[]; //expressed in 50us (1ms / 20)

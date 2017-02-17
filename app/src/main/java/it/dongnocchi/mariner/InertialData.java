@@ -11,7 +11,7 @@ public class InertialData {
     static final float NS2S = 1.0f / 1000000000.0f;
     static final float THRESHOLD_ACC = 0.01f;
     static final float THRESHOLD_GYRO = 0.001f;
-    final int NUM_OF_SMPLES = 720000; //= 4 ore * 50 Hz * 3600 secondi
+    final int NUM_OF_SAMPLES = 720000; //= 4 ore * 50 Hz * 3600 secondi
     public float[] AccXDataArray;
     public float[] AccYDataArray;
     public float[] AccZDataArray;
@@ -93,16 +93,16 @@ public class InertialData {
         mf_gyro_y = new MedianFilter3();
         mf_gyro_z = new MedianFilter3();
 
-        AccXDataArray = new float[NUM_OF_SMPLES];
-        AccYDataArray = new float[NUM_OF_SMPLES];
-        AccZDataArray = new float[NUM_OF_SMPLES];
+        AccXDataArray = new float[NUM_OF_SAMPLES];
+        AccYDataArray = new float[NUM_OF_SAMPLES];
+        AccZDataArray = new float[NUM_OF_SAMPLES];
 
-        GyroXDataArray = new float[NUM_OF_SMPLES];
-        GyroYDataArray = new float[NUM_OF_SMPLES];
-        GyroZDataArray = new float[NUM_OF_SMPLES];
+        GyroXDataArray = new float[NUM_OF_SAMPLES];
+        GyroYDataArray = new float[NUM_OF_SAMPLES];
+        GyroZDataArray = new float[NUM_OF_SAMPLES];
 
-        AccTimestampArray = new int[NUM_OF_SMPLES];
-        GyroTimestampArray = new int[NUM_OF_SMPLES];
+        AccTimestampArray = new int[NUM_OF_SAMPLES];
+        GyroTimestampArray = new int[NUM_OF_SAMPLES];
 
         min_acc_values = new float[3];
         max_acc_values = new float[3];
@@ -164,8 +164,8 @@ public class InertialData {
 
         AccTimestampArray[acc_data_counter] = (int) ((event.timestamp - reference_time) / 100000L);
 
-        if (++acc_data_counter >= NUM_OF_SMPLES)
-            acc_data_counter = NUM_OF_SMPLES - 1;
+        if (++acc_data_counter >= NUM_OF_SAMPLES)
+            acc_data_counter = NUM_OF_SAMPLES - 1;
 
         //Start the integration only if above threshold, using the MA value
         if (Math.abs(m_acc_x) < THRESHOLD_ACC)
@@ -241,8 +241,8 @@ public class InertialData {
 
         AccTimestampArray[gyro_data_counter] = (int) ((event.timestamp - reference_time) / 100000L);
 
-        if (++gyro_data_counter >= NUM_OF_SMPLES)
-            gyro_data_counter = NUM_OF_SMPLES - 1;
+        if (++gyro_data_counter >= NUM_OF_SAMPLES)
+            gyro_data_counter = NUM_OF_SAMPLES - 1;
 
         //verifico se l'accelerazione è sopra soglia
         //altrimenti l'azzero
@@ -330,8 +330,8 @@ public class InertialData {
 
         AccTimestampArray[acc_data_counter] = (int) ((event.timestamp - reference_time) / 100000L);
 
-        if (++acc_data_counter >= NUM_OF_SMPLES)
-            acc_data_counter = NUM_OF_SMPLES - 1;
+        if (++acc_data_counter >= NUM_OF_SAMPLES)
+            acc_data_counter = NUM_OF_SAMPLES - 1;
 
         acc_data_counter_calibration = acc_data_counter;
 
@@ -380,8 +380,8 @@ public class InertialData {
 
         GyroTimestampArray[gyro_data_counter] = (int) ((event.timestamp - reference_time) / 100000L);
 
-        if (++gyro_data_counter >= NUM_OF_SMPLES)
-            gyro_data_counter = NUM_OF_SMPLES - 1;
+        if (++gyro_data_counter >= NUM_OF_SAMPLES)
+            gyro_data_counter = NUM_OF_SAMPLES - 1;
 
         gyro_data_counter_calibration = gyro_data_counter;
 
@@ -542,7 +542,7 @@ public class InertialData {
 
         //TODO: verificare se sia eventualmente necessario azzerare il tutto
         if (false) {
-            for (int i = 0; i < NUM_OF_SMPLES; i++) {
+            for (int i = 0; i < NUM_OF_SAMPLES; i++) {
                 AccXDataArray[i] = 0;
                 AccYDataArray[i] = 0;
                 AccZDataArray[i] = 0;

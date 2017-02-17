@@ -5,13 +5,10 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 
-import java.sql.Blob;
 import java.util.LinkedList;
 import java.util.Queue;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
 
 import com.microsoft.azure.storage.*;
 import com.microsoft.azure.storage.blob.*;
@@ -32,6 +29,8 @@ public class AzureManager {
     private boolean isBusy = false;
 
     Configuration myConfig;
+
+    public boolean ConfigDownloaded = false;
 
     String ApkFileToUpdate = "";
 
@@ -57,7 +56,7 @@ public class AzureManager {
 
 
     //==========================================================================
-    //protected void UploadBlobs(int battery){//String FileInternalPath, String FileName, String BlobContainer, int battery){
+    //protected void UploadFilesToBlobs(int battery){//String FileInternalPath, String FileName, String BlobContainer, int battery){
     protected void UploadBlobs_old(){//String FileInternalPath, String FileName, String BlobContainer, int battery){
         // ==========================================================================
         // FileInternalPath = local folder where the file is located
@@ -165,22 +164,22 @@ public class AzureManager {
             }
             if (isAllOK){
                 notSentFileHandler.DeleteLine(File_FullPath);
-                //UploadBlobs(BatLev);
-                UploadBlobs();
+                //UploadFilesToBlobs(BatLev);
+                UploadFilesToBlobs();
             }
         }
     }
 
     //==========================================================================
-    protected void UploadBlobs(){//String FileInternalPath, String FileName, String BlobContainer, int battery){
+    protected void UploadFilesToBlobs(){//String FileInternalPath, String FileName, String BlobContainer, int battery){
         // ==========================================================================
 
-        BlobsAsyncUploaderNew UploadBlobs = new BlobsAsyncUploaderNew();
-        UploadBlobs.execute();
+        FileAsyncUploader FileUploader = new FileAsyncUploader();
+        FileUploader.execute();
     }
 
     //==========================================================================
-    private class BlobsAsyncUploaderNew extends AsyncTask<Void, Boolean, String> {
+    private class FileAsyncUploader extends AsyncTask<Void, Boolean, String> {
         //==========================================================================
         String LocalAcquisitionFolder = "";
         String FileName_local = "";
@@ -189,7 +188,7 @@ public class AzureManager {
 
         // Size_FilesToSend = 0 se stiamo caricando un nuovo file
         //                  = FilesToSend.size se stiamo caricando vecchi file dalla lista
-        public BlobsAsyncUploaderNew(){
+        public FileAsyncUploader(){
             LocalAcquisitionFolder = myConfig.get_Acquisition_Folder();
             BlobContainer = myConfig.get_Acquisition_Container();
         }
@@ -270,10 +269,10 @@ public class AzureManager {
             if (isAllOK){
                 FilesToSend.remove();
                 //notSentFileHandler.DeleteLine(File_FullPath);
-                //UploadBlobs(BatLev);
+                //UploadFilesToBlobs(BatLev);
 
                 if (FilesToSend.size() > 0)
-                    UploadBlobs();
+                    UploadFilesToBlobs();
             }
         }
     }
@@ -484,6 +483,7 @@ public class AzureManager {
                     new_updater.execute();
                 }
                 else if (Size_FilesToDownload == COMMAND_UPDATE_CONFIG) {
+                    ConfigDownloaded = true;
                 }
 
                 //Download_NotDownloadedFiles();

@@ -24,3 +24,6 @@
                           tutti gli sleep() in MainActivity sono stati sostituiti da postdelayed runnable()
 2016-1228 - Vers. 01027 - Inserita una procedura per loggare le eccezioni della App non gestite, in modo da verificare quali siano le ragioni dei periodici crash che non vengon segnalati
 2017-0130 - Vers. 01028 - Sistemato l'ordine delle attivazioni in OnCreate per cercare di salvare i dati di calibrazioen anche il giorno dell'attivazione dell'applicazione
+2017-0214 - Vers. 01029 - Spostata tutta la sequenza di preparazione e spedizione dei dati dalla catena di postelayed runnable in AsyncTask dedicati.
+2017-0215 - Vers. 01030 - Piccoli aggiustamenti (calibrazione ora di 10 secondi), stampa del numero di campioni di acc, e gyro acquisiti, sia a video che nel file log
+2017-0217 - Vers. 01031 - Modifica dell'accensione e dello spegnimento dell'acquisizione in yNewValue e OnSensorChanged, e StopCalibration (tolto il posthandler). Aggiunte due linee di LogDebug sulla calibrazione

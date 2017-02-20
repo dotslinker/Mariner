@@ -243,12 +243,13 @@ public class WheelchairData {
 
             //Se il motore è ancora acceso,
             //significa che ci siamo persi un motor OFF e quindi lo segnalo come spento
+            /*
             if (MotorON) {
+
                 AddMotorOFFEvent(EventTime);
             }
-
+            */
             PowerON = false;
-
         }
         finally{
             PowerStatusLocker.unlock();

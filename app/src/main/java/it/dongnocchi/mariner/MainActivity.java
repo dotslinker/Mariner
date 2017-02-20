@@ -66,7 +66,7 @@ public class MainActivity extends Activity
     //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1033;
+    public final int CURRENT_BUILD = 1034;
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -124,6 +124,8 @@ public class MainActivity extends Activity
     boolean CalibrationMode = false;
     //TimestampedDataArray acc_x_calib, acc_y_calib, acc_z_calib;
     //TimestampedDataArray gyro_x_calib, gyro_y_calib, gyro_z_calib;
+
+    boolean InitialCalibrationPerformed = false;
 
     private int tens_sec_counter; //counter of tens seconds for timeout
     private int ms_to_sleep;
@@ -370,7 +372,7 @@ public class MainActivity extends Activity
             //TODO: da verificare perchè parzialmente sovrapponibile al precendnte UpdateDailyReferenceTimeAndDate();
             DailyResetData();
 
-            StartCalibration();
+            //StartCalibration();
 
             StartTemperatureAcquisition();
 
@@ -450,6 +452,12 @@ public class MainActivity extends Activity
     @Override
     protected void onStart() {
         super.onStart();
+
+        if(!InitialCalibrationPerformed)
+        {
+            StartCalibration();
+            InitialCalibrationPerformed = false;
+        }
 
         //Start_Yocto();
 
@@ -1946,7 +1954,8 @@ public class MainActivity extends Activity
             if (Motor_NewInputData == 0) {
 
                 StopInertialAcquisition();
-                myData.AddMotorOFFEvent(new_event_time);
+                if(myData.MotorON)
+                    myData.AddMotorOFFEvent(new_event_time);
             }
         } catch (Exception ex) {
             LogException(TAG, "yNewValue Exception: ", ex);

@@ -66,7 +66,7 @@ public class MainActivity extends Activity
     //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1031;
+    public final int CURRENT_BUILD = 1032;
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -158,10 +158,13 @@ public class MainActivity extends Activity
     TextView ligth_val_tview, number_of_touch_tview;
     TextView hourly_ref_time_tview;
 
+    TextView power_on_tview, power_off_tview, motor_on_tview, motor_off_tview;
+
     Button btPowerOn, btPowerOff, btMotorOn, btMotorOff;
-    Button btSendEvent, btSendDailyReport, btSendHourlyReport;
+    //Button btSendEvent, btSendDailyReport, btSendHourlyReport;
     Button btCalibrate, btToggleView, btToggleMode;
-    Button btDoHourlyUpdate, btDoDailyUpdate;
+    //Button btDoHourlyUpdate;
+    Button btDoDailyUpdate;
     boolean UpdateTextViewsEnabled = false;
 
     //Array containing the information about the running time of the App
@@ -1132,21 +1135,26 @@ public class MainActivity extends Activity
         temperature_min_val_tview = (TextView) findViewById(R.id.temperature_min_tview);
         temperature_max_val_tview = (TextView) findViewById(R.id.temperature_max_tview);
 
+        power_on_tview = (TextView) findViewById(R.id.system_power_on_tview);
+        power_off_tview = (TextView) findViewById(R.id.system_power_off_tview);
+        motor_on_tview = (TextView) findViewById(R.id.system_motor_on_tview);
+        motor_off_tview = (TextView) findViewById(R.id.system_motor_off_tview);
+
         btPowerOn = (Button) findViewById(R.id.PowerONBtn);
         btPowerOff = (Button) findViewById(R.id.PowerOFFBtn);
         btMotorOn = (Button) findViewById(R.id.MotorONBtn);
         btMotorOff = (Button) findViewById(R.id.MotorOFFBtn);
-
+/*
         btSendEvent = (Button) findViewById(R.id.send_event_button);
         btSendHourlyReport = (Button) findViewById(R.id.send_hourly_data_button);
         btSendDailyReport = (Button) findViewById(R.id.send_daily_data_button);
-
+      btDoHourlyUpdate = (Button) findViewById(R.id.hourly_update_button);
+*/
         btCalibrate = (Button) findViewById(R.id.calibrate_button);
         btToggleView = (Button) findViewById(R.id.toggle_display_button);
         btToggleMode = (Button) findViewById(R.id.toggle_manualmode_button);
 
         btDoDailyUpdate = (Button) findViewById(R.id.daily_update_button);
-        btDoHourlyUpdate = (Button) findViewById(R.id.hourly_update_button);
     }
 
     //==========================================================================
@@ -1159,11 +1167,11 @@ public class MainActivity extends Activity
         btPowerOff.setEnabled(enabled);
         btMotorOn.setEnabled(enabled);
         btMotorOff.setEnabled(enabled);
-        btSendEvent.setEnabled(enabled);
-        btSendHourlyReport.setEnabled(enabled);
-        btSendDailyReport.setEnabled(enabled);
+        //btSendEvent.setEnabled(enabled);
+        //btSendHourlyReport.setEnabled(enabled);
+        //btSendDailyReport.setEnabled(enabled);
 
-        btDoHourlyUpdate.setEnabled(enabled);
+        //btDoHourlyUpdate.setEnabled(enabled);
         btDoDailyUpdate.setEnabled(enabled);
     }
 
@@ -1595,6 +1603,11 @@ public class MainActivity extends Activity
                     gyro_y_1_tview.setText(String.format("%.3f", myData.myInertialData.last_gyro_y));
                     gyro_z_1_tview.setText(String.format("%.3f", myData.myInertialData.last_gyro_z));
                 }
+
+                power_on_tview.setText(String.valueOf(myData.PowerONDailyCounter));
+                power_off_tview.setText(String.valueOf(myData.PowerOFFDailyCounter));
+                motor_on_tview.setText(String.valueOf(myData.MotorONDailyCounter));
+                motor_off_tview.setText(String.valueOf(myData.MotorOFFDailyCounter));
 
                 acc_samples_tview.setText(String.valueOf(myData.myInertialData.acc_data_counter));
 
@@ -2732,7 +2745,7 @@ public class MainActivity extends Activity
         logger_filename_complete = myConfig.get_Acquisition_Folder() + logger_filename;
         //Open the new one for the new day
         FileLog.open(logger_filename_complete, Log.VERBOSE, MAX_LOGFILE_SIZE);
-        FileLog.d("Wheelchair Remote Monitor", "Vers. " + Integer.toString(CURRENT_BUILD), null);
+        FileLog.d("Wheelchair Remote Monitor | ", "ID = " + myConfig.get_WheelchairID() + " | SW build = " + Integer.toString(CURRENT_BUILD), null);
     }
 
 

@@ -29,3 +29,4 @@
 2017-0217 - Vers. 01031 - Modifica dell'accensione e dello spegnimento dell'acquisizione in yNewValue e OnSensorChanged, e StopCalibration (tolto il posthandler). Aggiunte due linee di LogDebug sulla calibrazione
 2017-0220 - Vers. 01032 - Modifica all'interfaccia utente, rimossi i bottoni di invio degli eventi ed introdotte delle tview per vedere il numero di eventi on e off power e motor
 2017-0220 - Vers. 01033 - Modifica del posizionamento dell'attivazione e disattivazione della Yocto in OnCreate e OnDestroy per ovviare ai problemi di mancanza di logging delle informazioni dalla Yocto
+2017-0220 - Vers. 01034 - Introdotto un controllo per evitare che ci sia un AddMotorOffData quando non c'è un MotorON

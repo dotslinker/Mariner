@@ -66,7 +66,7 @@ public class MainActivity extends Activity
     //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1033;
+    public final int CURRENT_BUILD = 1034;
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -1946,7 +1946,8 @@ public class MainActivity extends Activity
             if (Motor_NewInputData == 0) {
 
                 StopInertialAcquisition();
-                myData.AddMotorOFFEvent(new_event_time);
+                if(myData.MotorON)
+                    myData.AddMotorOFFEvent(new_event_time);
             }
         } catch (Exception ex) {
             LogException(TAG, "yNewValue Exception: ", ex);

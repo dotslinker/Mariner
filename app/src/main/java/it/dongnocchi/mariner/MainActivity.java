@@ -66,7 +66,7 @@ public class MainActivity extends Activity
     //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1032;
+    public final int CURRENT_BUILD = 1033;
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -402,6 +402,7 @@ public class MainActivity extends Activity
             //CreateMyWheelchairFile();
             //call_toast(ByteOrder.nativeOrder().toString()); system is little endian
             //FileLog.d(TAG, "onCreate completed");
+            Start_Yocto();
 
 
             ///*****************************************************************
@@ -448,20 +449,11 @@ public class MainActivity extends Activity
 
     @Override
     protected void onStart() {
-        super.onStart();// ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        //client.connect();
+        super.onStart();
 
-        Start_Yocto();
+        //Start_Yocto();
 
-        //myEventManager.SendEventNew("APP_ON_START", myData.myBatteryData.level, "");
         FileLog.d(TAG, "App START", null);
-
-        //ProvediSleep()
-
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        //AppIndex.AppIndexApi.start(client, getIndexApiAction0());
     }
 
     @Override
@@ -489,27 +481,19 @@ public class MainActivity extends Activity
 
     @Override
     protected void onStop() {
-        /********************* Eliminato perchè non usato
-         if(init_yocto_just_once) {
-         if (YoctoInUse) {
-         Stop_Yocto();
-         MaxiIO_textview.setText("Yocto = stopped");
-         } else
-         MaxiIO_textview.setText("Yocto = not present");
-         }
-         */
-
         //myEventManager.SendEventNew("APP_ON_STOP", myData.myBatteryData.level, "");
         FileLog.d(TAG, "App STOP", null);
 
         super.onStop();
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        //AppIndex.AppIndexApi.end(client, getIndexApiAction0());
+        //Stop_Yocto();
+    }
+
+    @Override
+    protected void onDestroy()
+    {
         Stop_Yocto();
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        //client.disconnect();
+
+        super.onDestroy();
     }
 
 

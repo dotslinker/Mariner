@@ -82,7 +82,7 @@ public class WheelchairData {
     public int NumberOfDailyTouch;
 
     public String DailyLogFileName;
-    public String UploadedFileListString;
+    public String SavedFileListString;
 
     private Lock MotorStatusLocker = new ReentrantLock();
     private Lock PowerStatusLocker = new ReentrantLock();
@@ -129,7 +129,7 @@ public class WheelchairData {
     }
 
     public String GetUploadedFileList() {
-        return UploadedFileListString;
+        return SavedFileListString;
     }
 
     public void UpdateLightValue(float new_val)
@@ -336,7 +336,7 @@ public class WheelchairData {
         PowerONHourlyCounter = 0;
         MotorONHourlyCounter = 0;
         PowerOFFHourlyCounter = 0;
-        MotorOFFDailyCounter= 0;
+        MotorOFFHourlyCounter= 0;
 
         HourlyMotorOnTime = 0f;
         HourlyPowerOnTime = 0f;
@@ -400,7 +400,7 @@ public class WheelchairData {
 
         ResetDailyCounters();
 
-        UploadedFileListString = "";
+        SavedFileListString = "";
     }
 
     private void MemoryDataDailyReset()

@@ -2,7 +2,6 @@ package it.dongnocchi.mariner;
 
 import android.content.Context;
 import android.os.SystemClock;
-import android.util.Log;
 
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
@@ -12,14 +11,22 @@ import org.apache.http.Header;
 import org.apache.http.entity.StringEntity;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.net.URLEncoder;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+
+import java.io.File;
+import java.util.Queue;
+import java.util.Scanner;
 
 /*
  * Created by DianaM on 27/08/2015.
@@ -74,6 +81,8 @@ class AzureEventManager {
         context = in_context;
         delegate = asyncResponse;//Assigning call back interfacethrough constructor
 
+        FileLog.d("AzureEventManager", "AzureEventManager created");
+
         //JsonPacketToSend = new JSONObject();
         /*CheckUpdates.run();
         handler.postDelayed(CheckUpdates, 1000);*/
@@ -102,7 +111,6 @@ class AzureEventManager {
 
                 //Empty_EventsToSend_List();
             }
-
             delegate.processFinish("success");
         }
 
@@ -130,13 +138,12 @@ class AzureEventManager {
 
 
     //*************************************************************************
-
     //Aggiunta da PM
     //*************************************************************************
 
     //==========================================================================
     public short SendEventNew(String EventName, int EventValue, String Note) {
-    //==========================================================================
+        //==========================================================================
 
         try {
 
@@ -153,17 +160,18 @@ class AzureEventManager {
             DataToSend.put("Note", Note);
 
             //String s = DataToSend.toString();
-            SendJsonEvent(DataToSend,myConfig.Events_EventHub_url, myConfig.Events_EventHub_connstring );
+            SendJsonElement(DataToSend, myConfig.Events_EventHub_url, myConfig.Events_EventHub_connstring);
 
         } catch (Exception ex) {
             ex.printStackTrace();
+            FileLog.e("AzureEventManager", "SendEventNew exception: " + ex.toString());
         }
         return Status;
     }
 
     //==========================================================================
     public short SendEventNew(String EventName, float EventValue, String Note) {
-    //==========================================================================
+        //==========================================================================
 
         try {
 
@@ -180,17 +188,18 @@ class AzureEventManager {
             DataToSend.put("Note", Note);
 
             //String s = DataToSend.toString();
-            SendJsonEvent(DataToSend,myConfig.Events_EventHub_url, myConfig.Events_EventHub_connstring );
+            SendJsonElement(DataToSend, myConfig.Events_EventHub_url, myConfig.Events_EventHub_connstring);
             //AsyncSendJsonEvent(DataToSend,myConfig.Events_EventHub_url, myConfig.Events_EventHub_connstring );
 
         } catch (Exception ex) {
             ex.printStackTrace();
+            FileLog.e("AzureEventManager", "SendEventNew exception: " + ex.toString());
+
         }
         return Status;
     }
 
-    private void SendJsonEvent(JSONObject jso, String url, String connstring)
-    {
+    private void SendJsonElement(JSONObject jso, String url, String connstring) {
         String sas;
         AsyncHttpClient client = new AsyncHttpClient();
 
@@ -211,14 +220,42 @@ class AzureEventManager {
 
         } catch (Exception ex) {
             ex.printStackTrace();
+            FileLog.e("AzureEventManager", "SendJsonElement exception: " + ex.toString());
+
         }
     }
 
-    public void AsyncSendJsonEvent(final JSONObject jso, final  String url, final String connstring)
-    {
+    private void SendJsonString(String jso_string, String url, String connstring) {
+        String sas;
+        AsyncHttpClient client = new AsyncHttpClient();
+
+        //JSONObject params = new JSONObject();
+        try {
+            //----------------------------------
+            // authorization to be generated every time with the script
+
+            ParseConnectionString(connstring);
+            sas = generateSasToken(url);
+
+            client.addHeader("Authorization", sas);
+            //JSONObject ParamsToSend = new JSONObject();
+
+            //EventsBuffer = jso.toString();
+            StringEntity entity = new StringEntity(jso_string);
+            client.post(context, url, entity, "application/json", MyAsyncHttpResponseHandler);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            FileLog.e("AzureEventManager", "SendJsonString exception: " + ex.toString());
+
+        }
+    }
+
+
+    public void AsyncSendJsonEvent(final JSONObject jso, final String url, final String connstring) {
         new Thread(new Runnable() {
             public void run() {
-                SendJsonEvent(jso, url, connstring);
+                SendJsonElement(jso, url, connstring);
             }
         }).start();
     }
@@ -227,7 +264,7 @@ class AzureEventManager {
     /// Versione nuova del SendEvent_SystemStatus() modificata il 2016-0126 da pm
 
     //******************************************************************
-    public void SendHourlyStatusEvent() {
+    public void SendHourlyStatusEvent(boolean online) {
         //******************************************************************
         // this is done once an hour thanks to alarm manager
         // build event message and send it
@@ -263,7 +300,7 @@ class AzureEventManager {
             //String EventType = "HOURLY_STATUS";
             //myData.HourlyNote = "Just good news";
             //myData.HourlyNote = TEST_PHASE_STRING + " - Build 0" +  myConfig.currentBuild;
-            myData.HourlyNote = "Build 0" +  myConfig.currentBuild;
+            myData.HourlyNote = "Build 0" + myConfig.currentBuild;
             JSONObject ParamsToSend = new JSONObject();
             java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(Calendar.getInstance().getTime().getTime());
 
@@ -295,25 +332,19 @@ class AzureEventManager {
             ParamsToSend.put("Note", myData.HourlyNote); //puoi chiamarla più volte per mandare più param nello stesso evento
 
             //String s = ParamsToSend.toString();
-            SendJsonEvent(ParamsToSend, myConfig.HourlyUpdate_EventHub_url, myConfig.HourlyUpdate_EventHub_connstring);
-
-            /*              Vecchio metodo (TODO: da verificare se tenere o canccellare
-
-                            myEventManager.SendHourlyEvent(myConfig.WheelchairID, EventType,
-                                    myData.HourlyUse, BatteryLevel, SignalStrength,
-                                    myData.PowerONHourlyCounter, myData.MotorONHourlyCounter,
-                                    0.0f, 0.0f,
-                                    myData.Status, myData.HourlyNote);
-            */
+            if (online)
+                SendJsonElement(ParamsToSend, myConfig.HourlyUpdate_EventHub_url, myConfig.HourlyUpdate_EventHub_connstring);
+            else
+                AppendHourlyJsonEventToFile(ParamsToSend.toString());
 
         } catch (Exception e) {
             //throw new RuntimeException(e);
-            Log.e("AzureEventManager", "SendHourlyStatusEvent", e);
+            FileLog.e("AzureEventManager", "SendHourlyStatusEvent", e);
         }
     }
 
 
-    public void SendDailyReport() {
+    public void SendDailyReport(boolean isonline) {
         //Preparo l'oggeto Json da spedire con i dati giornalieri
         try {
             //Aggiorno i valori
@@ -372,13 +403,15 @@ class AzureEventManager {
             ParamsToSend.put("UploadedFileList", myData.GetUploadedFileList());
             ParamsToSend.put("DailyLog", myData.GetDailyLog());
             //ParamsToSend.put("Note", TEST_PHASE_STRING + " - Build 0" +  myConfig.currentBuild); //puoi chiamarla più volte per mandare più param nello stesso evento
-            ParamsToSend.put("Note", "Build 0" +  myConfig.currentBuild);
+            ParamsToSend.put("Note", "Build 0" + myConfig.currentBuild);
 
-            SendJsonEvent(ParamsToSend, myConfig.DailyUpdate_EventHub_url, myConfig.DailyUpdate_EventHub_connstring);
-        }
-        catch (Exception ex) {
+            if (isonline)
+                SendJsonElement(ParamsToSend, myConfig.DailyUpdate_EventHub_url, myConfig.DailyUpdate_EventHub_connstring);
+            else
+                AppendDailyJsonReportToFile(ParamsToSend.toString());
+        } catch (Exception ex) {
             ex.printStackTrace();
-            Log.e("AzureEventManager", "SendDailyReport", ex);
+            FileLog.e("AzureEventManager", "SendDailyReport", ex);
         }
     }
 
@@ -387,8 +420,7 @@ class AzureEventManager {
                                     float HourlyUse, float BatteryLevel, int SignalStrenght,
                                     int PowerOnOffCounter, int MotorOnOffCounter,
                                     float Latitude, float Longitude,
-                                    int WheelchairStatus, String note )
-    {
+                                    int WheelchairStatus, String note) {
         //==========================================================================
 
         try {
@@ -412,7 +444,7 @@ class AzureEventManager {
             //ParamsToSend.put("Time", time_string);
             ParamsToSend.put("HourlyUse", HourlyUse);
             ParamsToSend.put("PhoneBatteryLevel", BatteryLevel);
-            ParamsToSend.put("SignalStrength", (float)SignalStrenght);
+            ParamsToSend.put("SignalStrength", (float) SignalStrenght);
             ParamsToSend.put("NumberOfPowerOnOff", PowerOnOffCounter);
             ParamsToSend.put("NumberOfMotorOnOff", MotorOnOffCounter);
             ParamsToSend.put("Latitude", Latitude);
@@ -420,12 +452,99 @@ class AzureEventManager {
             ParamsToSend.put("Status", WheelchairStatus);
             ParamsToSend.put("Note", note); //puoi chiamarla più volte per mandare più param nello stesso evento
 
-            SendJsonEvent(ParamsToSend, myConfig.HourlyUpdate_EventHub_url, myConfig.HourlyUpdate_EventHub_connstring );
+            SendJsonElement(ParamsToSend, myConfig.HourlyUpdate_EventHub_url, myConfig.HourlyUpdate_EventHub_connstring);
 
         } catch (Exception ex) {
             ex.printStackTrace();
+            FileLog.e("AzureEventManager", "SendHourlyEvent :" + ex.toString());
         }
         return Status;
+    }
+
+    public void AppendDailyJsonReportToFile(String jsonstring) {
+        FileWriter f;
+        try {
+            f = new FileWriter(myConfig.get_Acquisition_Folder() +
+                    myConfig.OfflineDailyEventListFilename, true);
+            f.write(jsonstring + System.getProperty("line.separator"));
+            f.flush();
+            f.close();
+        } catch (Exception ex) {
+            FileLog.e("AzureEventManager", "AppendDailyJsonReportToFile :" + ex.toString());
+        }
+    }
+
+    public void AppendHourlyJsonEventToFile(String jsonstring) {
+        FileWriter f;
+        try {
+            f = new FileWriter(myConfig.get_Acquisition_Folder() +
+                    myConfig.OfflineHourlyEventListFilename, true);
+            f.write(jsonstring + System.getProperty("line.separator"));
+            f.flush();
+            f.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            FileLog.e("AzureEventManager", "AppendHourlyJsonEventToFile :" + ex.toString());
+        }
+    }
+
+    public void SendJsonHourlyEventList() {
+        try {
+
+            File f = new File(myConfig.get_Acquisition_Folder() +
+                    myConfig.OfflineHourlyEventListFilename);
+            if (f.exists() && !f.isDirectory()) {
+                // do something
+                Scanner s = new Scanner(f);
+
+                Queue<String> ToBeSent = new LinkedList<String>();
+
+                while (s.hasNextLine()) {
+                    ToBeSent.add(s.nextLine());
+                }
+                s.close();
+
+                for (int i = 0; i < ToBeSent.size(); i++) {
+                    String str = ToBeSent.poll();
+                    if (str.contains("{")) {
+                        SendJsonString(str, myConfig.HourlyUpdate_EventHub_url, myConfig.HourlyUpdate_EventHub_connstring);
+                    }
+                }
+                f.delete();
+            }
+        } catch (Exception ex) {
+            FileLog.e("AzureEventManager", "SendJsonHourlyEventList :" + ex.toString());
+        }
+    }
+
+    public void SendJsonDailyReportList() {
+        try {
+
+            File f = new File(myConfig.get_Acquisition_Folder() +
+                    myConfig.OfflineDailyEventListFilename);
+            if (f.exists() && !f.isDirectory()) {
+                // do something
+
+                Scanner s = new Scanner(f);
+
+                Queue<String> ToBeSent = new LinkedList<String>();
+
+                while (s.hasNextLine()) {
+                    ToBeSent.add(s.nextLine());
+                }
+                s.close();
+
+                for (int i = 0; i < ToBeSent.size(); i++) {
+                    String str = ToBeSent.poll();
+                    if (str.contains("{")) {
+                        SendJsonString(str, myConfig.DailyUpdate_EventHub_url, myConfig.DailyUpdate_EventHub_connstring);
+                    }
+                }
+                f.delete();
+            }
+        } catch (Exception ex) {
+            FileLog.e("AzureEventManager", "SendJsonDailyReportList :" + ex.toString());
+        }
     }
 
 
@@ -450,13 +569,26 @@ class AzureEventManager {
 
             String test_json = ParamsToSend.toString();
 
-            SendJsonEvent(ParamsToSend,myConfig.Events_EventHub_url ,myConfig.Events_EventHub_connstring );
+            SendJsonElement(ParamsToSend, myConfig.Events_EventHub_url, myConfig.Events_EventHub_connstring);
 
         } catch (Exception ex) {
             ex.printStackTrace();
+            FileLog.e("AzureEventManager", "sendEventTestClick :" + ex.toString());
         }
     }
 
+    // From http://stackoverflow.com/questions/9570237/android-check-internet-connection
+    //
+    public boolean isInternetOnline() {
+        boolean ret = false;
+        try {
+            String command = "ping -c 1 8.8.8.8";
+            ret = (Runtime.getRuntime().exec(command).waitFor() == 0);
+        } catch (Exception ex) {
+            ret = false;
+        }
+        return ret;
+    }
 
     /**
      * Example code from http://msdn.microsoft.com/library/azure/dn495627.aspx to
@@ -504,8 +636,8 @@ class AzureEventManager {
         } catch (Exception e) {
             e.printStackTrace();
             //DialogNotify("Exception Generating SaS", e.getMessage().toString());
+            FileLog.e("AzureEventManager", "generateSasToken :" + e.toString());
         }
-
         return null;
     }
 
@@ -517,8 +649,7 @@ class AzureEventManager {
      * @param connectionString This must be the DefaultFullSharedAccess connection
      *                         string for this example.
      */
-    private void ParseConnectionString(String connectionString)
-    {
+    private void ParseConnectionString(String connectionString) {
         String[] parts = connectionString.split(";");
         if (parts.length != 3)
             throw new RuntimeException("Error parsing connection string: "
@@ -534,7 +665,5 @@ class AzureEventManager {
             }
         }
     }
-
-
 }
 

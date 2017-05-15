@@ -8,6 +8,7 @@ import android.telephony.PhoneStateListener;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -60,6 +61,28 @@ public class NetworkInfo extends PhoneStateListener {
                 return "Unknown";
         }
     }
+
+    /*
+    protected boolean isInternetOnline()
+    {
+        boolean haveConnectedWifi = false;
+        boolean haveConnectedMobile = false;
+
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        if (activeNetwork != null) { // connected to the internet
+            if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
+                if (activeNetwork.isConnected())
+                    haveConnectedWifi = true;
+            } else if (activeNetwork.getType() == ConnectivityManager.TYPE_MOBILE) {
+                if (activeNetwork.isConnected())
+                    haveConnectedMobile = true;
+            }
+        }
+
+        return haveConnectedWifi || haveConnectedMobile;
+    }
+    */
 
 
     //TODO: verificare questa parte del valore del segnale restituito.

@@ -85,6 +85,9 @@ public class Configuration {
     public String serviceNamespace;// = "mariner";
     public int NumOfmsMotorOn2SaveFiles = 60000; // Soglia di 60 sec per salvare i file tra accensione e spegnimento della carrozzina
 
+    public String OfflineHourlyEventListFilename = "offline_hourlyevents.txt";
+    public String OfflineDailyEventListFilename = "offline_dailyevents.txt";
+    public String OfflineFilesToUploadListFilename = "offline_filesnotsent.txt";
 
     //==========================================================================
     public Configuration(){

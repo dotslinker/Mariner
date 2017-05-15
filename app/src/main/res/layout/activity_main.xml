@@ -66,20 +66,6 @@
                         android:textSize="12dp"
                         android:layout_margin="0dp" />
 
-                    <Button
-                        android:id="@+id/PowerOFFBtn"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        style="?android:attr/buttonStyleSmall"
-                        android:layout_alignParentEnd="true"
-                        android:layout_alignParentRight="true"
-                        android:layout_alignParentTop="true"
-                        android:layout_column="1"
-
-                        android:onClick="Power_OFF_Click"
-                        android:text="Power OFF"
-                        android:textSize="12dp"
-                        android:layout_margin="0dp" />
 
 
                     <Button
@@ -87,24 +73,34 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         style="?android:attr/buttonStyleSmall"
-                        android:layout_column="2"
+                        android:layout_column="1"
                         android:onClick="Motor_ON_Click"
                         android:text="Motor ON"
                         android:textSize="12dp"
                         android:layout_margin="0dp" />
 
-
                     <Button
-                        android:id="@+id/MotorOFFBtn"
+                        android:id="@+id/calibrate_button"
+                        style="?android:attr/buttonStyleSmall"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_column="2"
+                        android:onClick="CalibrateButton"
+                        android:text="Calibrate"
+                        android:textSize="12dp"
+                        android:visibility="invisible"
+                        android:layout_margin="0dp" />
+
+
+                    <Button
+                        android:id="@+id/toggle_manualmode_button"
                         style="?android:attr/buttonStyleSmall"
-                        android:layout_alignParentEnd="true"
-                        android:layout_alignParentRight="true"
-                        android:layout_below="@+id/PowerOFFBtn"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
                         android:layout_column="3"
-                        android:onClick="Motor_OFF_Click"
-                        android:text="Motor OFF"
+                        android:onClick="ToggleManualModeButton"
+                        android:text="Manual Mode"
+                        android:clickable="true"
                         android:textSize="12dp"
                         android:layout_margin="0dp" />
 
@@ -121,66 +117,89 @@
                         android:text="- - -"
                         android:textAppearance="?android:attr/textAppearanceSmall"/>
 
-                    <TextView
-                        android:id="@+id/system_power_off_tview"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_column="1"
-                        android:gravity="center"
-                        android:text="- - -"
-                        android:textAppearance="?android:attr/textAppearanceSmall"/>
 
                     <TextView
                         android:id="@+id/system_motor_on_tview"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_column="2"
+                        android:layout_column="1"
                         android:gravity="center"
                         android:text="- - -"
                         android:textAppearance="?android:attr/textAppearanceSmall"/>
 
                     <TextView
+                        android:id="@+id/system_online_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:gravity="center"
+                        android:text="OFFLINE"
+                        android:textAppearance="?android:attr/textAppearanceSmall"/>
+
+                </TableRow>
+                <TableRow>
+
+                    <TextView
+                        android:id="@+id/system_power_off_tview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="0"
+                        android:gravity="center"
+                        android:text="- - -"
+                        android:textAppearance="?android:attr/textAppearanceSmall"/>
+
+
+                    <TextView
                         android:id="@+id/system_motor_off_tview"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_column="3"
+                        android:layout_column="1"
                         android:gravity="center"
                         android:text="- - -"
                         android:textAppearance="?android:attr/textAppearanceSmall"/>
 
                 </TableRow>
-
                 <TableRow>
                     <Button
-                        android:id="@+id/toggle_manualmode_button"
-                        style="?android:attr/buttonStyleSmall"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_column="0"
-                        android:onClick="ToggleManualModeButton"
-                        android:text="Manual Mode"
-                        android:clickable="true"
-                        android:textSize="12dp"
-                        android:layout_margin="0dp" />
-
-                    <Button
-                        android:id="@+id/calibrate_button"
-                        style="?android:attr/buttonStyleSmall"
+                        android:id="@+id/PowerOFFBtn"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_alignParentEnd="true"
+                        android:layout_alignParentRight="true"
+                        android:layout_alignParentTop="true"
+                        android:layout_column="0"
+
+                        android:onClick="Power_OFF_Click"
+                        android:text="Power OFF"
+                        android:visibility="invisible"
+                        android:textSize="12dp"
+                        android:layout_margin="0dp" />
+
+
+                    <Button
+                        android:id="@+id/MotorOFFBtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="?android:attr/buttonStyleSmall"
+                        android:layout_alignParentEnd="true"
+                        android:layout_alignParentRight="true"
+                        android:layout_below="@+id/PowerOFFBtn"
                         android:layout_column="1"
-                        android:onClick="CalibrateButton"
-                        android:text="Calibrate"
+                        android:onClick="Motor_OFF_Click"
+                        android:visibility="invisible"
+                        android:text="Motor OFF"
                         android:textSize="12dp"
                         android:layout_margin="0dp" />
 
                     <Button
-                        android:id="@+id/daily_update_button"
+                        android:id="@+id/update_app_button"
                         style="?android:attr/buttonStyleSmall"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
                         android:onClick="UpdateAppButton"
+                        android:visibility="invisible"
                         android:text="Update App"
                         android:textSize="12dp"
                         android:layout_margin="0dp" />
@@ -193,6 +212,7 @@
                         android:layout_height="wrap_content"
                         android:layout_column="3"
                         android:onClick="ToggleViewButton_Click"
+                        android:visibility="invisible"
                         android:text="Toggle View"
                         android:textSize="12dp"
                         android:layout_margin="0dp" />

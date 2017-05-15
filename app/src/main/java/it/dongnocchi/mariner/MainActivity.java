@@ -51,22 +51,13 @@ import com.yoctopuce.YoctoAPI.YModule;
 
 import static com.yoctopuce.YoctoAPI.YDigitalIO.FindDigitalIO;
 
-    /*
-    //MODIFICA PER TESTARE IL CODICE DI SEBASTIEN 2016-1206
-
-    //==========================================================================
-    public class MainActivity extends Activity
-            implements SensorEventListener, YDigitalIO.UpdateCallback {
-        //==========================================================================
-    */
-
 //==========================================================================
 public class MainActivity extends Activity
         implements SensorEventListener, YAPI.DeviceArrivalCallback, YAPI.DeviceRemovalCallback, YDigitalIO.UpdateCallback {
-    //==========================================================================
+//==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1034;
+    public final int CURRENT_BUILD = 1037;
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -116,6 +107,9 @@ public class MainActivity extends Activity
     final int UXUPDATE_PERIOD_IN_MILLIS_FAST = 200;
     final int SLOW_INFO_UPDATE_PERIOD_IN_MILLIS = 1000 * 60 * 6; //Signal Strength, memory, etc.
     //final int SLOW_INFO_UPDATE_RATIO = SLOW_INFO_UPDATE_PERIOD_IN_MILLIS / UXUPDATE_PERIOD_IN_MILLIS;
+
+    boolean InternetOnline = false;
+    final int ONLINE_CHECK_UPDATE_PERIOD = 1000 * 30;
     int time_from_lat_ux_update_millis;
     boolean AccAquiring = false;
     boolean GyroAcquiring = false;
@@ -162,11 +156,13 @@ public class MainActivity extends Activity
 
     TextView power_on_tview, power_off_tview, motor_on_tview, motor_off_tview;
 
+    TextView system_online_tview;
+
     Button btPowerOn, btPowerOff, btMotorOn, btMotorOff;
     //Button btSendEvent, btSendDailyReport, btSendHourlyReport;
     Button btCalibrate, btToggleView, btToggleMode;
     //Button btDoHourlyUpdate;
-    Button btDoDailyUpdate;
+    Button btDoAppUpdate; //btDoDailyUpdate;
     boolean UpdateTextViewsEnabled = false;
 
     //Array containing the information about the running time of the App
@@ -198,7 +194,10 @@ public class MainActivity extends Activity
 
     Handler RefreshUX_Handler;
     private boolean RefreshUX = false;
-    private final boolean NEW_REFRESH = true;
+    //private final boolean NEW_REFRESH = true;
+
+    Handler RefreshOnlineStatus_Handler;
+    private boolean RefreshOnlineStatus = false;
 
     //it.dongnocchi.mariner.NotSentFileHandler notSent;
     //WindowManager.LayoutParams NewLayoutParams = null;
@@ -214,7 +213,7 @@ public class MainActivity extends Activity
     String MaxiIO_SerialN;
 
     YDigitalIO MaxiIO;
-    YModule myYModule;
+    //YModule myYModule;
     private Handler YoctoHandler = new Handler();
 
     //int Motor_OldInputData;
@@ -233,7 +232,7 @@ public class MainActivity extends Activity
     private long CalibrationStartTime;
 
     //FileLog myFileLog;
-    private long AcquisitionStartTime;
+    //private long AcquisitionStartTime;
     private String CommonFilePreamble;
     // INDICATE WHEN YOCTO IS IN USE (AVAILABLE)
     private boolean YoctoInUse = false;
@@ -242,6 +241,7 @@ public class MainActivity extends Activity
     public static Context applicationContext = null;
     public static Thread.UncaughtExceptionHandler defaultHandler = null;
     public static Thread.UncaughtExceptionHandler exceptionHandler = null;
+
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -285,6 +285,8 @@ public class MainActivity extends Activity
 
             RefreshUX_Handler = new Handler();
 
+            RefreshOnlineStatus_Handler = new Handler();
+
             build_tview.setText("Build: " + CURRENT_BUILD);
             WheelchairID_tview.setText("Wheelchair ID: " + myConfig.get_WheelchairID());
             CreateAndOpenNewFileLogger();
@@ -313,30 +315,30 @@ public class MainActivity extends Activity
             //set the log filename to the DailyLogFileName varabile
             myData.DailyLogFileName = logger_filename;
 
-                /*
-                acc_x_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
-                acc_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
-                acc_z_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            /*
+            acc_x_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            acc_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            acc_z_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
 
-                gyro_x_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
-                gyro_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
-                gyro_z_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
-                */
+            gyro_x_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            gyro_y_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            gyro_z_calib = new TimestampedDataArray(CALIB_DATA_SIZE);
+            */
 
 
-                /*
-                myAzureManager = new AzureManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
-                    @Override
-                    public void processFinish(String last_uploaded_file) {
+            /*
+            myAzureManager = new AzureManager(getApplicationContext(), new it.dongnocchi.mariner.AsyncResponse() {
+                @Override
+                public void processFinish(String last_uploaded_file) {
 
-                        // se ho caricato il file xml coi nomi dei file caricati, non scriverlo sul nuovo file xml
-                        String xml_name = myConfig.get_UploadedFiles_XmlName();
-                        if (last_uploaded_file != xml_name) { // l'ultimo file caricato è un file di dati
-                            myAzureManager.AppendNew_UploadedFileName(last_uploaded_file);//lo aggiungo al file contenente i nomi dei file caricati
-                        }
+                    // se ho caricato il file xml coi nomi dei file caricati, non scriverlo sul nuovo file xml
+                    String xml_name = myConfig.get_UploadedFiles_XmlName();
+                    if (last_uploaded_file != xml_name) { // l'ultimo file caricato è un file di dati
+                        myAzureManager.AppendNew_UploadedFileName(last_uploaded_file);//lo aggiungo al file contenente i nomi dei file caricati
                     }
-                }, myConfig);
-                */
+                }
+            }, myConfig);
+            */
 
             //DebugTestWriteBin();
 
@@ -381,6 +383,25 @@ public class MainActivity extends Activity
             StartHourlyTimer();
 
             StartPeriodicRefreshUX(); //StartPeriodicUpdateUX();
+
+            InternetOnline = myEventManager.isInternetOnline();
+
+            //Let's check if there are files and json events to upload
+            if(InternetOnline)
+            {
+                myAzureManager.UpdateFilesToSendList();
+                if(myAzureManager.FilesToSend.size()>0 )
+                {
+                    myAzureManager.UploadFilesToBlobs();
+                    WaitForEmptyBlobListOrTimeout(300);
+                }
+
+                myEventManager.SendJsonHourlyEventList();
+                myEventManager.SendJsonDailyReportList();
+                //myAzureManager.sen
+            }
+
+            StartPeriodicOnlineCheck(ONLINE_CHECK_UPDATE_PERIOD);
 
             //notSent = new it.dongnocchi.mariner.NotSentFileHandler(myConfig.get_Wheelchair_path());
 
@@ -456,7 +477,7 @@ public class MainActivity extends Activity
         if(!InitialCalibrationPerformed)
         {
             StartCalibration();
-            InitialCalibrationPerformed = false;
+            InitialCalibrationPerformed = true;
         }
 
         //Start_Yocto();
@@ -600,7 +621,7 @@ public class MainActivity extends Activity
 
     //==========================================================================
     private class DailyUpdaterTask extends AsyncTask<Void, Boolean, String>
-            //==========================================================================
+    //==========================================================================
     {
 
         public DailyUpdaterTask() {
@@ -627,7 +648,6 @@ public class MainActivity extends Activity
     private class HourlyUpdaterTask extends AsyncTask<Void, Boolean, String>
     //==========================================================================
     {
-
         public HourlyUpdaterTask() {
         };
 
@@ -638,9 +658,10 @@ public class MainActivity extends Activity
                 long actual_time = System.nanoTime();
                 actual_hour_of_day = GetActualHourOfDay();//
 
-                LogDebug(TAG, "OnceEveryHour_Receiver - (h" + actual_hour_of_day + "/" + previous_hour_of_day + ")");
+                LogDebug(TAG, "doInBackground()");
 
                 if (actual_hour_of_day != previous_hour_of_day) {
+                    LogDebug(TAG, "OnceEveryHour_Receiver - (h" + actual_hour_of_day + "/" + previous_hour_of_day + ")");
 
                     myData.updateHourlyUse(Hourly_Reference_Time, actual_time);
 
@@ -649,7 +670,7 @@ public class MainActivity extends Activity
 
                     } else {
                         //myData.updateHourlyUse(Hourly_Reference_Time, actual_time);
-                        myEventManager.SendHourlyStatusEvent();
+                        myEventManager.SendHourlyStatusEvent(InternetOnline);
                         ResetHourlyCounters();
                     }
 
@@ -688,7 +709,7 @@ public class MainActivity extends Activity
         SaveData();
         LogDebug(TAG, "Data Saved");
 
-        myEventManager.SendDailyReport();
+        myEventManager.SendDailyReport(InternetOnline);
 
         LogDebug(TAG, "Daily Report End");
 
@@ -699,31 +720,39 @@ public class MainActivity extends Activity
         CreateAndOpenNewFileLogger();
         LogDebug(TAG, "New File Logger Created");
 
+        //In case there are offline files
+        myAzureManager.UpdateFilesToSendList();
+
         //CalibrateAccelerometer();
         //UpdateListofFilesToUpload();
 
-        myAzureManager.UploadFilesToBlobs();
+        if(InternetOnline) {
+            myAzureManager.UploadFilesToBlobs();
+            WaitForEmptyBlobListOrTimeout(300);
 
+            LogDebug(TAG, "Upload Blobs done");
+
+            myAzureManager.ConfigDownloaded = false;
+            myAzureManager.CheckAndUpdateConfig();
+
+            WaitForConfigDownloadedOrTimeout(30);
+
+            myAzureManager.CheckAndUpdateAPK();
+
+            Sleep(2000, 100);
+
+            LogDebug(TAG, "Checked (and updated)");
+
+        }
+        else {
+            myAzureManager.AppendFilesToUploadList();
+            LogDebug(TAG, "Blobs to Upload inserted in uploading list");
+        }
         //tens_sec_counter = 18;
         //CheckForEmptyBlobListOrTimeout();
 
-        WaitForEmptyBlobListOrTimeout(300);
-
-        LogDebug(TAG, "Upload Blobs done");
-
         //Check for App updates
         //myAzureManager.CheckNewUpdates(myData.myBatteryData.level);
-
-        myAzureManager.ConfigDownloaded = false;
-        myAzureManager.CheckAndUpdateConfig();
-
-        WaitForConfigDownloadedOrTimeout(30);
-
-        myAzureManager.CheckAndUpdateAPK();
-
-        Sleep(2000, 100);
-
-        LogDebug(TAG, "Checked (and updated)");
 
         //myData.DailyReset(Daily_Reference_Time);//DailyResetData();
 
@@ -736,6 +765,8 @@ public class MainActivity extends Activity
         StartLightAcquisition();
 
         StartPeriodicRefreshUX();//StartPeriodicUpdateUX();
+
+        StartPeriodicOnlineCheck(ONLINE_CHECK_UPDATE_PERIOD);
 
         LogDebug(TAG, "Daily update - all functions started");
         //FileLog.d("MARINER", "End Daily Report", null);
@@ -754,13 +785,11 @@ public class MainActivity extends Activity
                     HourlyUpdaterTask hut = new HourlyUpdaterTask();
                     hut.execute();
 
-
                 } catch (Exception ex) {
                     LogException(TAG, "OnceEveryHour_Receiver ERROR: ", ex);
                 }
 
             } else {
-
 
                 try {
                     long actual_time = System.nanoTime();
@@ -778,6 +807,8 @@ public class MainActivity extends Activity
                             //Step 1 - let's stop periodic operations and acquisitions (if any)
                             StopPeriodicRefreshUX();//StopPeriodicUpdateUX();
 
+                            StopPeriodicOnlineCheck();
+
                             //myData.updateDailyUse();
                             UpdateStorageMemoryAvailable();
 
@@ -791,7 +822,7 @@ public class MainActivity extends Activity
                                     //Step 2 -
                                     SaveData();
 
-                                    myEventManager.SendDailyReport();
+                                    myEventManager.SendDailyReport(InternetOnline);
 
                                     LogDebug(TAG, "Daily Report End");
 
@@ -844,6 +875,8 @@ public class MainActivity extends Activity
 
                                                     StartPeriodicRefreshUX();//StartPeriodicUpdateUX();
 
+                                                    StartPeriodicOnlineCheck(ONLINE_CHECK_UPDATE_PERIOD);
+
                                                     LogDebug(TAG, "Daily update - all functions started");
                                                     //FileLog.d("MARINER", "End Daily Report", null);
 
@@ -855,7 +888,7 @@ public class MainActivity extends Activity
                             }, 2000);
                         } else {
                             //myData.updateHourlyUse(Hourly_Reference_Time, actual_time);
-                            myEventManager.SendHourlyStatusEvent();
+                            myEventManager.SendHourlyStatusEvent(InternetOnline);
                             ResetHourlyCounters();
                         }
 
@@ -1132,6 +1165,8 @@ public class MainActivity extends Activity
         motor_on_tview = (TextView) findViewById(R.id.system_motor_on_tview);
         motor_off_tview = (TextView) findViewById(R.id.system_motor_off_tview);
 
+        system_online_tview = (TextView) findViewById(R.id.system_online_tview);
+
         btPowerOn = (Button) findViewById(R.id.PowerONBtn);
         btPowerOff = (Button) findViewById(R.id.PowerOFFBtn);
         btMotorOn = (Button) findViewById(R.id.MotorONBtn);
@@ -1146,7 +1181,7 @@ public class MainActivity extends Activity
         btToggleView = (Button) findViewById(R.id.toggle_display_button);
         btToggleMode = (Button) findViewById(R.id.toggle_manualmode_button);
 
-        btDoDailyUpdate = (Button) findViewById(R.id.daily_update_button);
+        btDoAppUpdate = (Button) findViewById(R.id.update_app_button);
     }
 
     //==========================================================================
@@ -1164,7 +1199,8 @@ public class MainActivity extends Activity
         //btSendDailyReport.setEnabled(enabled);
 
         //btDoHourlyUpdate.setEnabled(enabled);
-        btDoDailyUpdate.setEnabled(enabled);
+        //btDoDailyUpdate.setEnabled(enabled);
+        btDoAppUpdate.setEnabled(enabled);
     }
 
     //==============================================================================================
@@ -1268,28 +1304,6 @@ public class MainActivity extends Activity
 
                 sys_stat_textview.setText("POWER OFF");
 
-                // STOP ACQUISITIONS
-                //if(!init_yocto_just_once) {
-
-                /***********************************
-                 *
-                 * Prova di eliminazione 2016-1206
-                 *
-                 *
-                 *
-                 if (YoctoInUse) {
-                 Stop_Yocto();
-                 MaxiIO_textview.setText("Yocto = stopped");
-                 } else
-                 MaxiIO_textview.setText("Yocto = not present");
-
-
-
-                 */
-
-                //}
-                //LowerScreenBrightness();
-
                 StopInertialAcquisition();
             }
         } catch (Exception ex) {
@@ -1360,28 +1374,39 @@ public class MainActivity extends Activity
                     RefreshUX_Handler.postDelayed(this, delay);
             }
         }, delay);
-
     }
 
     private void StartPeriodicRefreshUX() {
         StartPeriodicRefreshUX(SLOW_INFO_UPDATE_PERIOD_IN_MILLIS);
     }
 
-
     private void StopPeriodicRefreshUX() {
         RefreshUX = false;
     }
 
-    /*
-        //==========================================================================
-        //OLD
 
-        private void StartPeriodicUpdateUX() {
-            //==========================================================================
-            //StartHourlyTimer();
-            StartUXUpdateTimer(UXUPDATE_PERIOD_IN_MILLIS_SLOW);
-        }
-    */
+    private void StartPeriodicOnlineCheck(final int delay)
+    {
+        RefreshOnlineStatus = true;
+        RefreshOnlineStatus_Handler.postDelayed(new Runnable() {
+            public void run() {
+
+                InternetOnline = myEventManager.isInternetOnline();
+
+                if(InternetOnline)
+                    system_online_tview.setText("ONLINE");
+                else
+                    system_online_tview.setText("OFFLINE");
+
+                if (RefreshOnlineStatus)
+                    RefreshOnlineStatus_Handler.postDelayed(this, delay);
+            }
+        }, delay);
+    }
+
+    private void StopPeriodicOnlineCheck() {
+        RefreshOnlineStatus = false;
+    }
 
 
     //==========================================================================
@@ -1407,33 +1432,6 @@ public class MainActivity extends Activity
         //        CancelAlarm(myAlarmManager, OnceAnHour_pintent);
     }
 
-    /*
-        //==========================================================================
-        private void StartUXUpdateTimer(long interval)
-        //==========================================================================
-        {
-            //update the MainCalendar
-            //MainCalendar.setTimeInMillis(System.currentTimeMillis());
-
-            // sets the receiver for once an hour alarm
-            this.registerReceiver(ViewRefreshUpdate_Receiver, new IntentFilter("every_new_second"));
-            ViewRefreshUpdate_pintent = PendingIntent.getBroadcast(this, 0, new Intent("every_new_second"), 0);
-            AlarmManager am = (AlarmManager) (this.getSystemService(Context.ALARM_SERVICE));
-            am.cancel(ViewRefreshUpdate_pintent);
-            //OnceAnHour_alarmMgr.setRepeating(AlarmManager.RTC_WAKEUP, MainCalendar.getTimeInMillis(), (600*1000) , OnceAnHour_pintent); // AlarmManager.INTERVAL_HOUR
-            am.setInexactRepeating(AlarmManager.RTC_WAKEUP, GetActualTimeInMillis(), interval, ViewRefreshUpdate_pintent); // AlarmManager.INTERVAL_HOUR
-        }
-
-        //==========================================================================
-        private void StopPeriodicUpdateUX() {
-            //==========================================================================
-            this.unregisterReceiver(ViewRefreshUpdate_Receiver);
-            AlarmManager am = (AlarmManager) (this.getSystemService(Context.ALARM_SERVICE));
-            am.cancel(ViewRefreshUpdate_pintent);
-            //CancelAlarm(ViewRefreshUpdate_alarmMgr, ViewRefreshUpdate_pintent);
-        }
-    */
-
     //==========================================================================
     private void CancelAlarm(AlarmManager Alarm_StopToFire, PendingIntent PendingIntentToStop)
     //==========================================================================
@@ -1452,14 +1450,19 @@ public class MainActivity extends Activity
         //        mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         //        mGyro = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         try {
-            if (CalibrationMode) {
+            if (CalibrationMode)
+            {
                 if(!AccAquiring)
-                AccAquiring = mSensorManager.registerListener(this, mAcc, ACC_READING_PERDIOD_CALIB);
+                    AccAquiring = mSensorManager.registerListener(this, mAcc, ACC_READING_PERDIOD_CALIB);
 
-                GyroAcquiring = mSensorManager.registerListener(this, mGyro, GYRO_READING_PERDIOD_CALIB);// 20.000 us ----> FsAMPLE = 50Hz
-            } else {
+                if(!GyroAcquiring)
+                    GyroAcquiring = mSensorManager.registerListener(this, mGyro, GYRO_READING_PERDIOD_CALIB);// 20.000 us ----> FsAMPLE = 50Hz
+            }
+            else
+            {
                 if(!AccAquiring)
                     AccAquiring = mSensorManager.registerListener(this, mAcc, ACC_READING_PERDIOD);
+
                 if(!GyroAcquiring)
                     GyroAcquiring = mSensorManager.registerListener(this, mGyro, GYRO_READING_PERDIOD);// 20.000 us ----> FsAMPLE = 50Hz
             }
@@ -1596,10 +1599,10 @@ public class MainActivity extends Activity
                     gyro_z_1_tview.setText(String.format("%.3f", myData.myInertialData.last_gyro_z));
                 }
 
-                power_on_tview.setText(String.valueOf(myData.PowerONDailyCounter));
-                power_off_tview.setText(String.valueOf(myData.PowerOFFDailyCounter));
-                motor_on_tview.setText(String.valueOf(myData.MotorONDailyCounter));
-                motor_off_tview.setText(String.valueOf(myData.MotorOFFDailyCounter));
+                power_on_tview.setText( "ON  " + String.valueOf(myData.PowerONDailyCounter));
+                power_off_tview.setText("OFF " + String.valueOf(myData.PowerOFFDailyCounter));
+                motor_on_tview.setText("ON  " + String.valueOf(myData.MotorONDailyCounter));
+                motor_off_tview.setText("OFF " + String.valueOf(myData.MotorOFFDailyCounter));
 
                 acc_samples_tview.setText(String.valueOf(myData.myInertialData.acc_data_counter));
 
@@ -1674,188 +1677,6 @@ public class MainActivity extends Activity
 
     //==============================================================================================
     //==============================================================================================
-    //  Yocto Methods
-    //==============================================================================================
-    //==============================================================================================
-
-        /*
-        //==========================================================================
-        protected void Start_Yocto()
-        //==========================================================================
-        {
-            // Connect to Yoctopuce Maxi-IO
-            try {
-                YAPI.EnableUSBHost(getApplicationContext());
-                YAPI.SetUSBPacketAckMS(50);
-                YAPI.RegisterHub("usb");
-
-                myYModule = YModule.FirstModule();
-                while (myYModule != null) {
-                    if (myYModule.get_productName().equals("Yocto-Maxi-IO")) {
-
-                        MaxiIO_SerialN = myYModule.get_serialNumber();
-                        MaxiIO = FindDigitalIO(MaxiIO_SerialN);
-                        if (MaxiIO.isOnline()) {
-                            //call_toast("Maxi-IO connected");
-                            Init_Yocto(MaxiIO);
-                            MaxiIO.registerValueCallback(this);
-                            YAPI.HandleEvents();
-                        }
-                    }
-                    myYModule = myYModule.nextModule();
-                }
-                YoctoRunnable.run();
-            } catch (YAPI_Exception ex) {
-                LogException(TAG, "Start_Yocto Exception: ", ex);
-            }
-
-            //Faccio partire tra un secondo il runnable di rilevamento del dato dal sensore
-            //YoctoHandler.postDelayed(YoctoRunnable, 100);
-        }
-
-        //==========================================================================
-        private void InitYoctoMaxiIO(long new_power_on_time) {
-            //==========================================================================
-            int k = 0;
-            YoctoInUse = false;
-            while (!(ConnectYoctoMaxiIO())) {
-                k++;
-                if (k == 4000) {
-                    MaxiIO_textview.setText("Yocto not found");
-                    break;
-                }
-            }
-            if (YoctoInUse) {
-                float time_to_talk_with_yocto_ms = ((float) (System.nanoTime() - new_power_on_time)) / 1000000.0f;
-                Start_Yocto();
-                MaxiIO_textview.setText("Yocto connected in: " + time_to_talk_with_yocto_ms + " ms");
-            }
-        }
-
-        //==========================================================================
-        final Runnable YoctoRunnable = new Runnable()
-        //==========================================================================
-        {
-            public void run() {
-                if (MaxiIO_SerialN != null) {
-                    //YDigitalIO io = YDigitalIO.FindDigitalIO(MaxiIO_SerialN);
-                    try {
-                        YAPI.UpdateDeviceList();
-                        YAPI.HandleEvents();
-
-                        // DO THIS EVERYTIME TO LET IT WORK PROPERLY
-                        // da togliere per versione finale app
-                        //_outputdata = (_outputdata + 1) % 16;   // cycle ouput 0..15
-                        //io.set_portState(_outputdata);          // set output value
-
-                    } catch (YAPI_Exception e) {
-                        LogException(TAG, "final Runnable YoctoRunnable", e);
-                    }
-                }
-                YoctoHandler.postDelayed(this, 200);
-            }
-        };
-
-
-        //==========================================================================
-        protected void Init_Yocto(YDigitalIO YoctoIOModule)
-        //==========================================================================
-        {        // set the port as input
-            try {
-                YoctoIOModule.set_portDirection(0x0F);             //bit 0-3: OUT; bit 4-7: IN ( bit set to 0)
-                YoctoIOModule.set_portPolarity(0);                 // polarity set to regular
-                YoctoIOModule.set_portOpenDrain(0);                // No open drain
-                //moduleName.set_portState(0x00);                 // imposta valori logici di uscita inizialmente tutti bassi
-            } catch (YAPI_Exception e) {
-                LogException(TAG, "Init_Yocto Exception: ", e);
-            }
-        }
-
-        //==========================================================================
-        protected void Stop_Yocto()
-        //==========================================================================
-        {
-            try {
-                YAPI.FreeAPI();
-                YoctoHandler.removeCallbacks(YoctoRunnable);
-            }
-            catch (Exception e) {
-                LogException(TAG, "Stop_Yocto Exception: ", e);
-            }
-        }
-
-        // NEW VALUE ON PORT:
-        @Override
-        //==========================================================================
-        public void yNewValue(YDigitalIO yDigitalIO, String newPortValue)
-        //==========================================================================
-        {
-            long new_event_time = System.nanoTime();
-            event_textview.setText(newPortValue);
-
-            try {
-                // CHECK MOTOR PIN VALUE
-                //Motor_OldInputData = Motor_NewInputData;
-                //Motor_NewInputData = MaxiIO.get_bitState(MaxiIO_MotorPin);
-                int portvalue = Integer.valueOf(newPortValue, 16);
-
-                Motor_NewInputData = (portvalue >> MaxiIO_MotorPin) & 1;
-
-                // MOTOR EVENT HANDLING
-                if (Motor_NewInputData == 1) {
-                    myData.AddMotorONEvent(new_event_time);
-                    StartInertialAcquisition();
-                }
-
-                if (Motor_NewInputData == 0) {
-                    StopInertialAcquisition();
-                    myData.AddMotorOFFEvent(new_event_time);
-                }
-
-            } catch (Exception e) {
-                LogException(TAG, "yNewValue Exception: ", e);
-            }
-        }
-
-        //==========================================================================
-        public boolean ConnectYoctoMaxiIO()
-        //==========================================================================
-        {
-            try {
-
-                YAPI.EnableUSBHost(getApplicationContext());
-                YAPI.RegisterHub("usb");
-
-                myYModule = YModule.FirstModule();
-                while (myYModule != null) {
-                    if (myYModule.get_productName().equals("Yocto-Maxi-IO")) {
-
-                        MaxiIO_SerialN = myYModule.get_serialNumber();
-                        MaxiIO = FindDigitalIO(MaxiIO_SerialN);
-
-                        if (MaxiIO.isOnline()) {
-                            YoctoInUse = true;
-                            MaxiIO_textview.setText("MaxiIO connected: YES");
-                        } else {
-                            YoctoInUse = false;
-                            MaxiIO_textview.setText("MaxiIO connected: NO");
-                        }
-                    } else {
-                        YoctoInUse = false;
-                    }
-                    myYModule = myYModule.nextModule();
-                }
-            } catch (YAPI_Exception e) {
-                LogException(TAG, "ConnectYoctoMaxiIO Exception: ", e);
-            }
-
-            //lastfiles.isyoctoinuse = YoctoInUse;
-            return YoctoInUse;
-        }
-        */
-
-    //==============================================================================================
-    //==============================================================================================
     //  NEW Yocto Methods
     //==============================================================================================
     //==============================================================================================
@@ -1901,7 +1722,6 @@ public class MainActivity extends Activity
         }
     };
 
-
     //==========================================================================
     protected void Init_Yocto(YDigitalIO YoctoIOModule)
     //==========================================================================
@@ -1914,7 +1734,6 @@ public class MainActivity extends Activity
             LogException(TAG, "Init_Yocto Exception: ", e);
         }
     }
-
 
     //==========================================================================
     protected void Stop_Yocto()
@@ -2165,7 +1984,6 @@ public class MainActivity extends Activity
                     StartPeriodicRefreshUX(UXUPDATE_PERIOD_IN_MILLIS_SLOW);
                     //StartUXUpdateTimer(UXUPDATE_PERIOD_IN_MILLIS_SLOW);
                 }
-
             }
         }, 1000);
     }
@@ -2180,6 +1998,13 @@ public class MainActivity extends Activity
             btToggleMode.setText("Manual Mode");
             btToggleMode.getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
 
+            btCalibrate.setVisibility(Button.INVISIBLE);
+            btPowerOff.setVisibility(Button.INVISIBLE);
+            btMotorOff.setVisibility(Button.INVISIBLE);
+
+            btToggleView.setVisibility(Button.INVISIBLE);
+            btDoAppUpdate.setVisibility(Button.INVISIBLE);
+
             ManualMode = false;
         } else {
             SetGUIButtonEnabled(true);
@@ -2188,17 +2013,23 @@ public class MainActivity extends Activity
             btToggleMode.getBackground().setColorFilter(Color.LTGRAY, PorterDuff.Mode.MULTIPLY);
             //setBackgroundColor(Color.LTGRAY);
 
+            btCalibrate.setVisibility(Button.VISIBLE);
+            btPowerOff.setVisibility(Button.VISIBLE);
+            btMotorOff.setVisibility(Button.VISIBLE);
+
+            btToggleView.setVisibility(Button.VISIBLE);
+            btDoAppUpdate.setVisibility(Button.VISIBLE);
+
             ManualMode = true;
         }
     }
-
 
     //==========================================================================
     public void SendHourlyDataButton_Click(View view)
     //==========================================================================
     {
         myData.updateHourlyUse(Hourly_Reference_Time, System.nanoTime());
-        myEventManager.SendHourlyStatusEvent();
+        myEventManager.SendHourlyStatusEvent(InternetOnline);
         ResetHourlyCounters();
     }
 
@@ -2207,12 +2038,10 @@ public class MainActivity extends Activity
     //==========================================================================
     {
 
-
         if (true) {
             try {
                 DailyUpdaterTask dut = new DailyUpdaterTask();
                 dut.execute();
-
 
             } catch (Exception ex) {
                 LogException(TAG, "OnceEveryHour_Receiver ERROR: ", ex);
@@ -2220,9 +2049,10 @@ public class MainActivity extends Activity
 
         } else {
 
-
             //Step 1 - let's stop periodic operations and acquisitions (if any)
             StopPeriodicRefreshUX();//StopPeriodicUpdateUX();
+
+            StopPeriodicOnlineCheck();
 
             StopAllAcquisitions();
 
@@ -2244,10 +2074,9 @@ public class MainActivity extends Activity
 
                     UpdateStorageMemoryAvailable();
 
-                    myEventManager.SendDailyReport();
+                    myEventManager.SendDailyReport(InternetOnline);
 
                     //CalibrateAccelerometer();
-
                     //UpdateListofFilesToUpload();
 
                     //Upload Blobs
@@ -2261,7 +2090,6 @@ public class MainActivity extends Activity
                     new Handler().postDelayed(new Runnable() {
                         @Override
                         public void run() {
-
 
                             myAzureManager.CheckAndUpdateConfig();
 
@@ -2284,6 +2112,8 @@ public class MainActivity extends Activity
                                     StartLightAcquisition();
 
                                     StartPeriodicRefreshUX();//StartPeriodicUpdateUX();
+
+                                    StartPeriodicOnlineCheck(ONLINE_CHECK_UPDATE_PERIOD);
 
                                 }
                             }, 2000);
@@ -2309,15 +2139,12 @@ public class MainActivity extends Activity
         } catch (Exception ex) {
             LogException(TAG, "SendEventButton_Click", ex);
         }
-
     }
-
 
     //==========================================================================
     private void SaveData()
     //==========================================================================
     {
-
         DataOutputStream data_out;
         String filename;
         String filename_complete;
@@ -2343,9 +2170,9 @@ public class MainActivity extends Activity
             data_out.flush();
             data_out.close();
 
-            //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-            myAzureManager.AddFileToSaveList(filename);
-            myData.UploadedFileListString += filename + "\r\n";
+            //myAzureManager.AddFileToSavedFileList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+            myAzureManager.AddFileToSavedFileList(filename);
+            myData.SavedFileListString += filename + "\r\n";
 
         } catch (Exception ex) {
             LogException(TAG, "SaveData (calib.)", ex);
@@ -2372,9 +2199,9 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-                myAzureManager.AddFileToSaveList(filename);
-                myData.UploadedFileListString += filename + "\r\n";
+                //myAzureManager.AddFileToSavedFileList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myAzureManager.AddFileToSavedFileList(filename);
+                myData.SavedFileListString += filename + "\r\n";
 
             }
         } catch (Exception ex) {
@@ -2402,9 +2229,9 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-                myAzureManager.AddFileToSaveList(filename);
-                myData.UploadedFileListString += filename + "\r\n";
+                //myAzureManager.AddFileToSavedFileList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myAzureManager.AddFileToSavedFileList(filename);
+                myData.SavedFileListString += filename + "\r\n";
             }
         } catch (Exception ex) {
             LogException(TAG, "SaveData (gyro)", ex);
@@ -2429,9 +2256,9 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-                myAzureManager.AddFileToSaveList(filename);
-                myData.UploadedFileListString += filename + "\r\n";
+                //myAzureManager.AddFileToSavedFileList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myAzureManager.AddFileToSavedFileList(filename);
+                myData.SavedFileListString += filename + "\r\n";
             }
         } catch (Exception ex) {
             LogException(TAG, "SaveData (temperature)", ex);
@@ -2456,9 +2283,9 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
-                myAzureManager.AddFileToSaveList(filename);
-                myData.UploadedFileListString += filename + "\r\n";
+                //myAzureManager.AddFileToSavedFileList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
+                myAzureManager.AddFileToSavedFileList(filename);
+                myData.SavedFileListString += filename + "\r\n";
             }
         } catch (Exception ex) {
             LogException(TAG, "SaveData (events)", ex);
@@ -2485,8 +2312,8 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                myAzureManager.AddFileToSaveList(filename);
-                myData.UploadedFileListString += filename + "\r\n";
+                myAzureManager.AddFileToSavedFileList(filename);
+                myData.SavedFileListString += filename + "\r\n";
             }
         } catch (Exception ex) {
             LogException(TAG, "SaveData (battery)", ex);
@@ -2507,7 +2334,7 @@ public class MainActivity extends Activity
                         data_out.writeBytes(myAzureManager.FilesToSend.get(i) + System.getProperty("line.separator"));
                     }
 
-                    myAzureManager.AddFileToSaveList(filename);
+                    myAzureManager.AddFileToSavedFileList(filename);
 
                     data_out.flush();
                     data_out.close();
@@ -2547,8 +2374,8 @@ public class MainActivity extends Activity
                 data_out.flush();
                 data_out.close();
 
-                //myAzureManager.AddFileToSaveList(filename);
-                //myData.UploadedFileListString += filename + "\YoctoRunnable\n";
+                //myAzureManager.AddFileToSavedFileList(filename);
+                //myData.SavedFileListString += filename + "\YoctoRunnable\n";
 
             } catch (Exception ex) {
                 LogException(TAG, "SaveData", ex);
@@ -2720,8 +2547,8 @@ public class MainActivity extends Activity
         FileLog.close();
 
         //Save logfile
-        myAzureManager.AddFileToSaveList(logger_filename);
-        //myAzureManager.AddFileToSaveList(myConfig.getAcquisitionsFolder(), logger_filename, myConfig.get_Acquisition_Container());
+        myAzureManager.AddFileToSavedFileList(logger_filename);
+        //myAzureManager.AddFileToSavedFileList(myConfig.getAcquisitionsFolder(), logger_filename, myConfig.get_Acquisition_Container());
         myData.DailyLogFileName = logger_filename;
         //}
 

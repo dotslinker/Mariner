@@ -32,4 +32,4 @@
 2017-0220 - Vers. 01034 - Introdotto un controllo per evitare che ci sia un AddMotorOffData quando non c'è un MotorON. Spostata la prima calibrazione in OnStart e messa sotto flag.
 2017-0220 - Vers. 01035 - Bugfix (flag per la calibrazione iniziale e azzeramento DailyMotorOFFCounter) e piccola revisione UI con spostamento (e nascondimento) dei bottoni e dei contatori POwer e Motor ON/OPF
 2017-0512 - Vers. 01036 - Inserita la verifica della presenza della connessione ad Internet e, in caso contrario, lo storage locale delle comunicazioni degli eventi Hourly e Daily e dei File
-2017-0512 - Vers. 01037 - Inserita la spedizione dei file e dei json raccolti nei file offline in caso di mancanza della connessione ad internet
+2017-0515 - Vers. 01037 - Inserita la spedizione dei file e dei json raccolti nei file offline in caso di mancanza della connessione ad internet

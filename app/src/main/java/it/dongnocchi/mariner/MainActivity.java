@@ -57,7 +57,7 @@ public class MainActivity extends Activity
 //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1037;
+    public final int CURRENT_BUILD = 1038;
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -177,7 +177,7 @@ public class MainActivity extends Activity
     Configuration myConfig;
     AzureEventManager myEventManager;
     int slow_info_update_counter;
-    int actual_hour_of_day;
+    int current_hour_of_day;
     int previous_hour_of_day;
 
     //BroadcastReceiver OnceEveryHour_Receiver;
@@ -427,7 +427,6 @@ public class MainActivity extends Activity
             //FileLog.d(TAG, "onCreate completed");
             Start_Yocto();
 
-
             ///*****************************************************************
             //  Inserito per provare a loggare gli errori non gestiti della App
             ///*****************************************************************
@@ -457,7 +456,7 @@ public class MainActivity extends Activity
             myEventManager.SendEventNew("APP_ON_CREATE", myData.myBatteryData.level, "");
 
         } catch (Exception ex) {
-            LogException(TAG, "onCreate", ex);
+            LogException(TAG, "onCreate exception: ", ex);
         }
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -634,7 +633,7 @@ public class MainActivity extends Activity
                 DoDailyUpdate();
 
             } catch (Exception ex) {
-                LogException(TAG, "OnceEveryHour_Receiver ERROR: ", ex);
+                LogException(TAG, "DailyUpdaterTask exception: ", ex);
             }
 
             return null;
@@ -656,16 +655,16 @@ public class MainActivity extends Activity
         protected String doInBackground(Void... params) {
             try {
                 long actual_time = System.nanoTime();
-                actual_hour_of_day = GetActualHourOfDay();//
+                current_hour_of_day = GetActualHourOfDay();//
 
                 LogDebug(TAG, "doInBackground()");
 
-                if (actual_hour_of_day != previous_hour_of_day) {
-                    LogDebug(TAG, "OnceEveryHour_Receiver - (h" + actual_hour_of_day + "/" + previous_hour_of_day + ")");
+                if (current_hour_of_day != previous_hour_of_day) {
+                    LogDebug(TAG, "OnceEveryHour_Receiver - (h" + current_hour_of_day + "/" + previous_hour_of_day + ")");
 
                     myData.updateHourlyUse(Hourly_Reference_Time, actual_time);
 
-                    if (actual_hour_of_day == myConfig.get_DailyUpdateHour()) { // do this only once a day at 2 in the night
+                    if (current_hour_of_day == myConfig.get_DailyUpdateHour()) { // do this only once a day at 2 in the night
                         DoDailyUpdate();
 
                     } else {
@@ -678,10 +677,10 @@ public class MainActivity extends Activity
 
                     //LogDebug(TAG, "OnceEveryHour_Receiver - End");
 
-                    previous_hour_of_day = actual_hour_of_day;
+                    previous_hour_of_day = current_hour_of_day;
                 }
             } catch (Exception ex) {
-                LogException(TAG, "OnceEveryHour_Receiver ERROR: ", ex);
+                LogException(TAG, "HourlyUpdaterTask doInBackground() exception: ", ex);
             }
 
             return null;
@@ -696,6 +695,8 @@ public class MainActivity extends Activity
         //FileLog.d("MARINER", "Start Daily Report", null);
         //Step 1 - let's stop periodic operations and acquisitions (if any)
         StopPeriodicRefreshUX();//StopPeriodicUpdateUX();
+
+        StopPeriodicOnlineCheck();
 
         //myData.updateDailyUse();
         UpdateStorageMemoryAvailable();
@@ -720,6 +721,9 @@ public class MainActivity extends Activity
         CreateAndOpenNewFileLogger();
         LogDebug(TAG, "New File Logger Created");
 
+        //Let's check if we're online
+        InternetOnline = myEventManager.isInternetOnline();
+
         //In case there are offline files
         myAzureManager.UpdateFilesToSendList();
 
@@ -727,10 +731,14 @@ public class MainActivity extends Activity
         //UpdateListofFilesToUpload();
 
         if(InternetOnline) {
+            LogDebug(TAG, "Internet Online - Sending info");
             myAzureManager.UploadFilesToBlobs();
             WaitForEmptyBlobListOrTimeout(300);
-
             LogDebug(TAG, "Upload Blobs done");
+
+            //If there are saved events, let's send them to the Event HUb
+            myEventManager.SendJsonHourlyEventList();
+            myEventManager.SendJsonDailyReportList();
 
             myAzureManager.ConfigDownloaded = false;
             myAzureManager.CheckAndUpdateConfig();
@@ -745,6 +753,7 @@ public class MainActivity extends Activity
 
         }
         else {
+            LogDebug(TAG, "Internet Offline - saving info locally");
             myAzureManager.AppendFilesToUploadList();
             LogDebug(TAG, "Blobs to Upload inserted in uploading list");
         }
@@ -768,7 +777,7 @@ public class MainActivity extends Activity
 
         StartPeriodicOnlineCheck(ONLINE_CHECK_UPDATE_PERIOD);
 
-        LogDebug(TAG, "Daily update - all functions started");
+        LogDebug(TAG, "Daily update - all functions (re)started");
         //FileLog.d("MARINER", "End Daily Report", null);
     }
 
@@ -786,22 +795,22 @@ public class MainActivity extends Activity
                     hut.execute();
 
                 } catch (Exception ex) {
-                    LogException(TAG, "OnceEveryHour_Receiver ERROR: ", ex);
+                    LogException(TAG, "OnceEveryHour_Receiver exception: ", ex);
                 }
 
             } else {
 
                 try {
                     long actual_time = System.nanoTime();
-                    actual_hour_of_day = GetActualHourOfDay();//
+                    current_hour_of_day = GetActualHourOfDay();//
 
-                    LogDebug(TAG, "OnceEveryHour_Receiver - (h" + actual_hour_of_day + "/" + previous_hour_of_day + ")");
+                    LogDebug(TAG, "OnceEveryHour_Receiver - (h" + current_hour_of_day + "/" + previous_hour_of_day + ")");
 
-                    if (actual_hour_of_day != previous_hour_of_day) {
+                    if (current_hour_of_day != previous_hour_of_day) {
 
                         myData.updateHourlyUse(Hourly_Reference_Time, actual_time);
 
-                        if (actual_hour_of_day == myConfig.get_DailyUpdateHour()) { // do this only once a day at 2 in the night
+                        if (current_hour_of_day == myConfig.get_DailyUpdateHour()) { // do this only once a day at 2 in the night
                             LogDebug(TAG, "Daily Report Start");
                             //FileLog.d("MARINER", "Start Daily Report", null);
                             //Step 1 - let's stop periodic operations and acquisitions (if any)
@@ -896,10 +905,10 @@ public class MainActivity extends Activity
 
                         //LogDebug(TAG, "OnceEveryHour_Receiver - End");
 
-                        previous_hour_of_day = actual_hour_of_day;
+                        previous_hour_of_day = current_hour_of_day;
                     }
                 } catch (Exception ex) {
-                    LogException(TAG, "OnceEveryHour_Receiver ERROR: ", ex);
+                    LogException(TAG, "OnceEveryHour_Receiver exception: ", ex);
                 }
             }
         }
@@ -1076,7 +1085,7 @@ public class MainActivity extends Activity
             }
 
         } catch (Exception ex) {
-            LogException(TAG, "onSensorChanged ERROR: ", ex);
+            LogException(TAG, "onSensorChanged exception: ", ex);
         }
     }
 
@@ -1246,7 +1255,7 @@ public class MainActivity extends Activity
             TelephonManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
             TelephonManager.listen(myNetworkInfo, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
         } catch (Exception ex) {
-            LogException(TAG, "start_network_listener() ERROR: ", ex);
+            LogException(TAG, "start_network_listener() exception: ", ex);
         }
     }
 
@@ -1280,7 +1289,7 @@ public class MainActivity extends Activity
                  */
             }
         } catch (Exception ex) {
-            LogException(TAG, "PowerIsON", ex);
+            LogException(TAG, "PowerIsON exception: ", ex);
         }
     }
 
@@ -1307,7 +1316,7 @@ public class MainActivity extends Activity
                 StopInertialAcquisition();
             }
         } catch (Exception ex) {
-            LogException(TAG, "PowerIsOFF", ex);
+            LogException(TAG, "PowerIsOFF exception: ", ex);
         }
     }
 
@@ -1322,7 +1331,7 @@ public class MainActivity extends Activity
             sys_stat_textview.setText("POWER OFF");
             Status = STATUS_SLEEP;
         } catch (Exception ex) {
-            LogException(TAG, "Power_OFF_Click", ex);
+            LogException(TAG, "Power_OFF_Click exception: ", ex);
 
         }
     }
@@ -1338,7 +1347,7 @@ public class MainActivity extends Activity
             sys_stat_textview.setText("POWER ON");
             Status = STATUS_IDLE;
         } catch (Exception ex) {
-            LogException(TAG, "Power_ON_Click", ex);
+            LogException(TAG, "Power_ON_Click exception: ", ex);
         }
     }
 
@@ -1467,7 +1476,7 @@ public class MainActivity extends Activity
                     GyroAcquiring = mSensorManager.registerListener(this, mGyro, GYRO_READING_PERDIOD);// 20.000 us ----> FsAMPLE = 50Hz
             }
         } catch (Exception ex) {
-            LogException(TAG, "StartInertialAcquisition", ex);
+            LogException(TAG, "StartInertialAcquisition exception: ", ex);
         }
         //AccStartAcquiring();
         //GyroStartAcquiring();
@@ -1671,7 +1680,7 @@ public class MainActivity extends Activity
             //updatetview_counter = 0;
             //}
         } catch (Exception ex) {
-            LogException(TAG, "RefreshGUI", ex);
+            LogException(TAG, "RefreshGUI exception: ", ex);
         }
     }
 
@@ -1695,7 +1704,7 @@ public class MainActivity extends Activity
             YAPI.RegisterDeviceRemovalCallback(this);
             YoctoRunnable.run();
         } catch (YAPI_Exception ex) {
-            LogException(TAG, "Start_Yocto Exception: ", ex);
+            LogException(TAG, "Start_Yocto exception: ", ex);
         }
         //Start the runnable in 100 ms
         YoctoHandler.postDelayed(YoctoRunnable, 100);
@@ -1716,7 +1725,7 @@ public class MainActivity extends Activity
                 //        with the method saveToFlash(). See change in Start_Yocto
 
             } catch (YAPI_Exception e) {
-                LogException(TAG, "final Runnable YoctoRunnable", e);
+                LogException(TAG, "final Runnable YoctoRunnable exception: ", e);
             }
             YoctoHandler.postDelayed(this, 500);
         }
@@ -1731,7 +1740,7 @@ public class MainActivity extends Activity
             YoctoIOModule.set_portPolarity(0);                 // polarity set to regular
             YoctoIOModule.set_portOpenDrain(0);                // No open drain
         } catch (YAPI_Exception e) {
-            LogException(TAG, "Init_Yocto Exception: ", e);
+            LogException(TAG, "Init_Yocto exception: ", e);
         }
     }
 
@@ -1743,7 +1752,7 @@ public class MainActivity extends Activity
             YAPI.FreeAPI();
             YoctoHandler.removeCallbacks(YoctoRunnable);
         } catch (Exception e) {
-            LogException(TAG, "Stop_Yocto Exception: ", e);
+            LogException(TAG, "Stop_Yocto exception: ", e);
         }
     }
 
@@ -1777,7 +1786,7 @@ public class MainActivity extends Activity
                     myData.AddMotorOFFEvent(new_event_time);
             }
         } catch (Exception ex) {
-            LogException(TAG, "yNewValue Exception: ", ex);
+            LogException(TAG, "yNewValue exception: ", ex);
         }
     }
 
@@ -1820,7 +1829,7 @@ public class MainActivity extends Activity
                 }
             }
         } catch (YAPI_Exception ex) {
-            LogException(TAG, "yDeviceArrival Exception: ", ex);
+            LogException(TAG, "yDeviceArrival exception: ", ex);
         }
     }
 
@@ -1834,7 +1843,7 @@ public class MainActivity extends Activity
                 MaxiIO_SerialN = null;
             }
         } catch (YAPI_Exception ex) {
-            LogException(TAG, "yDeviceRemoval Exception: ", ex);
+            LogException(TAG, "yDeviceRemoval exception: ", ex);
         }
     }
 
@@ -1900,7 +1909,7 @@ public class MainActivity extends Activity
                 LogDebug(TAG, "Calibration Completed");
             }
         } catch (Exception ex) {
-            LogException(TAG, "StopCalibrateInertialSensors error: ", ex);
+            LogException(TAG, "StopCalibrateInertialSensors exception: ", ex);
         }
     }
 
@@ -2044,7 +2053,7 @@ public class MainActivity extends Activity
                 dut.execute();
 
             } catch (Exception ex) {
-                LogException(TAG, "OnceEveryHour_Receiver ERROR: ", ex);
+                LogException(TAG, "OnceEveryHour_Receiver exception: ", ex);
             }
 
         } else {
@@ -2137,7 +2146,7 @@ public class MainActivity extends Activity
             //myEventManager.SendStringEvent(tag_view.getText().toString(), value_view.getText().toString());
             myEventManager.sendEventTestClick();
         } catch (Exception ex) {
-            LogException(TAG, "SendEventButton_Click", ex);
+            LogException(TAG, "SendEventButton_Click exception: ", ex);
         }
     }
 
@@ -2175,7 +2184,7 @@ public class MainActivity extends Activity
             myData.SavedFileListString += filename + "\r\n";
 
         } catch (Exception ex) {
-            LogException(TAG, "SaveData (calib.)", ex);
+            LogException(TAG, "SaveData (calib.) exception: ", ex);
         }
 
         try {
@@ -2205,7 +2214,7 @@ public class MainActivity extends Activity
 
             }
         } catch (Exception ex) {
-            LogException(TAG, "SaveData (acc.)", ex);
+            LogException(TAG, "SaveData (acc.) exception: ", ex);
         }
 
         try {
@@ -2234,7 +2243,7 @@ public class MainActivity extends Activity
                 myData.SavedFileListString += filename + "\r\n";
             }
         } catch (Exception ex) {
-            LogException(TAG, "SaveData (gyro)", ex);
+            LogException(TAG, "SaveData (gyro) exception: ", ex);
         }
 
         try {
@@ -2261,7 +2270,7 @@ public class MainActivity extends Activity
                 myData.SavedFileListString += filename + "\r\n";
             }
         } catch (Exception ex) {
-            LogException(TAG, "SaveData (temperature)", ex);
+            LogException(TAG, "SaveData (temperature) exception: ", ex);
         }
 
         try {
@@ -2288,7 +2297,7 @@ public class MainActivity extends Activity
                 myData.SavedFileListString += filename + "\r\n";
             }
         } catch (Exception ex) {
-            LogException(TAG, "SaveData (events)", ex);
+            LogException(TAG, "SaveData (events) exception: ", ex);
         }
 
         try {
@@ -2316,7 +2325,7 @@ public class MainActivity extends Activity
                 myData.SavedFileListString += filename + "\r\n";
             }
         } catch (Exception ex) {
-            LogException(TAG, "SaveData (battery)", ex);
+            LogException(TAG, "SaveData (battery) exception: ", ex);
         }
 
             /*
@@ -2426,7 +2435,7 @@ public class MainActivity extends Activity
                     break;
             }
         } catch (Exception ex) {
-            LogException(TAG, "Sleep", ex);
+            LogException(TAG, "Sleep exception: ", ex);
         }
     }
 

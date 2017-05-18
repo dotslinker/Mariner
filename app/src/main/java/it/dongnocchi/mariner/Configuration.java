@@ -60,6 +60,8 @@ public class Configuration {
     private String WhereToSaveConfig_LocalPath;
     private String Wheelchair_path;
 
+    public String SendEmailTo = "pmeriggi@dongnocchi.it";
+
 //    private String UploadedFiles_XmlName;
 //    private String NotUploadedFiles_XmlName;
 
@@ -194,6 +196,8 @@ public class Configuration {
 
     public String get_APK_Container()              {return APK_Container;}
     public String get_Config_Container()           {return Config_Container;}
+
+
     public String get_Acquisition_Container()      {return Data_Container + "-" + WheelchairID;}
 
     //public String get_APK_FileName()               {return APK_FileName;}

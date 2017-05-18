@@ -22,6 +22,7 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.StrictMode;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.telephony.PhoneStateListener;
@@ -57,7 +58,7 @@ public class MainActivity extends Activity
 //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1038;
+    public final int CURRENT_BUILD = 1040;
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -261,8 +262,11 @@ public class MainActivity extends Activity
     //==========================================================================
     {
         try {
-            //Initialize Time info and data structures
+            //TO send email - as in http://stackoverflow.com/questions/22395417/error-strictmodeandroidblockguardpolicy-onnetwork
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+            StrictMode.setThreadPolicy(policy);
 
+            //Initialize Time info and data structures
             AppStartTime = System.nanoTime();
             App_Start_Date = new Date();
 
@@ -389,6 +393,8 @@ public class MainActivity extends Activity
             //Let's check if there are files and json events to upload
             if(InternetOnline)
             {
+                system_online_tview.setText("ONLINE");
+
                 myAzureManager.UpdateFilesToSendList();
                 if(myAzureManager.FilesToSend.size()>0 )
                 {
@@ -400,6 +406,8 @@ public class MainActivity extends Activity
                 myEventManager.SendJsonDailyReportList();
                 //myAzureManager.sen
             }
+            else
+                system_online_tview.setText("OFFLINE");
 
             StartPeriodicOnlineCheck(ONLINE_CHECK_UPDATE_PERIOD);
 
@@ -454,6 +462,9 @@ public class MainActivity extends Activity
             ///**********************************************
 
             myEventManager.SendEventNew("APP_ON_CREATE", myData.myBatteryData.level, "");
+
+            if(InternetOnline)
+                SendEMail("App OnCreate", "", "The App has been created");
 
         } catch (Exception ex) {
             LogException(TAG, "onCreate exception: ", ex);
@@ -610,7 +621,11 @@ public class MainActivity extends Activity
 
             // GET BATTERY LEVEL
             long eventtime = System.nanoTime();
-            myEventManager.SendEventNew("ALERT: BATTERY LOW", myData.myBatteryData.level, "");
+
+            if( InternetOnline) {
+                myEventManager.SendEventNew("ALERT: BATTERY LOW", myData.myBatteryData.level, "");
+                SendEMail("BATTERY LOW", "", "Current Battery Level = " + Integer.toString(myData.myBatteryData.level));
+            }
             myData.AddBatteryValChangeEvent(eventtime, battery_intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1));
             //battery_textview.setText(myData.BatteryLevel + "%");
             // save data
@@ -622,9 +637,8 @@ public class MainActivity extends Activity
     private class DailyUpdaterTask extends AsyncTask<Void, Boolean, String>
     //==========================================================================
     {
-
         public DailyUpdaterTask() {
-        };
+    };
 
 
         @Override
@@ -635,7 +649,6 @@ public class MainActivity extends Activity
             } catch (Exception ex) {
                 LogException(TAG, "DailyUpdaterTask exception: ", ex);
             }
-
             return null;
         }
 
@@ -710,7 +723,6 @@ public class MainActivity extends Activity
         SaveData();
         LogDebug(TAG, "Data Saved");
 
-        myEventManager.SendDailyReport(InternetOnline);
 
         LogDebug(TAG, "Daily Report End");
 
@@ -724,6 +736,8 @@ public class MainActivity extends Activity
         //Let's check if we're online
         InternetOnline = myEventManager.isInternetOnline();
 
+        myEventManager.SendDailyReport(InternetOnline);
+
         //In case there are offline files
         myAzureManager.UpdateFilesToSendList();
 
@@ -731,6 +745,10 @@ public class MainActivity extends Activity
         //UpdateListofFilesToUpload();
 
         if(InternetOnline) {
+            SendEMail("Daily report", myConfig.get_Acquisition_Folder()+ myData.DailyLogFileName,
+                    "Daily Report Sent" + System.getProperty("line.separator") +
+                            myEventManager.LastDailyReport);
+
             LogDebug(TAG, "Internet Online - Sending info");
             myAzureManager.UploadFilesToBlobs();
             WaitForEmptyBlobListOrTimeout(300);
@@ -742,6 +760,7 @@ public class MainActivity extends Activity
 
             myAzureManager.ConfigDownloaded = false;
             myAzureManager.CheckAndUpdateConfig();
+
 
             WaitForConfigDownloadedOrTimeout(30);
 
@@ -789,7 +808,7 @@ public class MainActivity extends Activity
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            if (true) {
+  //          if (true) {
                 try {
                     HourlyUpdaterTask hut = new HourlyUpdaterTask();
                     hut.execute();
@@ -798,6 +817,7 @@ public class MainActivity extends Activity
                     LogException(TAG, "OnceEveryHour_Receiver exception: ", ex);
                 }
 
+/*
             } else {
 
                 try {
@@ -911,6 +931,7 @@ public class MainActivity extends Activity
                     LogException(TAG, "OnceEveryHour_Receiver exception: ", ex);
                 }
             }
+            */
         }
     };
 
@@ -1069,9 +1090,23 @@ public class MainActivity extends Activity
             } else if ((event.sensor.getType() == Sensor.TYPE_AMBIENT_TEMPERATURE)) {
                 myData.myTempData.AppendData(event);
 
-                if (myData.myTempData.CurrentTemperature >= myConfig.TemperatureThresholdAlert)
-                    myEventManager.SendEventNew("ALERT: HIGH TEMPERATURE", myData.myTempData.CurrentTemperature, "");
+                if (myData.myTempData.CurrentTemperature >= myConfig.TemperatureThresholdAlert) {
+                    if(InternetOnline && !myData.HourlyAlerts.TemperatureHigh)
+                    {
+                        myData.HourlyAlerts.TemperatureHigh = true;
+                        new Thread(new Runnable(){
+                            public void run() {
+                                myEventManager.SendEventNew("ALERT: HIGH TEMPERATURE", myData.myTempData.CurrentTemperature, "");
+                                SendEMail("ALERT: TEMPERATURE HIGH", "",
+                                        "Temperature is too high: " + Float.toString(myData.myTempData.CurrentTemperature) + "°C");
 
+                                // do something here
+                            }
+                        }).start();
+
+                    }
+
+                }
                 myData.UpdateMemoryUsage();
 
                 //TODO: da sistemare una routine con un intervallo di un secondo...
@@ -2654,6 +2689,38 @@ public class MainActivity extends Activity
                 .setObject(object)
                 .setActionStatus(Action.STATUS_TYPE_COMPLETED)
                 .build();
+    }
+
+    public void SendEMail(String subject, String attachment, String body) {
+        Mail m = new Mail("mariner.wheelchair@gmail.com", "c4p3c3l4tr066");
+        //Mail m = new Mail("paolo.meriggi@iol.it", "19-w0rK-69");
+
+        String _subject = "Mariner Project (From " + myConfig.WheelchairID + ") " + subject;
+        String _body = body + System.getProperty("line.separator");
+
+        //String[] toArr = {"bla@bla.com", "lala@lala.com"};
+        m.setTo(myConfig.SendEmailTo);
+        //m.setFrom("PW - "+ myConfig.WheelchairID + " <mariner.wheelchair@gmail.com>");
+        m.setFrom("mariner.wheelchair@gmail.com");
+        m.setSubject(_subject);
+        m.setBody(_body);
+
+        try {
+            if (attachment != "")
+                m.addAttachment(attachment);
+            if (m.send()) {
+                LogDebug(TAG, "email sent");
+                //Toast.makeText(MailApp.this, "Email was sent successfully.", Toast.LENGTH_LONG).show();
+            } else {
+                LogDebug(TAG, "email NOT sent");
+                //Toast.makeText(MailApp.this, "Email was not sent.", Toast.LENGTH_LONG).show();
+            }
+        } catch (Exception e) {
+            //Toast.makeText(MailApp.this, "There was a problem sending the email.", Toast.LENGTH_LONG).show();
+            LogException(TAG, "Could not send email", e);
+
+        }
+
     }
 
 

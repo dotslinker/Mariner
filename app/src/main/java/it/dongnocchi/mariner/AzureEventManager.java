@@ -69,6 +69,9 @@ class AzureEventManager {
     private String HubEndpoint = null;
     private String HubSasKeyName = null;
     private String HubSasKeyValue = null;
+
+    public String LastDailyReport = "";
+
     //private String HubFullAccess = "<Enter Your DefaultFullSharedAccess Connection string>";
 
     // costruttore
@@ -404,6 +407,8 @@ class AzureEventManager {
             ParamsToSend.put("DailyLog", myData.GetDailyLog());
             //ParamsToSend.put("Note", TEST_PHASE_STRING + " - Build 0" +  myConfig.currentBuild); //puoi chiamarla più volte per mandare più param nello stesso evento
             ParamsToSend.put("Note", "Build 0" + myConfig.currentBuild);
+
+            LastDailyReport = ParamsToSend.toString();
 
             if (isonline)
                 SendJsonElement(ParamsToSend, myConfig.DailyUpdate_EventHub_url, myConfig.DailyUpdate_EventHub_connstring);

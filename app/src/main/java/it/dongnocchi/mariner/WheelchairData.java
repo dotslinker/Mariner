@@ -7,6 +7,8 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Created by Paolo on 27/01/2016.
  */
+
+
 public class WheelchairData {
 
     public boolean PowerON; //flag for Power supply present
@@ -106,6 +108,8 @@ public class WheelchairData {
     //public float MemoryUsedFloat_KB, MaxMemoryUsedFloat_KB;
     //public int MemoryUsedFloatSumCounter;
 
+    public Alerts HourlyAlerts;
+
     //Runtime myRuntime;
 
 
@@ -121,6 +125,8 @@ public class WheelchairData {
         myBatteryData = new BatteryData();
         myEventData = new EventData();
         //myRuntime = Runtime.getRuntime();
+
+        HourlyAlerts = new Alerts();
     }
 
     public String GetDailyLog()
@@ -347,6 +353,8 @@ public class WheelchairData {
         MemoryDataHourlyReset();
 
         LightDataHourlyReset();
+
+        HourlyAlerts.Reset();
     }
 
     public void LightDataHourlyReset()

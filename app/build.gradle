@@ -38,6 +38,9 @@ dependencies {
     compile 'com.microsoft.azure:azure:0.8.0'
     compile 'com.microsoft.azure.android:azure-storage-android:0.8.0'
     compile 'com.google.android.gms:play-services-appindexing:8.4.0'
+    compile files('libs/mail.jar')
+    compile files('libs/additionnal.jar')
+    compile files('libs/activation.jar')
 }
 repositories {
     maven {

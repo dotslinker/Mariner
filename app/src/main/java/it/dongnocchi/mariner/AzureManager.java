@@ -661,8 +661,11 @@ public class AzureManager {
                                 // Download the item and save it to a file with the same name.
                                 CloudBlob blob = (CloudBlob) blobItem;
 
-
                                 String BlobName = blob.getName();//.replaceFirst("[.][^.]+$", "");
+
+                                //Let's check if there is a specific version of the software for my ID
+                                if (BlobName.contains(myConfig.WheelchairID))
+                                    BlobName = BlobName.replace(myConfig.WheelchairID, "mariner");
 
                                 if (BlobName.contains("mariner")) {
                                     String[] parts = BlobName.split("[-\\.]");

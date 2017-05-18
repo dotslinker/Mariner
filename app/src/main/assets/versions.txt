@@ -35,4 +35,4 @@
 2017-0515 - Vers. 01037 - Inserita la spedizione dei file e dei json raccolti nei file offline in caso di mancanza della connessione ad internet
 2017-0516 - Vers. 01038 - Inserite le procedure di spedizione dei file nel DoDailyUpdate, Corrette le stringhe di diversi LogDebug in MainActivity
 2017-0516 - Vers. 01039 - Aggiunta la possibilità di inviare una mail
-2017-0518 - Vers. 01040 - Aggiunta la possibilità di aggiornare il software anche soltanto sulla singola macchina, inserendo l'ID al posto di "mariner". Spedizione di email in caso di problemi (Batteria, temperatura);
+2017-0518 - Vers. 01040 - Aggiunta la possibilità di aggiornare il software anche soltanto sulla singola macchina, inserendo l'ID al posto di "mariner". Spedizione di email in caso di problemi (Batteria, temperatura), in OnCreate e OnDestroy.

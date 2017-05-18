@@ -530,6 +530,9 @@ public class MainActivity extends Activity
     @Override
     protected void onDestroy()
     {
+        if(InternetOnline)
+            SendEMail("App OnDestroy", "", "The App is about to be destroyed");
+
         Stop_Yocto();
 
         super.onDestroy();
@@ -595,7 +598,6 @@ public class MainActivity extends Activity
         }
     }
 
-
     //==========================================================================
     private BroadcastReceiver mBatChanged = new BroadcastReceiver()
             //==========================================================================
@@ -624,8 +626,12 @@ public class MainActivity extends Activity
 
             if( InternetOnline) {
                 myEventManager.SendEventNew("ALERT: BATTERY LOW", myData.myBatteryData.level, "");
-                SendEMail("BATTERY LOW", "", "Current Battery Level = " + Integer.toString(myData.myBatteryData.level));
+                if( !myData.HourlyAlerts.BatteryLow) {
+                    myData.HourlyAlerts.BatteryLow = true;
+                    SendEMail("BATTERY LOW", "", "Current Battery Level = " + Integer.toString(myData.myBatteryData.level));
+                }
             }
+
             myData.AddBatteryValChangeEvent(eventtime, battery_intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1));
             //battery_textview.setText(myData.BatteryLevel + "%");
             // save data
@@ -662,7 +668,6 @@ public class MainActivity extends Activity
     {
         public HourlyUpdaterTask() {
         };
-
 
         @Override
         protected String doInBackground(Void... params) {
@@ -799,7 +804,6 @@ public class MainActivity extends Activity
         LogDebug(TAG, "Daily update - all functions (re)started");
         //FileLog.d("MARINER", "End Daily Report", null);
     }
-
 
     //==========================================================================
     private BroadcastReceiver OnceEveryHour_Receiver = new BroadcastReceiver()

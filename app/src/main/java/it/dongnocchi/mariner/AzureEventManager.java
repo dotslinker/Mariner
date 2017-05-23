@@ -342,7 +342,7 @@ class AzureEventManager {
 
         } catch (Exception e) {
             //throw new RuntimeException(e);
-            FileLog.e("AzureEventManager", "SendHourlyStatusEvent", e);
+            FileLog.e("AzureEventManager", "SendHourlyStatusEvent exception", e);
         }
     }
 
@@ -416,7 +416,7 @@ class AzureEventManager {
                 AppendDailyJsonReportToFile(ParamsToSend.toString());
         } catch (Exception ex) {
             ex.printStackTrace();
-            FileLog.e("AzureEventManager", "SendDailyReport", ex);
+            FileLog.e("AzureEventManager", "SendDailyReport exception", ex);
         }
     }
 
@@ -461,7 +461,7 @@ class AzureEventManager {
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            FileLog.e("AzureEventManager", "SendHourlyEvent :" + ex.toString());
+            FileLog.e("AzureEventManager", "SendHourlyEvent exception:" + ex.toString());
         }
         return Status;
     }
@@ -475,7 +475,7 @@ class AzureEventManager {
             f.flush();
             f.close();
         } catch (Exception ex) {
-            FileLog.e("AzureEventManager", "AppendDailyJsonReportToFile :" + ex.toString());
+            FileLog.e("AzureEventManager", "AppendDailyJsonReportToFile exception:" + ex.toString());
         }
     }
 
@@ -489,11 +489,11 @@ class AzureEventManager {
             f.close();
         } catch (Exception ex) {
             ex.printStackTrace();
-            FileLog.e("AzureEventManager", "AppendHourlyJsonEventToFile :" + ex.toString());
+            FileLog.e("AzureEventManager", "AppendHourlyJsonEventToFile exception:" + ex.toString());
         }
     }
 
-    public void SendJsonHourlyEventList() {
+    public void SendJsonHourlyEventListFromFile() {
         try {
 
             File f = new File(myConfig.get_Acquisition_Folder() +
@@ -518,11 +518,11 @@ class AzureEventManager {
                 f.delete();
             }
         } catch (Exception ex) {
-            FileLog.e("AzureEventManager", "SendJsonHourlyEventList :" + ex.toString());
+            FileLog.e("AzureEventManager", "SendJsonHourlyEventListFromFile exception :" + ex.toString());
         }
     }
 
-    public void SendJsonDailyReportList() {
+    public void SendJsonDailyReportListFromFile() {
         try {
 
             File f = new File(myConfig.get_Acquisition_Folder() +
@@ -548,7 +548,7 @@ class AzureEventManager {
                 f.delete();
             }
         } catch (Exception ex) {
-            FileLog.e("AzureEventManager", "SendJsonDailyReportList :" + ex.toString());
+            FileLog.e("AzureEventManager", "SendJsonDailyReportListFromFile exception:" + ex.toString());
         }
     }
 
@@ -578,7 +578,7 @@ class AzureEventManager {
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            FileLog.e("AzureEventManager", "sendEventTestClick :" + ex.toString());
+            FileLog.e("AzureEventManager", "sendEventTestClick exception:" + ex.toString());
         }
     }
 
@@ -641,7 +641,7 @@ class AzureEventManager {
         } catch (Exception e) {
             e.printStackTrace();
             //DialogNotify("Exception Generating SaS", e.getMessage().toString());
-            FileLog.e("AzureEventManager", "generateSasToken :" + e.toString());
+            FileLog.e("AzureEventManager", "generateSasToken exception:" + e.toString());
         }
         return null;
     }

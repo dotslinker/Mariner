@@ -58,7 +58,7 @@ public class MainActivity extends Activity
 //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1040;
+    public final int CURRENT_BUILD = 1041;
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -291,7 +291,7 @@ public class MainActivity extends Activity
 
             RefreshOnlineStatus_Handler = new Handler();
 
-            build_tview.setText("Build: " + CURRENT_BUILD);
+            build_tview.setText("Build: " + Integer.toString(CURRENT_BUILD));
             WheelchairID_tview.setText("Wheelchair ID: " + myConfig.get_WheelchairID());
             CreateAndOpenNewFileLogger();
             //myLogger = new FileLog();
@@ -378,6 +378,8 @@ public class MainActivity extends Activity
             //TODO: da verificare perchè parzialmente sovrapponibile al precendnte UpdateDailyReferenceTimeAndDate();
             DailyResetData();
 
+            UpdateDailyReferenceTimeAndDate();
+
             //StartCalibration();
 
             StartTemperatureAcquisition();
@@ -402,8 +404,8 @@ public class MainActivity extends Activity
                     WaitForEmptyBlobListOrTimeout(300);
                 }
 
-                myEventManager.SendJsonHourlyEventList();
-                myEventManager.SendJsonDailyReportList();
+                myEventManager.SendJsonHourlyEventListFromFile();
+                myEventManager.SendJsonDailyReportListFromFile();
                 //myAzureManager.sen
             }
             else
@@ -464,7 +466,7 @@ public class MainActivity extends Activity
             myEventManager.SendEventNew("APP_ON_CREATE", myData.myBatteryData.level, "");
 
             if(InternetOnline)
-                SendEMail("App OnCreate", "", "The App has been created");
+                SendEMail("App OnCreate (build " + Integer.toString(CURRENT_BUILD) + ")", "", "The App has been created");
 
         } catch (Exception ex) {
             LogException(TAG, "onCreate exception: ", ex);
@@ -530,6 +532,8 @@ public class MainActivity extends Activity
     @Override
     protected void onDestroy()
     {
+        FileLog.d(TAG, "App OnDestroy", null);
+
         if(InternetOnline)
             SendEMail("App OnDestroy", "", "The App is about to be destroyed");
 
@@ -628,7 +632,7 @@ public class MainActivity extends Activity
                 myEventManager.SendEventNew("ALERT: BATTERY LOW", myData.myBatteryData.level, "");
                 if( !myData.HourlyAlerts.BatteryLow) {
                     myData.HourlyAlerts.BatteryLow = true;
-                    SendEMail("BATTERY LOW", "", "Current Battery Level = " + Integer.toString(myData.myBatteryData.level));
+                    SendEMail("BATTERY LOW", "", "Current Battery Level = " + Integer.toString(myData.myBatteryData.level) + "%");
                 }
             }
 
@@ -675,7 +679,7 @@ public class MainActivity extends Activity
                 long actual_time = System.nanoTime();
                 current_hour_of_day = GetActualHourOfDay();//
 
-                LogDebug(TAG, "doInBackground()");
+                LogDebug(TAG, "HourlyUpdaterTask - doInBackground()");
 
                 if (current_hour_of_day != previous_hour_of_day) {
                     LogDebug(TAG, "OnceEveryHour_Receiver - (h" + current_hour_of_day + "/" + previous_hour_of_day + ")");
@@ -687,7 +691,13 @@ public class MainActivity extends Activity
 
                     } else {
                         //myData.updateHourlyUse(Hourly_Reference_Time, actual_time);
+
+                        //If we're online and there is a que of events not sent, let's send them
+                        if(InternetOnline)
+                            myEventManager.SendJsonHourlyEventListFromFile();
+
                         myEventManager.SendHourlyStatusEvent(InternetOnline);
+
                         ResetHourlyCounters();
                     }
 
@@ -733,7 +743,7 @@ public class MainActivity extends Activity
 
         CloseAndSaveLogger();
 
-        DailyResetData();
+        UpdateDailyReferenceTimeAndDate();
 
         CreateAndOpenNewFileLogger();
         LogDebug(TAG, "New File Logger Created");
@@ -742,6 +752,8 @@ public class MainActivity extends Activity
         InternetOnline = myEventManager.isInternetOnline();
 
         myEventManager.SendDailyReport(InternetOnline);
+
+        DailyResetData();
 
         //In case there are offline files
         myAzureManager.UpdateFilesToSendList();
@@ -760,8 +772,8 @@ public class MainActivity extends Activity
             LogDebug(TAG, "Upload Blobs done");
 
             //If there are saved events, let's send them to the Event HUb
-            myEventManager.SendJsonHourlyEventList();
-            myEventManager.SendJsonDailyReportList();
+            myEventManager.SendJsonHourlyEventListFromFile();
+            myEventManager.SendJsonDailyReportListFromFile();
 
             myAzureManager.ConfigDownloaded = false;
             myAzureManager.CheckAndUpdateConfig();
@@ -1045,7 +1057,6 @@ public class MainActivity extends Activity
     private void DailyResetData()
     //==========================================================================
     {        //TODO: implementare il reset di tutte le strutture dati utilizzate
-        UpdateDailyReferenceTimeAndDate();
         myData.DailyReset(Daily_Reference_Time);
     }
 
@@ -2599,8 +2610,6 @@ public class MainActivity extends Activity
         //myAzureManager.AddFileToSavedFileList(myConfig.getAcquisitionsFolder(), logger_filename, myConfig.get_Acquisition_Container());
         myData.DailyLogFileName = logger_filename;
         //}
-
-
     }
 
     //==========================================================================
@@ -2613,7 +2622,7 @@ public class MainActivity extends Activity
         logger_filename_complete = myConfig.get_Acquisition_Folder() + logger_filename;
         //Open the new one for the new day
         FileLog.open(logger_filename_complete, Log.VERBOSE, MAX_LOGFILE_SIZE);
-        FileLog.d("Wheelchair Remote Monitor | ", "ID = " + myConfig.get_WheelchairID() + " | SW build = " + Integer.toString(CURRENT_BUILD), null);
+        FileLog.d("Wheelchair Remote Monitor", "ID = " + myConfig.get_WheelchairID() + "SW build = " + Integer.toString(CURRENT_BUILD), null);
     }
 
 

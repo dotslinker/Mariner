@@ -220,7 +220,7 @@ public class AzureManager {
                 f.delete();
             }
         } catch (Exception ex) {
-            FileLog.e("AzureEventManager", "SendJsonHourlyEventList :" + ex.toString());
+            FileLog.e("AzureEventManager", "SendJsonHourlyEventListFromFile :" + ex.toString());
         }
     }
 

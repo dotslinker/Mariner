@@ -56,6 +56,7 @@ public class MovingAverage {
         {
             firstval = true;
             MeanVal = 0.0f;
+            data_counter = 0;
         }
 
     }

@@ -513,9 +513,12 @@ class AzureEventManager {
                     String str = ToBeSent.poll();
                     if (str.contains("{")) {
                         SendJsonString(str, myConfig.HourlyUpdate_EventHub_url, myConfig.HourlyUpdate_EventHub_connstring);
+                        FileLog.d("AzureEventManager", "Sent hourly json string: " + str);
+                        Thread.sleep(1000);
                     }
                 }
                 f.delete();
+                FileLog.d("AzureEventManager", " Hourly Json buffer file deleted");
             }
         } catch (Exception ex) {
             FileLog.e("AzureEventManager", "SendJsonHourlyEventListFromFile exception :" + ex.toString());
@@ -543,9 +546,12 @@ class AzureEventManager {
                     String str = ToBeSent.poll();
                     if (str.contains("{")) {
                         SendJsonString(str, myConfig.DailyUpdate_EventHub_url, myConfig.DailyUpdate_EventHub_connstring);
+                        FileLog.d("AzureEventManager", "Sent daily json string: " + str);
+                        Thread.sleep(1000);
                     }
                 }
                 f.delete();
+                FileLog.d("AzureEventManager", "Daily Json buffer file deleted");
             }
         } catch (Exception ex) {
             FileLog.e("AzureEventManager", "SendJsonDailyReportListFromFile exception:" + ex.toString());

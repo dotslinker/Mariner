@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -58,7 +57,9 @@ public class MainActivity extends Activity
 //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1041;
+    public final int CURRENT_BUILD = 1043;
+
+    public boolean debug_mode = false; //flag to enable debug mode of the application
 
     public final String TAG = MainActivity.class.getSimpleName();
 
@@ -172,7 +173,7 @@ public class MainActivity extends Activity
     //User user;              //input to this class
     //LastFiles lastfiles;    //output
     // phone network variables
-    TelephonyManager TelephonManager;
+    TelephonyManager myTelephonyManager;
     NetworkInfo myNetworkInfo;
     AzureManager myAzureManager;
     Configuration myConfig;
@@ -486,6 +487,8 @@ public class MainActivity extends Activity
     protected void onStart() {
         super.onStart();
 
+        FileLog.d(TAG, "App START", null);
+
         if(!InitialCalibrationPerformed)
         {
             StartCalibration();
@@ -493,8 +496,6 @@ public class MainActivity extends Activity
         }
 
         //Start_Yocto();
-
-        FileLog.d(TAG, "App START", null);
     }
 
     @Override
@@ -507,14 +508,15 @@ public class MainActivity extends Activity
     @Override
     protected void onPause() {
         //myEventManager.SendEventNew("APP_ON_PAUSE", myData.myBatteryData.level, "");
-        FileLog.d(TAG, "App Pause", null);
+        if(debug_mode)
+            FileLog.d(TAG, "App Pause", null);
         super.onPause();
     }
 
     @Override
     protected void onResume() {
-
-        super.onResume();
+        if(debug_mode)
+            super.onResume();
         //myEventManager.SendEventNew("APP_ON_RESUME", myData.myBatteryData.level, "");
         FileLog.d(TAG, "App RESUME", null);
 
@@ -1241,6 +1243,11 @@ public class MainActivity extends Activity
         btToggleMode = (Button) findViewById(R.id.toggle_manualmode_button);
 
         btDoAppUpdate = (Button) findViewById(R.id.update_app_button);
+
+        btToggleMode.setText("Auto Mode");
+        btToggleMode.setBackgroundColor(Color.GREEN); //.getBackground().setColorFilter(Color.LTGRAY, PorterDuff.Mode.MULTIPLY);
+        btDoAppUpdate.setBackgroundColor(Color.CYAN);
+        btToggleView.setBackgroundColor(Color.GREEN);
     }
 
     //==========================================================================
@@ -1301,9 +1308,18 @@ public class MainActivity extends Activity
     //==============================================================================================
     protected void start_network_listener() {
         try {
+            /*
             myNetworkInfo = new NetworkInfo();
-            TelephonManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-            TelephonManager.listen(myNetworkInfo, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+            myTelephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+            myTelephonyManager.listen(myNetworkInfo, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+            */
+
+            //psListener = new myPhoneStateListener();
+            myNetworkInfo = new NetworkInfo();
+            myTelephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+            myTelephonyManager.listen(myNetworkInfo,PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+
+
         } catch (Exception ex) {
             LogException(TAG, "start_network_listener() exception: ", ex);
         }
@@ -1715,14 +1731,14 @@ public class MainActivity extends Activity
                     new SimpleDateFormat("dd.MM.yyyy - HH:mm:ss").format(Daily_Reference_Date));
 
             if (myData.PowerON)
-                btPowerOn.getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
+                btPowerOn.setBackgroundColor(Color.GREEN); //getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
             else
-                btPowerOn.getBackground().setColorFilter(Color.DKGRAY, PorterDuff.Mode.MULTIPLY);
+                btPowerOn.setBackgroundColor(Color.DKGRAY); //getBackground().setColorFilter(Color.DKGRAY, PorterDuff.Mode.MULTIPLY);
 
             if (myData.MotorON)
-                btMotorOn.getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
+                btMotorOn.setBackgroundColor(Color.GREEN); //.getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
             else
-                btMotorOn.getBackground().setColorFilter(Color.DKGRAY, PorterDuff.Mode.MULTIPLY);
+                btMotorOn.setBackgroundColor(Color.DKGRAY); //.getBackground().setColorFilter(Color.DKGRAY, PorterDuff.Mode.MULTIPLY);
 
             //app_uptime_tview.setText(AppUptimeString);
 
@@ -2025,6 +2041,11 @@ public class MainActivity extends Activity
     {
         UpdateTextViewsEnabled = !UpdateTextViewsEnabled;
 
+        if(UpdateTextViewsEnabled)
+            btToggleView.setBackgroundColor(Color.YELLOW);
+        else
+            btToggleView.setBackgroundColor(Color.GREEN);
+
         StopPeriodicRefreshUX();
 
         //Sleep(1000, 100);
@@ -2054,8 +2075,8 @@ public class MainActivity extends Activity
         if (ManualMode) {
             SetGUIButtonEnabled(false);
 
-            btToggleMode.setText("Manual Mode");
-            btToggleMode.getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
+            btToggleMode.setText("Auto Mode");
+            btToggleMode.setBackgroundColor(Color.GREEN); //getBackground().setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
 
             btCalibrate.setVisibility(Button.INVISIBLE);
             btPowerOff.setVisibility(Button.INVISIBLE);
@@ -2068,13 +2089,21 @@ public class MainActivity extends Activity
         } else {
             SetGUIButtonEnabled(true);
 
-            btToggleMode.setText("Auto Mode");
-            btToggleMode.getBackground().setColorFilter(Color.LTGRAY, PorterDuff.Mode.MULTIPLY);
+            btToggleMode.setText("Manual Mode");
+            btToggleMode.setBackgroundColor(Color.YELLOW); //.getBackground().setColorFilter(Color.LTGRAY, PorterDuff.Mode.MULTIPLY);
             //setBackgroundColor(Color.LTGRAY);
 
-            btCalibrate.setVisibility(Button.VISIBLE);
-            btPowerOff.setVisibility(Button.VISIBLE);
-            btMotorOff.setVisibility(Button.VISIBLE);
+            if(debug_mode)
+            {
+                btCalibrate.setVisibility(Button.INVISIBLE);
+                btPowerOff.setVisibility(Button.INVISIBLE);
+                btMotorOff.setVisibility(Button.INVISIBLE);
+            }
+            else {
+                btCalibrate.setVisibility(Button.INVISIBLE);
+                btPowerOff.setVisibility(Button.INVISIBLE);
+                btMotorOff.setVisibility(Button.INVISIBLE);
+            }
 
             btToggleView.setVisibility(Button.VISIBLE);
             btDoAppUpdate.setVisibility(Button.VISIBLE);
@@ -2092,6 +2121,7 @@ public class MainActivity extends Activity
         ResetHourlyCounters();
     }
 
+    /*
     //==========================================================================
     public void SendDailyDataButton_Click(View view)
     //==========================================================================
@@ -2185,6 +2215,7 @@ public class MainActivity extends Activity
 
         }
     }
+*/
 
     //==========================================================================
     public void SendEventButton_Click(View view)
@@ -2231,7 +2262,7 @@ public class MainActivity extends Activity
 
             //myAzureManager.AddFileToSavedFileList(myConfig.getAcquisitionsFolder(), filename, myConfig.get_Acquisition_Container());
             myAzureManager.AddFileToSavedFileList(filename);
-            myData.SavedFileListString += filename + "\r\n";
+            myData.SavedFileListString += filename + "; ";
 
         } catch (Exception ex) {
             LogException(TAG, "SaveData (calib.) exception: ", ex);

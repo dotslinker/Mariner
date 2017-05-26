@@ -235,11 +235,11 @@ public class InertialData {
         if (max_gyro_values[2] < new_gyro_z)
             max_gyro_values[2] = new_gyro_z;
 
-        AccXDataArray[gyro_data_counter] = new_gyro_x;
-        AccYDataArray[gyro_data_counter] = new_gyro_y;
-        AccZDataArray[gyro_data_counter] = new_gyro_z;
+        GyroXDataArray[gyro_data_counter] = new_gyro_x;
+        GyroYDataArray[gyro_data_counter] = new_gyro_y;
+        GyroZDataArray[gyro_data_counter] = new_gyro_z;
 
-        AccTimestampArray[gyro_data_counter] = (int) ((event.timestamp - reference_time) / 100000L);
+        GyroTimestampArray[gyro_data_counter] = (int) ((event.timestamp - reference_time) / 100000L);
 
         if (++gyro_data_counter >= NUM_OF_SAMPLES)
             gyro_data_counter = NUM_OF_SAMPLES - 1;

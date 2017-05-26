@@ -91,11 +91,13 @@ public class NetworkInfo extends PhoneStateListener {
     public int getSignalStrength() {
         return mySignalStrength;
     }
+
     //==========================================================================
 
 
     //TODO: implementare qualcosa che consenta di avere il valore di segnale anche all'inizio senza dovere attendere il cambio di
 
+/*
     @Override
     //==========================================================================
     public void onSignalStrengthsChanged(SignalStrength signalStrength) {
@@ -104,6 +106,23 @@ public class NetworkInfo extends PhoneStateListener {
         mySignalStrength = signalStrength.getGsmSignalStrength();
         mySignalStrength = (2 * mySignalStrength) - 113; // -> dBm
     }
+*/
+
+    @Override
+    //==========================================================================
+    public void onSignalStrengthsChanged(SignalStrength signalStrength) {
+        //==========================================================================
+        super.onSignalStrengthsChanged(signalStrength);
+        if (signalStrength.isGsm()) {
+            if (signalStrength.getGsmSignalStrength() != 99)
+                mySignalStrength = signalStrength.getGsmSignalStrength() * 2 - 113;
+            else
+                mySignalStrength = signalStrength.getGsmSignalStrength();
+        } else {
+            mySignalStrength = signalStrength.getCdmaDbm();
+        }
+    }
+
 
 
     //==========================================================================

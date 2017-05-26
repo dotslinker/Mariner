@@ -37,3 +37,6 @@
 2017-0516 - Vers. 01039 - Aggiunta la possibilità di inviare una mail
 2017-0518 - Vers. 01040 - Aggiunta la possibilità di aggiornare il software anche soltanto sulla singola macchina, inserendo l'ID al posto di "mariner". Spedizione di email in caso di problemi (Batteria, temperatura), in OnCreate e OnDestroy.
 2017-0523 - Vers. 01041 - Patch per la sistemazione dei dati inviati via mail (precedentemente tutti 0), spedizione degli eventi orari appena si trova connettività internet. Aggiunte alcune indicazioni alle scritte delle email
+2017-0526 - Vers. 01042 - Patch per la spedizione degli eventi orari memorizzati nel file (ora spediti ad un intervallo di un secondo). Piccola modifica della leggibilità della lista dei file salvati (da "\r\n" come separatore a "; "). Modificate le impostazioni dei colori dei pulsanti
+2017-0526 - Vers. 01043 - Patch correggere un grave baco sull'acquisizione dei dati che scriveva le informazioni del giroscopio anche sull'accelerometro
+

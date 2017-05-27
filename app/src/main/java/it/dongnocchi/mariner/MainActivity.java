@@ -57,7 +57,7 @@ public class MainActivity extends Activity
 //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1043;
+    public final int CURRENT_BUILD = 1044;
 
     public boolean debug_mode = false; //flag to enable debug mode of the application
 
@@ -78,8 +78,12 @@ public class MainActivity extends Activity
 
     private final int GYRO_READING_PERDIOD = 20000; //20 ms
 
-    private final int TEMPERATURE_READING_PERDIOD = 100000000; //10 s
+    private final int TEMPERATURE_READING_PERDIOD = 10000000; //10 s
 
+    private final long delta_temperature_reading = 10000;
+    private long LastTemperatureReadingTime, CurrentTemperatureReadingTime;
+
+    // MAX Int = 4294967296
 
     private final int LIGHT_READING_PERDIOD = 10000000; //1s
 
@@ -296,7 +300,7 @@ public class MainActivity extends Activity
             WheelchairID_tview.setText("Wheelchair ID: " + myConfig.get_WheelchairID());
             CreateAndOpenNewFileLogger();
             //myLogger = new FileLog();
-
+            LastTemperatureReadingTime = System.currentTimeMillis();
 
             // INITIALISE SENSOR MANAGER and Sensors
             mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -507,19 +511,18 @@ public class MainActivity extends Activity
 
     @Override
     protected void onPause() {
+        super.onPause();
         //myEventManager.SendEventNew("APP_ON_PAUSE", myData.myBatteryData.level, "");
         if(debug_mode)
             FileLog.d(TAG, "App Pause", null);
-        super.onPause();
     }
 
     @Override
     protected void onResume() {
+        super.onResume();
         if(debug_mode)
-            super.onResume();
+            FileLog.d(TAG, "App RESUME", null);
         //myEventManager.SendEventNew("APP_ON_RESUME", myData.myBatteryData.level, "");
-        FileLog.d(TAG, "App RESUME", null);
-
     }
 
     @Override
@@ -1105,33 +1108,34 @@ public class MainActivity extends Activity
                     }
                 }
             } else if ((event.sensor.getType() == Sensor.TYPE_AMBIENT_TEMPERATURE)) {
-                myData.myTempData.AppendData(event);
+                CurrentTemperatureReadingTime =  System.currentTimeMillis();
+                if( (CurrentTemperatureReadingTime - LastTemperatureReadingTime) > delta_temperature_reading )
+                {
+                    myData.myTempData.AppendData(event);
 
-                if (myData.myTempData.CurrentTemperature >= myConfig.TemperatureThresholdAlert) {
-                    if(InternetOnline && !myData.HourlyAlerts.TemperatureHigh)
-                    {
-                        myData.HourlyAlerts.TemperatureHigh = true;
-                        new Thread(new Runnable(){
-                            public void run() {
-                                myEventManager.SendEventNew("ALERT: HIGH TEMPERATURE", myData.myTempData.CurrentTemperature, "");
-                                SendEMail("ALERT: TEMPERATURE HIGH", "",
-                                        "Temperature is too high: " + Float.toString(myData.myTempData.CurrentTemperature) + "°C");
+                    if (myData.myTempData.CurrentTemperature >= myConfig.TemperatureThresholdAlert) {
+                        if (InternetOnline && !myData.HourlyAlerts.TemperatureHigh) {
+                            myData.HourlyAlerts.TemperatureHigh = true;
+                            new Thread(new Runnable() {
+                                public void run() {
+                                    myEventManager.SendEventNew("ALERT: HIGH TEMPERATURE", myData.myTempData.CurrentTemperature, "");
+                                    SendEMail("ALERT: TEMPERATURE HIGH", "",
+                                            "Temperature is too high: " + Float.toString(myData.myTempData.CurrentTemperature) + "°C");
 
-                                // do something here
-                            }
-                        }).start();
-
+                                    // do something here
+                                }
+                            }).start();
+                        }
                     }
 
+                    myData.UpdateMemoryUsage();
+
+                    //TODO: da sistemare una routine con un intervallo di un secondo...
+                    UpdateRunningTime();
+
+                    //Aggiorno la visualizzazione dei dati
+                    //RefreshGUI();
                 }
-                myData.UpdateMemoryUsage();
-
-                //TODO: da sistemare una routine con un intervallo di un secondo...
-                UpdateRunningTime();
-
-                //Aggiorno la visualizzazione dei dati
-                //RefreshGUI();
-
             } else if ((event.sensor.getType() == Sensor.TYPE_LIGHT)) {
                 myData.UpdateLightValue(event.values[0]);
             }

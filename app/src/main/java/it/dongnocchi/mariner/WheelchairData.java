@@ -102,7 +102,7 @@ public class WheelchairData {
 
     long DailyReferenceTime;
 
-    private static final int NUM_OF_TEMPERARURE_SAMPLES = 8650; //8640 sarebbe il numero corretto
+    private static final int NUM_OF_TEMPERARURE_SAMPLES = 86500; //8640 sarebbe il numero corretto
 
     public long MemoryUsed, MemoryAvailable;
     //public float MemoryUsedFloat_KB, MaxMemoryUsedFloat_KB;

@@ -443,10 +443,6 @@ class AzureEventManager {
             ParamsToSend.put("WheelchairID", WheelchairID); //puoi chiamarla più volte per mandare più param nello stesso evento
             ParamsToSend.put("EventType", EventType);
             ParamsToSend.put("TimeInfo", currentTimestamp.toString());
-            //ParamsToSend.put("TimeStamp", currentTimestamp);
-            //TODO: bisogna sistemare la questione dei timestamp
-
-            //ParamsToSend.put("Time", time_string);
             ParamsToSend.put("HourlyUse", HourlyUse);
             ParamsToSend.put("PhoneBatteryLevel", BatteryLevel);
             ParamsToSend.put("SignalStrength", (float) SignalStrenght);
@@ -508,12 +504,13 @@ class AzureEventManager {
                     ToBeSent.add(s.nextLine());
                 }
                 s.close();
+                int num_of_elem = ToBeSent.size();
 
-                for (int i = 0; i < ToBeSent.size(); i++) {
+                for (int i = 0; i < num_of_elem; i++) {
                     String str = ToBeSent.poll();
                     if (str.contains("{")) {
                         SendJsonString(str, myConfig.HourlyUpdate_EventHub_url, myConfig.HourlyUpdate_EventHub_connstring);
-                        FileLog.d("AzureEventManager", "Sent hourly json string: " + str);
+                        FileLog.d("AzureEventManager", "Sent buffered hourly json string: " + str);
                         Thread.sleep(1000);
                     }
                 }
@@ -541,12 +538,13 @@ class AzureEventManager {
                     ToBeSent.add(s.nextLine());
                 }
                 s.close();
+                int num_of_elem = ToBeSent.size();
 
-                for (int i = 0; i < ToBeSent.size(); i++) {
+                for (int i = 0; i < num_of_elem; i++) {
                     String str = ToBeSent.poll();
                     if (str.contains("{")) {
                         SendJsonString(str, myConfig.DailyUpdate_EventHub_url, myConfig.DailyUpdate_EventHub_connstring);
-                        FileLog.d("AzureEventManager", "Sent daily json string: " + str);
+                        FileLog.d("AzureEventManager", "Sent buffered daily json string: " + str);
                         Thread.sleep(1000);
                     }
                 }

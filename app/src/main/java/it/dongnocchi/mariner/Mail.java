@@ -50,12 +50,11 @@ public class Mail extends javax.mail.Authenticator {
 
     public Mail() {
         _host = "smtp.gmail.com"; // default smtp server
-        //_host = "smtp.libero.it"; // default smtp server
         _port = "465"; // default smtp port
         _sport = "465"; // default socketfactory port
 
-        _user = ""; //mariner.wheelchair@gmail.com"; // username
-        _pass = ""; //c4p3c3l4tr066"; // password
+        _user = ""; // username
+        _pass = ""; // password
         _from = ""; // email sent from
         _subject = ""; // email subject
         _body = ""; // email body

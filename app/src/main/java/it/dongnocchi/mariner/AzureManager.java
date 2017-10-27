@@ -538,17 +538,6 @@ public class AzureManager {
         }
     }
 
-    //TODO: verificare che si possa togliere del tutto
-/*
-    //==========================================================================
-    protected void Download_NotDownloadedFiles(){
-        //==========================================================================
-        if (FilesToDownload.size() != 0) {
-            BlobAsyncDownloader new_downl= new BlobAsyncDownloader(FilesToDownload.get(FilesToDownload.size() - 3), FilesToDownload.get(FilesToDownload.size() - 2), FilesToDownload.get(FilesToDownload.size() - 1), FilesToDownload.size());
-            new_downl.execute();
-        }
-    }
-*/
     //==========================================================================
     public boolean isNetworkOnline() {
         //==========================================================================
@@ -597,26 +586,6 @@ public class AzureManager {
     }
 
 
-
-    /*
-    //==========================================================================
-    //==========================================================================
-    public void CheckNewUpdates(int battery){
-    //==========================================================================
-    //==========================================================================
-        //BatLev = battery;
-        // set local folder to save xml file
-        //String storageConnectionString = myConfig.get_storageConnectionString();
-        File WhereToSaveXml = new File(myConfig.get_WhereToSaveXML_LocalPath());
-        if (!WhereToSaveXml.exists()) {
-            WhereToSaveXml.mkdir();
-        }
-
-        // download xml file from cloud
-        VersionChecker new_version_checker = new VersionChecker();
-        new_version_checker.execute();
-   }
-*/
 
     //==========================================================================
     private class AppCheckerAndUpdater extends AsyncTask<Void, Boolean, Boolean> {

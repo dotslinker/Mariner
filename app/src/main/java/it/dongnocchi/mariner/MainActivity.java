@@ -57,7 +57,7 @@ public class MainActivity extends Activity
 //==========================================================================
 
     //xxyyy xx = major release, yyy = minor release
-    public final int CURRENT_BUILD = 1044;
+    public final int CURRENT_BUILD = 1045;
 
     public boolean debug_mode = false; //flag to enable debug mode of the application
 
@@ -1127,15 +1127,15 @@ public class MainActivity extends Activity
                             }).start();
                         }
                     }
-
                     myData.UpdateMemoryUsage();
-
-                    //TODO: da sistemare una routine con un intervallo di un secondo...
-                    UpdateRunningTime();
 
                     //Aggiorno la visualizzazione dei dati
                     //RefreshGUI();
                 }
+
+                //TODO: da sistemare una routine con un intervallo di un secondo...
+                UpdateRunningTime();
+
             } else if ((event.sensor.getType() == Sensor.TYPE_LIGHT)) {
                 myData.UpdateLightValue(event.values[0]);
             }
@@ -2543,7 +2543,7 @@ public class MainActivity extends Activity
     {
         long LastMeasuredTime = System.nanoTime();//Calendar.getInstance().getTime().getTime();
 
-        long mills = (LastMeasuredTime - Daily_Reference_Time) / 1000000;
+        long mills = (LastMeasuredTime - Daily_Reference_Time) / 1000000L;
 
         int Hours = (int) (mills / (1000 * 60 * 60));
         int Mins = (int) (mills / (1000 * 60)) % 60;
@@ -2657,9 +2657,8 @@ public class MainActivity extends Activity
         logger_filename_complete = myConfig.get_Acquisition_Folder() + logger_filename;
         //Open the new one for the new day
         FileLog.open(logger_filename_complete, Log.VERBOSE, MAX_LOGFILE_SIZE);
-        FileLog.d("Wheelchair Remote Monitor", "ID = " + myConfig.get_WheelchairID() + "SW build = " + Integer.toString(CURRENT_BUILD), null);
+        FileLog.d("Wheelchair Remote Monitor", "ID = " + myConfig.get_WheelchairID() + " (build = " + Integer.toString(CURRENT_BUILD) + ")", null);
     }
-
 
     //==========================================================================
     private void LogException(String tag, String msg, Exception ex)
@@ -2741,7 +2740,6 @@ public class MainActivity extends Activity
 
     public void SendEMail(String subject, String attachment, String body) {
         Mail m = new Mail("mariner.wheelchair@gmail.com", "c4p3c3l4tr066");
-        //Mail m = new Mail("paolo.meriggi@iol.it", "19-w0rK-69");
 
         String _subject = "Mariner Project (From " + myConfig.WheelchairID + ") " + subject;
         String _body = body + System.getProperty("line.separator");
@@ -2766,14 +2764,10 @@ public class MainActivity extends Activity
         } catch (Exception e) {
             //Toast.makeText(MailApp.this, "There was a problem sending the email.", Toast.LENGTH_LONG).show();
             LogException(TAG, "Could not send email", e);
-
         }
-
     }
 
-
         /*
-
         //TODO: probabilmente da tagliare completamente, dato che non abbiamo più l'Init Activity
         //==========================================================================
         void ReturnToInit() {

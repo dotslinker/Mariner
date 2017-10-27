@@ -40,4 +40,4 @@
 2017-0526 - Vers. 01042 - Patch per la spedizione degli eventi orari memorizzati nel file (ora spediti ad un intervallo di un secondo). Piccola modifica della leggibilità della lista dei file salvati (da "\r\n" come separatore a "; "). Modificate le impostazioni dei colori dei pulsanti
 2017-0526 - Vers. 01043 - Patch correggere un grave baco sull'acquisizione dei dati che scriveva le informazioni del giroscopio anche sull'accelerometro. Modificata la routine di acquisizione della temperatura per leggere correttamente i dati ogni 10 secondi. incrementate le dimensioni dell'array di dati della temperatura di un fattore 10
 2017-0527 - Vers. 01044 - Patch correggere un grave baco su OnResume e On Pause che faceva piombare la App su S6
-
+2017-0531 - Vers. 01045 - Patch che corregge la spedizione dei msg json (la coda veniva svuotata in maniera errata dal cilco for relativo). Piccole Correzioni sulle stringhe di log
